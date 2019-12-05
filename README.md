@@ -4,7 +4,7 @@ Repository for the [Spatial Inequality in the Smart City](https://www.turing.ac.
 
 ## Environment
 
-Depdencies for this project are managed with `conda` and listed in the `environment.yml` file. To create a virtual environment  with all dependencies installed clone this repo and from the parent `spatial-inequality` directory run:
+Depdencies for this project are managed with [conda](https://docs.conda.io/en/latest/) and listed in the `environment.yml` file. To create a virtual environment  with all dependencies installed clone this repo and from the parent `spatial-inequality` directory run:
 ```bash
 > conda env create
 ```
