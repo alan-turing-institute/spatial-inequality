@@ -1,0 +1,71 @@
+from data_fetcher import get_data
+from utils import satisfaction_matrix, plot_sensors
+import numpy as np
+
+def optimise(n_sensors=20, theta=500):
+    """Greedily place sensors to maximise satisfaction.
+    
+    Keyword Arguments:
+        n_sensors {int} -- number of sensors to place (default: {20})
+        theta {int} -- coverage decay rate (default: {500})
+
+    Returns:
+        [type] -- [description]
+    """
+
+    data = get_data()
+    poi_x = data["poi_x"] 
+    poi_y = data["poi_y"]
+    poi_weight = data["poi_y"]
+    
+    n_poi = len(poi_x)
+    satisfaction = satisfaction_matrix(poi_x, poi_y, theta)
+    
+    # binary array - 1 if sensor at this location, 0 if not
+    sensors = np.zeros(n_poi)
+
+    # satisfaction obtained with each number of sensors
+    satisfaction_history = []
+    
+    for s in range(n_sensors):
+        # greedily add sensors
+        print("Placing sensor", s+1, "out of", n_sensors, "... ", end='')
+        
+        best_satisfaction = 0
+        best_sensors = sensors.copy()
+        
+        for site in range(n_poi):
+            # try adding sensor at potential sensor site
+            
+            if sensors[site] == 1:
+                # already have a sensor here, so skip to next
+                continue
+            
+            else:
+                new_sensors = sensors.copy()
+                new_sensors[site] = 1
+                
+                # only keep satisfactions due to sites where a sensor is present
+                mask_sat = np.multiply(satisfaction, new_sensors[np.newaxis, :])
+
+                # satisfaction at each site = satisfaction due to nearest sensor
+                max_mask_sat = np.max(mask_sat, axis=1)
+                
+                # Avg satisfaction = weighted sum across all points of interest
+                new_satisfaction = (poi_weight * max_mask_sat).sum() / poi_weight.sum()
+                
+                if new_satisfaction > best_satisfaction:
+                    # this site is the best site for next sensor found so far
+                    best_sensors = new_sensors.copy()
+                    best_satisfaction = new_satisfaction
+        
+        sensors = best_sensors.copy()
+        satisfaction_history.append(best_satisfaction)
+        print("satisfaction = {:.2f}".format(best_satisfaction))
+        
+    sensor_locations = [(poi_x[i], poi_y[i]) 
+                        for i in range(n_poi) if sensors[i]==1]
+
+    plot_sensors(sensors)
+
+    return sensor_locations, best_satisfaction
