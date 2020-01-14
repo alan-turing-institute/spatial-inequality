@@ -12,3 +12,5 @@ dependencies:
   - pygmo
   - requests
   - contextily
+  - flask
+  - gunicorn
