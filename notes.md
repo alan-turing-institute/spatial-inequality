@@ -15,6 +15,14 @@ rq worker spineq
 
 ## start flask with gunicorn
 ```bash
-cd app
+cd api
 gunicorn --bind 0.0.0.0:8000 app:app
+```
+
+## api doc
+
+https://apidocjs.com/
+```bash
+npm install apidoc -g
+apidoc
 ```

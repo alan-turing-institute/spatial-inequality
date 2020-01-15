@@ -15,7 +15,7 @@ def optimise(n_sensors=20, theta=500, rq_job=False):
         function and upate meta data with progress.
 
     Returns:
-        [type] -- [description]
+        dict -- optimisation result.
     """
     
     if rq_job:
