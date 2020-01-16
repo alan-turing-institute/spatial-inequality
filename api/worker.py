@@ -1,16 +1,15 @@
 import os
+from config import REDIS_HOST, REDIS_PORT, REDIS_QUEUE
 
 import redis
 from rq import Worker, Queue, Connection
 
-listen = ['default']
 
-redis_url = os.getenv('REDISTOGO_URL', 'redis://0.0.0.0:6379')
-
+redis_url = "redis://{}:{}".format(REDIS_HOST, REDIS_PORT)
 conn = redis.from_url(redis_url)
 
-queue = Queue("default", connection=redis.Redis.from_url(redis_url))
-
+queue = Queue(REDIS_QUEUE, connection=conn)
+listen = [REDIS_QUEUE]
 
 if __name__ == '__main__':
     with Connection(conn):

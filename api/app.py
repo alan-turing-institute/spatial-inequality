@@ -7,14 +7,19 @@ from worker import conn, queue
 
 from spineq.optimise import optimise
 
+from config import FLASK_HOST, FLASK_PORT
+
 app = Flask(__name__)
 
 
 @app.route("/")
-def home():   
+def home():
     return """spineq-api:<br>
-                /optimise?n_sensors=&lt;n_sensors&gt;<br>
-                /job/&lt;job_id&gt;<br>
+                Submit optimisation job: /optimise?n_sensors=&lt;n_sensors&gt;<br>
+                Get job status and results: /job/&lt;job_id&gt;<br>
+                View jobs available on the queue: /queue<br>
+                Delete all jobs from the queue: /queue/deleteall<br>
+                Remove one job from the queue: /queue/delete/&lt;job_id&gt;
     """
 
 
@@ -56,7 +61,7 @@ def submit_optimise_job():
                         result_ttl=86400,  # how long to keep result (seconds)
                         n_sensors=n_sensors,
                         theta=theta,
-                        rq_job=True)        
+                        rq_job=True)  
             
     return make_job_dict(job)
 
@@ -103,7 +108,7 @@ def get_job_ids():
     return jsonify(jobs)
 
 
-@app.route("/queue/empty")
+@app.route("/queue/deleteall")
 def clear_queue():
     """Remove all jobs from the queue.
     
@@ -123,7 +128,33 @@ def clear_queue():
         return {"code": 400,
                 "message": "Failed to remove some jobs from the queue.",
                 "n_jobs_removed": n_removed,
-                "n_jobs_remaining": n_remaining}   
+                "n_jobs_remaining": n_remaining}
+
+
+@app.route("/queue/delete/<job_id>")
+def delete_job(job_id):
+    """Delete a single job from the queue.
+    
+    Returns:
+        dict -- json with result of whether job was successfully deleted.
+    """
+    
+    try:
+        job = Job.fetch(job_id, connection=conn)
+        
+    except rq.exceptions.NoSuchJobError:
+        return {"error": {"code": 404,
+                          "message": "No job with id "+job_id}}, 404
+        
+    # delete and verify can't get the job from the queue anymore
+    try:
+        job.delete()
+        job = Job.fetch(job_id, connection=conn)
+        return {"error": {"code": 400,
+                    "message": "Delete failed for job "+job_id}}, 400
+    except rq.exceptions.NoSuchJobError:
+        return {"code": 200,
+                "message": "Successfully deleted job "+job_id}, 200
 
 
 def make_job_dict(job):
@@ -148,4 +179,4 @@ def make_job_dict(job):
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host=FLASK_HOST, port=FLASK_PORT)

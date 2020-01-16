@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+
+  web:
+    build: .
+    image: spineq
+    container_name: spineq_api
+    ports:
+      - "${HOST_PORT}:${FLASK_PORT}"
+    depends_on:
+      - redis
+      - worker
+    env_file:
+      - .env
+    command: "gunicorn --bind ${FLASK_HOST}:${FLASK_PORT} app:app"
+
+  worker:
+    build: .
+    image: spineq
+    container_name: spineq_worker
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    command: python worker.py
+
+  redis:
+    image: redis
+    container_name: redis

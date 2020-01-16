@@ -8,15 +8,16 @@ RUN apt-get update && \
     apt-get install -y redis libgeos-dev
 
 # Port setup
-EXPOSE 5000
 ENV PORT 5000
+EXPOSE $PORT
 
 # Copy files
 COPY . /app
-WORKDIR /app
 
 # Install python requirements
-RUN pip install -r requirements.txt
+RUN cd /app && pip install -r requirements.txt
+
+WORKDIR /app/api
 
 # Start Redis, worker and gunicorn
-ENTRYPOINT cd api && bash start_services.sh
+#ENTRYPOINT cd api && bash start_services.sh
