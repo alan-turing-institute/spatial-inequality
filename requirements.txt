@@ -1,2 +1,8 @@
-mip
+flask
+gunicorn
+redis
 rq
+numpy
+pandas
+geopandas
+-e .

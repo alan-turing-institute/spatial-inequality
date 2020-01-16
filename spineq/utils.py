@@ -2,10 +2,6 @@
 import numpy as np
 import geopandas as gpd
 
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import contextily as ctx
-
 from .data_fetcher import get_data
 
 
@@ -77,6 +73,10 @@ def plot_sensors(sensors,
     Plot map with sensor locations (red points), output area centroids (black points),
     and satisfaction (shaded areas).
     """
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    import contextily as ctx
+
     data = get_data()
     satisfaction = satisfaction_matrix(data["poi_x"],
                                        data["poi_y"],

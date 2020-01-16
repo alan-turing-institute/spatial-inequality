@@ -119,7 +119,7 @@ def clear_queue():
                 "n_jobs_removed": n_removed,
                 "n_jobs_remaining": n_remaining}
      
-    else:      
+    else:
         return {"code": 400,
                 "message": "Failed to remove some jobs from the queue.",
                 "n_jobs_removed": n_removed,
@@ -139,7 +139,7 @@ def make_job_dict(job):
     if "status" in job.meta.keys():
         last_message = job.meta["status"]
     
-    return {"job_id": job_id,
+    return {"job_id": job.id,
             "call_str": call_str,
             "status": status,
             "progress": progress,
