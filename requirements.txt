@@ -4,5 +4,7 @@ redis
 rq
 numpy
 pandas
+xlrd
 geopandas
+requests
 -e .
