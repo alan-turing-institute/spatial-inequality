@@ -29,9 +29,10 @@ def optimise(n_sensors=20, theta=500, rq_job=False):
         job.save_meta()
     
     data = get_data()
-    poi_x = data["poi_x"] 
+    poi_x = data["poi_x"]
     poi_y = data["poi_y"]
     poi_weight = data["poi_weight"]
+    oa11cd = data["oa11cd"]
     
     n_poi = len(poi_x)
     satisfaction = satisfaction_matrix(poi_x, poi_y, theta=theta)
@@ -41,6 +42,7 @@ def optimise(n_sensors=20, theta=500, rq_job=False):
 
     # satisfaction obtained with each number of sensors
     satisfaction_history = []
+    oa_satisfaction = []
     
     for s in range(n_sensors):
         # greedily add sensors
@@ -52,7 +54,7 @@ def optimise(n_sensors=20, theta=500, rq_job=False):
             job.meta["progress"] = 100 * s / n_sensors
             job.save_meta()
         
-        best_satisfaction = 0
+        best_total_satisfaction = 0
         best_sensors = sensors.copy()
         
         for site in range(n_poi):
@@ -75,17 +77,24 @@ def optimise(n_sensors=20, theta=500, rq_job=False):
                 # Avg satisfaction = weighted sum across all points of interest
                 new_satisfaction = (poi_weight * max_mask_sat).sum() / poi_weight.sum()
                 
-                if new_satisfaction > best_satisfaction:
+                if new_satisfaction > best_total_satisfaction:
                     # this site is the best site for next sensor found so far
                     best_sensors = new_sensors.copy()
-                    best_satisfaction = new_satisfaction
+                    best_total_satisfaction = new_satisfaction
         
         sensors = best_sensors.copy()
-        satisfaction_history.append(best_satisfaction)
-        print("satisfaction = {:.2f}".format(best_satisfaction))
+        satisfaction_history.append(best_total_satisfaction)
+        oa_satisfaction = max_mask_sat
         
-    sensor_locations = [{"x": poi_x[i], "y": poi_y[i]} 
+        print("satisfaction = {:.2f}".format(best_total_satisfaction))
+        
+    sensor_locations = [{"x": poi_x[i], "y": poi_y[i],
+                         "oa11cd": oa11cd[i]}
                         for i in range(n_poi) if sensors[i]==1]
+    
+    oa_satisfaction = [{"oa11cd": oa11cd[i],
+                        "satisfaction": oa_satisfaction[i]}
+                       for i in range(n_poi)]
     
     if job:
         job.meta["progress"] = 100
@@ -93,4 +102,5 @@ def optimise(n_sensors=20, theta=500, rq_job=False):
         job.save_meta()
 
     return {"sensors": sensor_locations,
-            "satisfaction": best_satisfaction}
+            "total_satisfaction": best_total_satisfaction,
+            "oa_satisfaction": oa_satisfaction}

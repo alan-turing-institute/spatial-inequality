@@ -21,6 +21,7 @@ def get_data():
     # weighted centroids)
     poi_x = tyne_oa["X"].values
     poi_y = tyne_oa["Y"].values
+    oa11cd = tyne_oa["oa11cd"].values
     
     # Weight for each point of interest (in this case population estimate for 
     # each output area)
@@ -28,7 +29,9 @@ def get_data():
     
     return {"poi_x": poi_x,
             "poi_y": poi_y,
-            "poi_weight": poi_weight}
+            "poi_weight": poi_weight,
+            "oa11cd": oa11cd,
+            }
     
 
 def load_gdf(path, epsg=27700):
