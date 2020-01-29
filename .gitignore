@@ -1,6 +1,7 @@
 # Data files
 data/raw/
 data/backup/
+data/img/
 
 # Mac config files
 .DS_Store
