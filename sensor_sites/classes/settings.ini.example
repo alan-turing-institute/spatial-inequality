@@ -1,0 +1,9 @@
+; Credentials for NISMOD-DB++ API
+[API_CREDENTIALS]
+username = <NISMOD_DB_API_USERNAME>
+password = <NISMOD_DB_API_PASSWORD>
+
+[DB_CREDENTIALS]
+host = nismod-db.ncl.ac.uk
+username = <NISMOD_DB_USERNAME>
+password = <NISMOD_DB_PASSWORD>
