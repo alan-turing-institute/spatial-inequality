@@ -34,7 +34,7 @@ def optimise(n_sensors=20, theta=500, rq_job=False):
     poi_weight = data["poi_weight"]
     
     n_poi = len(poi_x)
-    satisfaction = satisfaction_matrix(poi_x, poi_y, theta)
+    satisfaction = satisfaction_matrix(poi_x, poi_y, theta=theta)
     
     # binary array - 1 if sensor at this location, 0 if not
     sensors = np.zeros(n_poi)
