@@ -1,5 +1,5 @@
 from .data_fetcher import get_data
-from .utils import satisfaction_matrix, plot_sensors
+from .utils import satisfaction_matrix
 
 import numpy as np
 
