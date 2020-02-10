@@ -1,11 +1,13 @@
+requests
 flask
 flask-cors
+flask-socketio
 gunicorn
+socketIO-client
 redis
 rq
 numpy
 pandas
 xlrd
 geopandas
-requests
 -e .
