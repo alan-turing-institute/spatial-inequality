@@ -1,3 +1,7 @@
+"""
+Demonstration of how to interact with the API via WebSockets
+"""
+
 from socketIO_client import SocketIO, LoggingNamespace
 
 JOB_ID = None
