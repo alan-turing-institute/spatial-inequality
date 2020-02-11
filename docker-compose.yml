@@ -13,7 +13,7 @@ services:
       - worker
     env_file:
       - .env
-    command: "gunicorn --bind ${FLASK_HOST}:${FLASK_PORT} app:app"
+    command: "gunicorn --bind ${FLASK_HOST}:${FLASK_PORT} --worker-class eventlet -w 1 app:app"
 
   worker:
     build: .
