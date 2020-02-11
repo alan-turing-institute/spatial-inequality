@@ -4,6 +4,15 @@ Repository for the [Spatial Inequality in the Smart City](https://www.turing.ac.
 
 ## API
 
+### Start the API
+
+```bash
+docker build .
+docker-compose up
+```
+
+Should then be available on `0.0.0.0:5000`
+
 ### WebSockets
 
 * Submit an optimisation job:
