@@ -43,6 +43,7 @@ print("----------")
 
 print("WAITING")
 socketIO.wait(seconds=20)
+# should see a jobFinished message once the job has completed
 print("----------")
 
 
