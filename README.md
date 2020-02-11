@@ -31,7 +31,7 @@ Should then be available on `0.0.0.0:5000`
   - Client emits event `deleteJob` with data `<the_job_id>`
   - Server emits event `message` with deletion result.
   
-* Remove all jobs from the queue (including completed jobs!):
+* Remove all jobs from the queue:
   - Client emits event `deleteQueue`
   - Server emits event `message` with deletion result.
 
