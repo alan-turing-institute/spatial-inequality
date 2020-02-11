@@ -18,6 +18,7 @@ Should then be available on `0.0.0.0:5000`
 * Submit an optimisation job:
   - Client emits event `submitJob` with data `{"n_sensors": 10, "theta": 500}`
   - Server emits event `job` with job data.
+  - On job completion, server emits `jobFinished` with job_id.
   
 * Retrieve the result/status of a job:
   - Client emits event `getJob` with data `<the_job_id>`

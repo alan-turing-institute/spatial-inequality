@@ -4,8 +4,11 @@ from .utils import satisfaction_matrix
 import numpy as np
 
 import rq
+from flask_socketio import SocketIO
 
-def optimise(n_sensors=20, theta=500, rq_job=False):
+
+def optimise(n_sensors=20, theta=500, rq_job=False, socket=False,
+             redis_url="redis//"):
     """Greedily place sensors to maximise satisfaction.
     
     Keyword Arguments:
@@ -100,6 +103,9 @@ def optimise(n_sensors=20, theta=500, rq_job=False):
         job.meta["progress"] = 100
         job.meta["status"] = "Finished"
         job.save_meta()
+        if socket:
+            socket = SocketIO(message_queue=redis_url)
+            socket.emit("jobFinished", job.id)
 
     return {"sensors": sensor_locations,
             "total_satisfaction": best_total_satisfaction,
