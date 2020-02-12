@@ -26,7 +26,7 @@ def job_finished(job_id):
 
 
 # Define host and callbacks
-socketIO = SocketIO('localhost', 5000, LoggingNamespace)
+socketIO = SocketIO('localhost', 5000)
 socketIO.on('message', print_message)
 socketIO.on('job', print_job)
 socketIO.on('queue', print_queue)
