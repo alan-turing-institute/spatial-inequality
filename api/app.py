@@ -14,7 +14,7 @@ from config import FLASK_HOST, FLASK_PORT
 
 app = Flask(__name__)
 CORS(app)
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 @app.route("/")
 def home():
