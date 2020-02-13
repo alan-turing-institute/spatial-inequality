@@ -8,7 +8,7 @@ from flask_socketio import SocketIO
 
 
 def optimise(n_sensors=20, theta=500, rq_job=False, socket=False,
-             redis_url="redis//"):
+             redis_url="redis://"):
     """Greedily place sensors to maximise satisfaction.
     
     Keyword Arguments:
@@ -25,7 +25,15 @@ def optimise(n_sensors=20, theta=500, rq_job=False, socket=False,
         job = rq.get_current_job()
     else:
         job = None
-    
+        
+    if socket:
+        socketIO = SocketIO(message_queue=redis_url)
+        
+    print("socket", socket)
+    print("socketIO", socketIO)
+    print("rq_job", rq_job)
+    print("job", job)
+   
     print("Fetching data...")
     if job:
         job.meta["status"] = "Fetching data"
@@ -54,9 +62,13 @@ def optimise(n_sensors=20, theta=500, rq_job=False, socket=False,
         if job:
             job.meta["status"] = "Placing sensor {} out of {}".format(s+1,
                                                                       n_sensors)
-            job.meta["progress"] = 100 * s / n_sensors
+            progress = 100 * s / n_sensors
+            job.meta["progress"] = progress
             job.save_meta()
-        
+            if socket:
+                socketIO.emit("jobProgress", {"job_id": job.id,
+                                              "progress": progress})
+
         best_total_satisfaction = 0
         best_sensors = sensors.copy()
         
@@ -104,8 +116,7 @@ def optimise(n_sensors=20, theta=500, rq_job=False, socket=False,
         job.meta["status"] = "Finished"
         job.save_meta()
         if socket:
-            socket = SocketIO(message_queue=redis_url)
-            socket.emit("jobFinished", job.id)
+            socketIO.emit("jobFinished", job.id)
 
     return {"sensors": sensor_locations,
             "total_satisfaction": best_total_satisfaction,

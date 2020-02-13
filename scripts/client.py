@@ -25,14 +25,19 @@ def job_finished(job_id):
     print("JOB FINISHED", job_id)
 
 
-# Define host and callbacks
+def print_progress(progress):
+    print("PROGRESS", progress)
+
+
+# Define host and callbacks
 socketIO = SocketIO('localhost', 5000)
 socketIO.on('message', print_message)
 socketIO.on('job', print_job)
 socketIO.on('queue', print_queue)
+socketIO.on('jobProgress', print_progress)
 socketIO.on('jobFinished', job_finished)
 
-# Make connection
+# Make connection
 print("CONNECT")
 socketIO.emit('connect')
 socketIO.wait(seconds=1)

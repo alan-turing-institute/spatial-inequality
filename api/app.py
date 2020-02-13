@@ -10,11 +10,14 @@ from worker import conn, queue
 
 from spineq.optimise import optimise
 
-from config import FLASK_HOST, FLASK_PORT
+from config import FLASK_HOST, FLASK_PORT, REDIS_HOST, REDIS_PORT
+
+redis_url = "redis://{}:{}".format(REDIS_HOST, REDIS_PORT)
+
 
 app = Flask(__name__)
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", message_queue=redis_url)
 
 @app.route("/")
 def home():
@@ -142,7 +145,9 @@ def socket_optimise_job(parameters):
     
     else:
         job_dict = submit_optimise_job(n_sensors=parameters["n_sensors"],
-                                       theta=parameters["theta"])
+                                       theta=parameters["theta"],
+                                       socket=True,
+                                       redis_url=redis_url)
         emit("job", job_dict)
 
 
@@ -213,7 +218,8 @@ def make_job_dict(job):
             "result": result}
 
 
-def submit_optimise_job(n_sensors=5, theta=500):
+def submit_optimise_job(n_sensors=5, theta=500,
+                        socket=False, redis_url="redis://"):
     """Run an optimisation job. Query parameters:
         - n_sensors: generate a network with this many sensors. 
         - theta: decay rate for satisfaction measure.
@@ -240,7 +246,9 @@ def submit_optimise_job(n_sensors=5, theta=500):
                         result_ttl=86400,  # how long to keep result (seconds)
                         n_sensors=n_sensors,
                         theta=theta,
-                        rq_job=True)  
+                        rq_job=True,
+                        socket=socket,
+                        redis_url=redis_url)  
             
     return make_job_dict(job)
 
