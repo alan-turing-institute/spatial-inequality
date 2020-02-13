@@ -1,5 +1,5 @@
 from .data_fetcher import get_data
-from .utils import satisfaction_matrix
+from .utils import satisfaction_matrix, make_job_dict
 
 import numpy as np
 
@@ -111,13 +111,17 @@ def optimise(n_sensors=20, theta=500, rq_job=False, socket=False,
                         "satisfaction": oa_satisfaction[i]}
                        for i in range(n_poi)]
     
+    result = {"sensors": sensor_locations,
+              "total_satisfaction": best_total_satisfaction,
+              "oa_satisfaction": oa_satisfaction}
+    
     if job:
         job.meta["progress"] = 100
         job.meta["status"] = "Finished"
         job.save_meta()
         if socket:
-            socketIO.emit("jobFinished", job.id)
+            jobDict = make_job_dict(job)
+            jobDict["result"] = result
+            socketIO.emit("jobFinished", jobDict)
 
-    return {"sensors": sensor_locations,
-            "total_satisfaction": best_total_satisfaction,
-            "oa_satisfaction": oa_satisfaction}
+    return result

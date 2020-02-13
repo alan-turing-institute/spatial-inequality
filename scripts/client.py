@@ -19,10 +19,10 @@ def print_queue(queue):
     print("QUEUE", queue)
 
 
-def job_finished(job_id):
+def job_finished(data):
     global JOB_ID
-    JOB_ID = job_id
-    print("JOB FINISHED", job_id)
+    JOB_ID = data["job_id"]
+    print("JOB FINISHED", data)
 
 
 def print_progress(progress):

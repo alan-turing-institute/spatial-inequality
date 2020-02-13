@@ -81,3 +81,32 @@ def satisfaction_matrix(x1, y1, x2=None, y2=None, theta=1):
         sensor placed at another location j.
     """
     return satisfaction(distance_matrix(x1, y1, x2=x2, y2=y2), theta=theta)
+
+
+def make_job_dict(job):
+    """Construct a dictionary out of RQ job status/results.
+    
+    Arguments:
+        job {RQ job} -- RQ job object
+    
+    Returns:
+        dict -- json like dictionary of job status/results
+    """
+    status = job.get_status()
+    call_str = job.get_call_string()
+    result = job.result
+    
+    if "progress" in job.meta.keys():
+        progress = job.meta["progress"]
+    else:
+        progress = 0
+    
+    if "status" in job.meta.keys():
+        last_message = job.meta["status"]
+    
+    return {"job_id": job.id,
+            "call_str": call_str,
+            "status": status,
+            "progress": progress,
+            "last_message": last_message,       
+            "result": result}

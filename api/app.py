@@ -9,6 +9,7 @@ from rq.job import Job
 from worker import conn, queue
 
 from spineq.optimise import optimise
+from spineq.utils import make_job_dict
 
 from config import FLASK_HOST, FLASK_PORT, REDIS_HOST, REDIS_PORT
 
@@ -195,27 +196,6 @@ def socket_delete_job(job_id):
         dict -- json with result of whether job was successfully deleted.
     """
     emit("message", delete_job(job_id))
-
-
-def make_job_dict(job):
-    status = job.get_status()
-    call_str = job.get_call_string()
-    result = job.result
-    
-    if "progress" in job.meta.keys():
-        progress = job.meta["progress"]
-    else:
-        progress = 0
-    
-    if "status" in job.meta.keys():
-        last_message = job.meta["status"]
-    
-    return {"job_id": job.id,
-            "call_str": call_str,
-            "status": status,
-            "progress": progress,
-            "last_message": last_message,       
-            "result": result}
 
 
 def submit_optimise_job(n_sensors=5, theta=500,
