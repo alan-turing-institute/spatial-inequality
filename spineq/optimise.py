@@ -1,26 +1,42 @@
-from .data_fetcher import get_data
+from .data_fetcher import get_oa_centroids, get_oa_stats
 from .utils import satisfaction_matrix, make_job_dict
 
 import numpy as np
+import pandas as pd
 
 import rq
 from flask_socketio import SocketIO
 
 
-def optimise(n_sensors=20, theta=500, rq_job=False, socket=False,
-             redis_url="redis://"):
+def optimise(n_sensors=20, theta=500,
+             age_weights=1, population_weight=1, workplace_weight=0,
+             rq_job=False, socket=False, redis_url="redis://"):
     """Greedily place sensors to maximise satisfaction.
     
     Keyword Arguments:
         n_sensors {int} -- number of sensors to place (default: {20})
         theta {int} -- coverage decay rate (default: {500})
+        
+        age_weights {float or pd.DataFrame} -- Either constant, in which case
+        use same weighting for all ages, or a dataframe with index age (range
+        between 0 and 90) and values weight (default: {1})
+        population_weight {float} -- Weighting for residential population
+        (default: {1})
+        workplace_weight {float} -- Weighting for workplace population
+        (default: {0})
+        
         rq_job {boolean} -- If True attempt to get the RQ job running this
         function and upate meta data with progress.
+        socket {boolean} -- If True attempt to make a SocketIO connection to
+        send updates to.
+        redis_url {str} -- URL of Redis server for SocketIO message queue
+        (default: {"redis://"})
 
     Returns:
         dict -- optimisation result.
     """
     
+    print("Setting up jobs and sockets...")
     if rq_job:
         job = rq.get_current_job()
     else:
@@ -28,25 +44,20 @@ def optimise(n_sensors=20, theta=500, rq_job=False, socket=False,
         
     if socket:
         socketIO = SocketIO(message_queue=redis_url)
-        
-    print("socket", socket)
-    print("socketIO", socketIO)
-    print("rq_job", rq_job)
-    print("job", job)
-   
+       
     print("Fetching data...")
     if job:
         job.meta["status"] = "Fetching data"
         job.save_meta()
     
-    data = get_data()
-    poi_x = data["poi_x"]
-    poi_y = data["poi_y"]
-    poi_weight = data["poi_weight"]
+    data = get_optimisation_inputs()
+    oa_x = data["oa_x"]
+    oa_y = data["oa_y"]
+    oa_weight = data["oa_weight"]
     oa11cd = data["oa11cd"]
     
-    n_poi = len(poi_x)
-    satisfaction = satisfaction_matrix(poi_x, poi_y, theta=theta)
+    n_poi = len(oa_x)
+    satisfaction = satisfaction_matrix(oa_x, oa_y, theta=theta)
     
     # binary array - 1 if sensor at this location, 0 if not
     sensors = np.zeros(n_poi)
@@ -90,7 +101,7 @@ def optimise(n_sensors=20, theta=500, rq_job=False, socket=False,
                 max_mask_sat = np.max(mask_sat, axis=1)
                 
                 # Avg satisfaction = weighted sum across all points of interest
-                new_satisfaction = (poi_weight * max_mask_sat).sum() / poi_weight.sum()
+                new_satisfaction = (oa_weight * max_mask_sat).sum() / oa_weight.sum()
                 
                 if new_satisfaction > best_total_satisfaction:
                     # this site is the best site for next sensor found so far
@@ -103,9 +114,9 @@ def optimise(n_sensors=20, theta=500, rq_job=False, socket=False,
         
         print("satisfaction = {:.2f}".format(best_total_satisfaction))
         
-    sensor_locations = [{"x": poi_x[i], "y": poi_y[i],
+    sensor_locations = [{"x": oa_x[i], "y": oa_y[i],
                          "oa11cd": oa11cd[i]}
-                        for i in range(n_poi) if sensors[i]==1]
+                        for i in range(n_poi) if sensors[i] == 1]
     
     oa_satisfaction = [{"oa11cd": oa11cd[i],
                         "satisfaction": oa_satisfaction[i]}
@@ -125,3 +136,78 @@ def optimise(n_sensors=20, theta=500, rq_job=False, socket=False,
             socketIO.emit("jobFinished", jobDict)
 
     return result
+
+
+def calc_oa_weights(age_weights=1, population_weight=1, workplace_weight=0):
+    """Calculate weighting factor for each OA.
+    
+    Keyword Arguments:
+        age_weights {float or pd.DataFrame} -- Either constant, in which case
+        use same weighting for all ages, or a dataframe with index age (range
+        between 0 and 90) and values weight (default: {1})
+        
+        population_weight {float} -- Weighting for residential population
+        (default: {1})
+        
+        workplace_weight {float} -- Weighting for workplace population
+        (default: {0})
+    
+    Returns:
+        dict -- Optimisation input data
+    """
+    
+    data = get_oa_stats()
+    population_ages = data["population_ages"]
+    workplace = data["workplace"]
+    
+    # weightings for residential population by age
+    oa_pop_weight_age = population_ages * age_weights
+    oa_pop_weight = oa_pop_weight_age.sum(axis=1)  # sum of weights for all ages
+    oa_pop_weight = oa_pop_weight / oa_pop_weight.sum()  # normalise so sum OA weights is 1
+    
+    # weightings for number of workers in OA (normalised to sum to 1)
+    oa_work_weight = workplace / workplace.sum()
+
+    # sum up weights and renormalise
+    oa_all_weights = pd.DataFrame({"population": oa_pop_weight,
+                                   "workplace": oa_work_weight})
+    oa_all_weights["total"] = (workplace_weight*oa_all_weights["workplace"] +
+                               population_weight*oa_all_weights["population"])
+    oa_all_weights["total"] = (oa_all_weights["total"] /
+                               oa_all_weights["total"].sum())
+    
+    return oa_all_weights["total"]
+
+
+def get_optimisation_inputs(age_weights=1, population_weight=1,
+                            workplace_weight=0):
+    """Get input data in format needed for optimisation.
+    
+    Keyword Arguments:
+        (all passed to cala_oa_weights)
+        age_weights {float or pd.DataFrame} -- Either constant, in which case
+        use same weighting for all ages, or a dataframe with index age (range
+        between 0 and 90) and values weight (default: {1})
+        
+        population_weight {float} -- Weighting for residential population
+        (default: {1})
+        
+        workplace_weight {float} -- Weighting for workplace population
+        (default: {0})
+    
+    Returns:
+        dict -- Optimisation input data
+    """
+    centroids = get_oa_centroids()
+    weights = calc_oa_weights(age_weights=1, population_weight=1,
+                              workplace_weight=0)
+    
+    centroids["weight"] = weights
+    
+    oa11cd = centroids.index.values
+    oa_x = centroids["X"].values
+    oa_y = centroids["Y"].values
+    oa_weight = weights.values
+
+    return {"oa11cd": oa11cd, "oa_x": oa_x, "oa_y": oa_y,
+            "oa_weight": oa_weight}

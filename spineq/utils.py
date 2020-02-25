@@ -1,8 +1,10 @@
+import numbers
 
 import numpy as np
 import geopandas as gpd
+import pandas as pd
 
-from .data_fetcher import get_data
+from .data_fetcher import get_data, get_oa_data
 
 
 def distance_matrix(x1, y1, x2=None, y2=None):
@@ -110,3 +112,6 @@ def make_job_dict(job):
             "progress": progress,
             "last_message": last_message,       
             "result": result}
+
+    
+    
