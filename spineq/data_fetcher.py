@@ -316,7 +316,12 @@ def get_oa_centroids():
         pd.DataFrame -- Dataframe with index oa11cd and columns x and y.
     """
     return pd.read_csv(PROCESSED_DIR + "/centroids.csv", index_col="oa11cd")
-    
+
+
+def get_oa_shapes():
+    shapes = gpd.read_file(PROCESSED_DIR + "/oa_shapes")
+    return shapes.set_index("oa11cd")
+
 
 if __name__ == "__main__":
     process_data_files()

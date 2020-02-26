@@ -1,75 +1,74 @@
 import numpy as np
 import geopandas as gpd
+import pandas as pd
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import contextily as ctx
 
 from .utils import satisfaction_matrix
-from .data_fetcher import get_data
+from .data_fetcher import get_data, get_oa_shapes
 
 
-def plot_sensors(sensors,
-                 figsize=(20,20),
-                 print_sensors=True,
-                 theta=500):
+def get_color_axis(ax):
+    """Make a colour axis matched to be the same size as the plot.
+    See: https://www.science-emergence.com/Articles/How-to-match-the-colorbar-size-with-the-figure-size-in-matpltolib-/
+    """
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.1)
+    return cax
+
+
+def plot_optimisation_result(result, title=None, save_path=None,
+                             figsize=(10, 10), cmap="YlGn",
+                             legend=True, alpha=0.75, sensor_size=36,
+                             sensor_color='darkgreen', sensor_edgecolor='white',
+                             fontsize=20, vmin=0, vmax=1):
     """
     Plot map with sensor locations (red points), output area centroids (black points),
     and satisfaction (shaded areas).
     """
-    data = get_data()
-    satisfaction = satisfaction_matrix(data["poi_x"],
-                                       data["poi_y"],
-                                       theta)
-    poi_weight = data["poi_weight"]
     
-    gdf = gpd.read_file("data/tyne_oa")
-        
-    # only keep satisfactions due to output areas where a sensor is present
-    mask_sat = np.multiply(satisfaction, sensors[np.newaxis, :])
-
-    # satisfaction at each output area = satisfaction due to nearest sensor
-    max_mask_sat = np.max(mask_sat, axis=1)
-
-    # population weighted average satisfaction
-    avg_satisfaction = (poi_weight * max_mask_sat).sum() / poi_weight.sum()
+    sensors = pd.DataFrame(result["sensors"])
+    sensors.set_index("oa11cd", inplace=True)
     
-    gdf["satisfaction"] = max_mask_sat
+    oa_satisfaction = pd.DataFrame(result["oa_satisfaction"])
+    oa_satisfaction.set_index("oa11cd", inplace=True)
+    
+    oa_shapes = get_oa_shapes()
 
+    oa_shapes["satisfaction"] = oa_satisfaction
+    
     # to make colorbar same size as graph:
     # https://www.science-emergence.com/Articles/How-to-match-the-colorbar-size-with-the-figure-size-in-matpltolib-/
     ax = plt.figure(figsize=figsize).gca()
-    
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.1)
+    cax = get_color_axis(ax)
 
-    ax = gdf.plot(column="satisfaction",
-                  alpha=0.75,
-                  cmap="YlGn", legend=True,
-                  ax=ax, cax=cax)
+    ax = oa_shapes.plot(column="satisfaction",
+                        alpha=alpha,
+                        cmap=cmap, legend=legend,
+                        ax=ax, cax=cax, vmin=vmin, vmax=vmax)
 
-    x = gdf[sensors == 1]["X"]
-    y = gdf[sensors == 1]["Y"]
-    ax.scatter(x, y, s=24, color='r')
-
-    x = gdf[sensors == 0]["X"]
-    y = gdf[sensors == 0]["Y"]
-    ax.scatter(x, y, s=4, color='k')
+    ax.scatter(sensors["x"], sensors["y"], s=sensor_size, color=sensor_color,
+               edgecolor=sensor_edgecolor)
 
     ctx.add_basemap(ax,
                     url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
-                    crs=gdf.crs)
+                    crs=oa_shapes.crs)
 
     ax.set_axis_off()
-    ax.set_title("n_sensors = {:.0f}, satisfaction = {:.2f}".format(sensors.sum(), avg_satisfaction),
-                 fontsize=20)
+    if title is None:
+        ax.set_title("n_sensors = {:.0f}, satisfaction = {:.2f}".format(
+                     len(sensors), result["total_satisfaction"]),
+                     fontsize=fontsize)
+    else:
+        ax.set_title(title)
     
-    # output areas with sensors
-    if print_sensors:
-        print("Output areas with sensors:",
-              gdf[sensors == 1]["oa11cd"].values)
-        
-    plt.show()
+    if save_path:
+        plt.savefig(save_path, dpi=200)    
+    else:
+        plt.tight_layout()
+        plt.show()
 
 
 def plot_coverage_grid(sensors, xlim, ylim,
@@ -139,8 +138,7 @@ def plot_coverage_grid(sensors, xlim, ylim,
     fig, ax = plt.subplots(1, 1, figsize=figsize)
 
     # match colorbar axis height to figure height
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.1)
+    cax = get_color_axis()
 
     # plot grid points, coloured by coverage
     sc = ax.scatter(grid_x,
@@ -169,6 +167,35 @@ def plot_coverage_grid(sensors, xlim, ylim,
     plt.colorbar(sc, cax=cax)
     
     if save_path:
-        plt.savefig(save_path, dpi=300)
+        plt.savefig(save_path, dpi=200)
     
     return fig, ax
+
+
+def plot_oa_weights(oa_weights, title="", save_path=None, figsize=(10,10),
+                    alpha=0.75, cmap="plasma", legend=True, vmin=0, vmax=1):
+    #YlGnBu
+    oa_shapes = get_oa_shapes()
+    oa_shapes["weight"] = oa_weights
+    
+    ax = plt.figure(figsize=figsize).gca()
+    
+    if legend:
+        cax = get_color_axis(ax)
+    else:
+        cax = None
+    
+    ax = oa_shapes.plot(column="weight", figsize=figsize, alpha=alpha,
+                        cmap=cmap, legend=legend, ax=ax, cax=cax, vmin=vmin,
+                        vmax=vmax)
+
+    ctx.add_basemap(ax,
+                    url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
+                    crs=oa_shapes.crs)
+    ax.set_title(title)
+    ax.set_axis_off()
+    
+    if save_path:
+        plt.savefig(save_path, dpi=200)
+    else:
+        plt.show()

@@ -82,8 +82,10 @@ def optimise(n_sensors=20, theta=500,
                 socketIO.emit("jobProgress", {"job_id": job.id,
                                               "progress": progress})
 
+        # initialise arrays to store best result so far
         best_total_satisfaction = 0
         best_sensors = sensors.copy()
+        best_oa_satisfaction = sensors.copy()
         
         for site in range(n_poi):
             # try adding sensor at potential sensor site
@@ -109,10 +111,11 @@ def optimise(n_sensors=20, theta=500,
                     # this site is the best site for next sensor found so far
                     best_sensors = new_sensors.copy()
                     best_total_satisfaction = new_satisfaction
+                    best_oa_satisfaction = max_mask_sat
         
         sensors = best_sensors.copy()
         satisfaction_history.append(best_total_satisfaction)
-        oa_satisfaction = max_mask_sat
+        oa_satisfaction = best_oa_satisfaction.copy()
         
         print("satisfaction = {:.2f}".format(best_total_satisfaction))
         
@@ -169,7 +172,8 @@ def calc_oa_weights(age_weights=1, population_weight=1, workplace_weight=0):
     # weightings for residential population by age
     oa_pop_weight_age = population_ages * age_weights
     oa_pop_weight = oa_pop_weight_age.sum(axis=1)  # sum of weights for all ages
-    oa_pop_weight = oa_pop_weight / oa_pop_weight.sum()  # normalise so sum OA weights is 1
+    if oa_pop_weight.sum() > 0:
+        oa_pop_weight = oa_pop_weight / oa_pop_weight.sum()  # normalise so sum OA weights is 1
     
     # weightings for number of workers in OA (normalised to sum to 1)
     oa_work_weight = workplace / workplace.sum()
@@ -219,9 +223,7 @@ def get_optimisation_inputs(age_weights=1, population_weight=1,
     oa11cd = centroids.index.values
     oa_x = centroids["x"].values
     oa_y = centroids["y"].values
-    oa_weight = weights.values
+    oa_weight = centroids["weight"].values
     
-
-
     return {"oa11cd": oa11cd, "oa_x": oa_x, "oa_y": oa_y,
             "oa_weight": oa_weight}
