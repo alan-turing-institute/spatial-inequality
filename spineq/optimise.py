@@ -57,7 +57,7 @@ def optimise(n_sensors=20, theta=500,
     oa_y = data["oa_y"]
     oa_weight = data["oa_weight"]
     oa11cd = data["oa11cd"]
-    print(len(oa_x), len(oa_y), len(oa_weight), len(oa11cd))
+        
     n_poi = len(oa_x)
     satisfaction = satisfaction_matrix(oa_x, oa_y, theta=theta)
     
@@ -162,6 +162,10 @@ def calc_oa_weights(age_weights=1, population_weight=1, workplace_weight=0):
     population_ages = data["population_ages"]
     workplace = data["workplace"]
     
+    if len(population_ages) != len(workplace):
+        raise ValueError("Lengths of inputs don't match: population_ages={}, workplace={}"
+                         .format(len(population_ages), len(workplace)))
+    
     # weightings for residential population by age
     oa_pop_weight_age = population_ages * age_weights
     oa_pop_weight = oa_pop_weight_age.sum(axis=1)  # sum of weights for all ages
@@ -204,12 +208,20 @@ def get_optimisation_inputs(age_weights=1, population_weight=1,
     weights = calc_oa_weights(age_weights=1, population_weight=1,
                               workplace_weight=0)
     
+    if len(centroids) != len(weights):
+        raise ValueError(
+            "Lengths of inputs don't match: centroids={}, weights={}"
+            .format(len(centroids), len(weights))
+            )
+    
     centroids["weight"] = weights
     
     oa11cd = centroids.index.values
     oa_x = centroids["x"].values
     oa_y = centroids["y"].values
     oa_weight = weights.values
+    
+
 
     return {"oa11cd": oa11cd, "oa_x": oa_x, "oa_y": oa_y,
             "oa_weight": oa_weight}
