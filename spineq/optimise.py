@@ -50,12 +50,14 @@ def optimise(n_sensors=20, theta=500,
         job.meta["status"] = "Fetching data"
         job.save_meta()
     
-    data = get_optimisation_inputs()
+    data = get_optimisation_inputs(age_weights=age_weights,
+                                   population_weight=population_weight,
+                                   workplace_weight=workplace_weight)
     oa_x = data["oa_x"]
     oa_y = data["oa_y"]
     oa_weight = data["oa_weight"]
     oa11cd = data["oa11cd"]
-    
+    print(len(oa_x), len(oa_y), len(oa_weight), len(oa11cd))
     n_poi = len(oa_x)
     satisfaction = satisfaction_matrix(oa_x, oa_y, theta=theta)
     
@@ -167,7 +169,7 @@ def calc_oa_weights(age_weights=1, population_weight=1, workplace_weight=0):
     
     # weightings for number of workers in OA (normalised to sum to 1)
     oa_work_weight = workplace / workplace.sum()
-
+    
     # sum up weights and renormalise
     oa_all_weights = pd.DataFrame({"population": oa_pop_weight,
                                    "workplace": oa_work_weight})
@@ -205,8 +207,8 @@ def get_optimisation_inputs(age_weights=1, population_weight=1,
     centroids["weight"] = weights
     
     oa11cd = centroids.index.values
-    oa_x = centroids["X"].values
-    oa_y = centroids["Y"].values
+    oa_x = centroids["x"].values
+    oa_y = centroids["y"].values
     oa_weight = weights.values
 
     return {"oa11cd": oa11cd, "oa_x": oa_x, "oa_y": oa_y,

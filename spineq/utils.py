@@ -4,8 +4,6 @@ import numpy as np
 import geopandas as gpd
 import pandas as pd
 
-from .data_fetcher import get_data, get_oa_data
-
 
 def distance_matrix(x1, y1, x2=None, y2=None):
     """Generate a matrix of distances between a number of locations. Either

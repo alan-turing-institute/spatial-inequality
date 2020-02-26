@@ -55,7 +55,6 @@ def download_oa(overwrite=False):
     if os.path.exists(save_path) and not overwrite:
         return gpd.read_file(save_path)
     url = "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/OA_DEC_2011_EW_BFC/FeatureServer/0/query?where=1%3D1&outFields=*&geometry=-2.160%2C54.936%2C-1.052%2C55.074&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=27700&f=json"
-
     return query_ons_records(url, save_path=save_path)
 
 
@@ -64,12 +63,19 @@ def download_centroids(overwrite=False):
     if os.path.exists(save_path) and not overwrite:
         return pd.read_csv(save_path)
     
-    url = "https://ons-inspire.esriuk.com/arcgis/rest/services/Census_Boundaries/Output_Area_December_2011_Centroids/MapServer/0/query?where=1%3D1&outFields=*&geometry=-2.177%2C54.917%2C-1.069%2C55.055&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=27700&f=json"
-    centroids = query_ons_records(url, save_path=save_path)
+    url = "https://ons-inspire.esriuk.com/arcgis/rest/services/Census_Boundaries/Output_Area_December_2011_Centroids/MapServer/0/query?where=1%3D1&outFields=*&geometry=-2.160%2C54.936%2C-1.052%2C55.074&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=27700&f=json"
+    centroids = query_ons_records(url)
     centroids["X"] = centroids["geometry"].x
     centroids["Y"] = centroids["geometry"].y
     
-    return centroids
+    df = pd.DataFrame(index=centroids.index)
+    df["X"] = centroids["X"]
+    df["Y"] = centroids["Y"]
+    df["oa11cd"] = centroids["oa11cd"]
+    
+    df.to_csv(save_path, index=False)
+    
+    return df
 
 
 def download_populations(overwrite=False):
@@ -101,10 +107,11 @@ def download_populations(overwrite=False):
                        thousands=",")
 
     df_total = df[["OA11CD", "All Ages"]]
-    df_total.rename(columns={"All Ages": "Population"}, inplace=True)
+    df_total.rename(columns={"All Ages": "population"}, inplace=True)
     df_total.to_csv(save_path_total, index=False)
 
-    df_ages = df.drop("All Ages", axis=1)
+    df_ages = df.drop(["All Ages", "LSOA11CD"], axis=1)
+    df_ages.rename(columns={"90+": 90}, inplace=True)
     df_ages.to_csv(save_path_ages, index=False)
     
     return df_total, df_ages
@@ -217,32 +224,32 @@ def query_ons_records(base_query, time_between_queries=1,
     return all_records
 
 
-def get_oa_stats():
-    data = {"population_ages": population_ages,
-            "workplace": workplace}
-    
-    population_ages = data["population_ages"]
-    workplace = data["workplace"]
-
-
-def process_data_files():
-    la = download_la(overwrite=False)
-    oa = download_oa(overwrite=False)
-    centroids = download_centroids(overwrite=False)
-    workplace = download_workplace(overwrite=False)
-    population_total, population_ages = download_populations(overwrite=False)
-    
+def process_data_files(overwrite=False):
+    la = download_la(overwrite=overwrite)
+    oa = download_oa(overwrite=overwrite)
+    centroids = download_centroids(overwrite=overwrite)
+    workplace = download_workplace(overwrite=overwrite)
+    population_total, population_ages = download_populations(overwrite=overwrite)
+        
     # OAs to keep: those that intersect LA geometry
+    for _, row in la.iterrows():
+        oa = oa[oa.intersects(row["geometry"])]
+    
+    if len(oa) == 0:
+        raise ValueError("None of {} OAs intersect any of {} LAs".format(len(oa),
+                                                                         len(la)))
+    
     oa.columns = oa.columns.str.lower()
-    oa = oa[oa.intersects(la["geometry"])]
     oa = oa[["oa11cd", "geometry"]]
-    oa.to_file(PROCESSED_DIR + "/oa_shapes.shp")
+    os.makedirs(PROCESSED_DIR + "/oa_shapes", exist_ok=True)
+    oa.to_file(PROCESSED_DIR + "/oa_shapes/oa_shapes.shp")
     oa_to_keep = oa["oa11cd"].values
     
     # filter centroids
     centroids.columns = centroids.columns.str.lower()
     centroids = centroids[centroids["oa11cd"].isin(oa_to_keep)]
-    centroids = centroids[["oa11cd", "X", "Y"]]
+    print("centroids", len(centroids))
+    centroids = centroids[["oa11cd", "x", "y"]]
     centroids.to_csv(PROCESSED_DIR + "/centroids.csv", index=False)
     
     # filter population data
@@ -258,6 +265,21 @@ def process_data_files():
     # filter worokplace
     workplace.columns = workplace.columns.str.lower()
     workplace = workplace[workplace["oa11cd"].isin(oa_to_keep)]
-    workplace.to_csv(PROCESSED_DIR + "/centroids.csv", index=False)
+    workplace.to_csv(PROCESSED_DIR + "/workplace.csv", index=False)
 
 
+def get_oa_stats():
+    population_ages = pd.read_csv(PROCESSED_DIR + "/population_ages.csv",
+                                  index_col="oa11cd")
+    population_ages.columns = population_ages.columns.astype(int)
+    
+    workplace = pd.read_csv(PROCESSED_DIR + "/workplace.csv",
+                            index_col="oa11cd")
+    workplace = workplace["workers"]
+    
+    return {"population_ages": population_ages, "workplace": workplace}
+
+
+def get_oa_centroids():
+    return pd.read_csv(PROCESSED_DIR + "/centroids.csv", index_col="oa11cd")
+    
