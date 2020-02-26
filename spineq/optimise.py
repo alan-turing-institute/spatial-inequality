@@ -209,8 +209,9 @@ def get_optimisation_inputs(age_weights=1, population_weight=1,
         dict -- Optimisation input data
     """
     centroids = get_oa_centroids()
-    weights = calc_oa_weights(age_weights=1, population_weight=1,
-                              workplace_weight=0)
+    weights = calc_oa_weights(age_weights=age_weights,
+                              population_weight=population_weight,
+                              workplace_weight=workplace_weight)
     
     if len(centroids) != len(weights):
         raise ValueError(
