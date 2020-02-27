@@ -36,12 +36,12 @@ def optimise(n_sensors=20, theta=500,
         dict -- optimisation result.
     """
     
-    print("Setting up jobs and sockets...")
+    if rq_job or socket:
+        print("Setting up jobs and sockets...")
     if rq_job:
         job = rq.get_current_job()
     else:
         job = None
-        
     if socket:
         socketIO = SocketIO(message_queue=redis_url)
        
