@@ -23,16 +23,15 @@ def optimise(n_sensors=20, theta=500, rq_job=False, socket=False,
     
     if rq_job:
         job = rq.get_current_job()
+        print("rq_job", rq_job)
+        print("job", job)
     else:
         job = None
         
     if socket:
-        socketIO = SocketIO(message_queue=redis_url)
-        
-    print("socket", socket)
-    print("socketIO", socketIO)
-    print("rq_job", rq_job)
-    print("job", job)
+        socketIO = SocketIO(message_queue=redis_url)        
+        print("socket", socket)
+        print("socketIO", socketIO)
    
     print("Fetching data...")
     if job:
