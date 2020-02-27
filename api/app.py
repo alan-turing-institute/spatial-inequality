@@ -76,7 +76,7 @@ def route_get_job(job_id):
         dict -- json containing job status information and its result if the
         job has finished.
     """
-    return get_job()
+    return get_job(job_id)
     
 
 @app.route("/queue", methods=["GET"])
