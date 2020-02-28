@@ -7,7 +7,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import contextily as ctx
 
 from .utils import satisfaction_matrix
-from .data_fetcher import get_data, get_oa_shapes
+from .data_fetcher import get_data, get_oa_shapes, get_oa_centroids
 
 
 def get_color_axis(ax):
@@ -186,8 +186,7 @@ def plot_oa_weights(oa_weights, title="", save_path=None, figsize=(10,10),
         cax = None
     
     ax = oa_shapes.plot(column="weight", figsize=figsize, alpha=alpha,
-                        cmap=cmap, legend=legend, ax=ax, cax=cax, vmin=vmin,
-                        vmax=vmax)
+                        cmap=cmap, legend=legend, ax=ax, cax=cax)
 
     ctx.add_basemap(ax,
                     url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
@@ -199,3 +198,60 @@ def plot_oa_weights(oa_weights, title="", save_path=None, figsize=(10,10),
         plt.savefig(save_path, dpi=200)
     else:
         plt.show()
+
+
+def plot_oa_importance(oa_weights, theta=500,
+                       title="", save_path=None, figsize=(10,10),
+                       alpha=0.75, cmap="plasma", legend=True):
+        
+    oa_centroids = get_oa_centroids()
+    oa_centroids["weight"] = oa_weights
+    
+    oa_x = oa_centroids["x"].values
+    oa_y = oa_centroids["y"].values
+    oa_weight = oa_centroids["weight"].values
+    oa11cd = oa_centroids.index.values
+        
+    n_poi = len(oa_x)
+    satisfaction = satisfaction_matrix(oa_x, oa_y, theta=theta)
+    
+    # binary array - 1 if sensor at this location, 0 if not
+    sensors = np.zeros(n_poi)
+
+    # to store total satisfaction due to a sensor at any output area
+    oa_importance = np.zeros(n_poi)
+        
+    for site in range(n_poi):
+        # add sensor at poi
+        sensors = np.zeros(n_poi)
+        sensors[site] = 1
+
+        oa_importance[site] = ((oa_weight * satisfaction[site, :]).sum()
+                                / oa_weight.sum())
+
+    oa_importance = pd.Series(data=oa_importance, index=oa11cd)
+    
+    oa_shapes = get_oa_shapes()
+    oa_shapes["importance"] = oa_importance
+    
+    ax = plt.figure(figsize=figsize).gca()
+    
+    if legend:
+        cax = get_color_axis(ax)
+    else:
+        cax = None
+    
+    ax = oa_shapes.plot(column="importance", figsize=figsize, alpha=alpha,
+                        cmap=cmap, legend=legend, ax=ax, cax=cax)
+
+    ctx.add_basemap(ax,
+                    url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
+                    crs=oa_shapes.crs)
+    ax.set_title(title)
+    ax.set_axis_off()
+    
+    if save_path:
+        plt.savefig(save_path, dpi=200)
+    else:
+        plt.show()
+    
