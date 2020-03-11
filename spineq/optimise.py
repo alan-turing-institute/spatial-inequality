@@ -1,5 +1,6 @@
 from .data_fetcher import get_oa_centroids, get_oa_stats
 from .utils import satisfaction_matrix, make_job_dict
+from .plotting import plot_optimisation_result
 
 import numpy as np
 import pandas as pd
@@ -7,10 +8,16 @@ import pandas as pd
 import rq
 from flask_socketio import SocketIO
 
+import os
+import datetime
+import json
+
 
 def optimise(n_sensors=20, theta=500,
              age_weights=1, population_weight=1, workplace_weight=0,
-             rq_job=False, socket=False, redis_url="redis://"):
+             rq_job=False, socket=False, redis_url="redis://",
+             save_result=False, save_plots=False, save_dir="", run_name="",
+             **kwargs):
     """Greedily place sensors to maximise satisfaction.
     
     Keyword Arguments:
@@ -31,6 +38,17 @@ def optimise(n_sensors=20, theta=500,
         send updates to.
         redis_url {str} -- URL of Redis server for SocketIO message queue
         (default: {"redis://"})
+        
+        save_result {boolean} -- If True save a json of optimisation results to
+        file {save_dir}/{run_name}_result.json {default: {False}}
+        save_plots {str} -- If 'final' save plot of final sensor network,
+        if 'all' save plot after placing each sensor, if False save no plots.
+        {default: {False}}
+        save_dir {str} -- Directory to save plots in.
+        Defaults to current directory. {default: {""}}
+        run_name {str} -- Prefix to add to saved plots. If empty defaults to
+        current date and time YYYYMMDDhhmm {default: {""}}
+        **kwrargs -- additional arguments to pass to plotting function.
 
     Returns:
         dict -- optimisation result.
@@ -49,6 +67,12 @@ def optimise(n_sensors=20, theta=500,
     if job:
         job.meta["status"] = "Fetching data"
         job.save_meta()
+        
+    if save_plots and save_dir:
+        os.makedirs(save_dir, exist_ok=True)
+    if save_plots and not run_name:
+        now = datetime.datetime.now()
+        run_name = now.strftime("%Y%m%d%H%M")
     
     data = get_optimisation_inputs(age_weights=age_weights,
                                    population_weight=population_weight,
@@ -119,17 +143,18 @@ def optimise(n_sensors=20, theta=500,
         
         print("satisfaction = {:.2f}".format(best_total_satisfaction))
         
-    sensor_locations = [{"x": oa_x[i], "y": oa_y[i],
-                         "oa11cd": oa11cd[i]}
-                        for i in range(n_poi) if sensors[i] == 1]
+        if save_plots == "all":
+            result = make_result_dict(n_sensors, theta, age_weights,
+                                      population_weight, workplace_weight,
+                                      oa_x, oa_y, oa11cd, sensors,
+                                      best_total_satisfaction, oa_satisfaction)
+            
+            save_path = "{}/{}_nsensors_{}.png".format(save_dir, run_name, s+1)
+            plot_optimisation_result(result, save_path=save_path, **kwargs)
     
-    oa_satisfaction = [{"oa11cd": oa11cd[i],
-                        "satisfaction": oa_satisfaction[i]}
-                       for i in range(n_poi)]
-    
-    result = {"sensors": sensor_locations,
-              "total_satisfaction": best_total_satisfaction,
-              "oa_satisfaction": oa_satisfaction}
+    result = make_result_dict(n_sensors, theta, age_weights, population_weight,
+                              workplace_weight, oa_x, oa_y, oa11cd, sensors,
+                              best_total_satisfaction, oa_satisfaction)
     
     if job:
         job.meta["progress"] = 100
@@ -139,6 +164,16 @@ def optimise(n_sensors=20, theta=500,
             jobDict = make_job_dict(job)
             jobDict["result"] = result
             socketIO.emit("jobFinished", jobDict)
+            
+    if save_plots == "final":
+        save_path = "{}/{}_nsensors_{}.png".format(save_dir, run_name,
+                                                   n_sensors)
+        plot_optimisation_result(result, save_path=save_path, **kwargs)
+        
+    if save_result:
+        result_file = "{}/{}_result.json".format(save_dir, run_name)
+        with open(result_file, "w") as f:
+            json.dump(result, f, indent=4)
 
     return result
 
@@ -228,3 +263,31 @@ def get_optimisation_inputs(age_weights=1, population_weight=1,
     
     return {"oa11cd": oa11cd, "oa_x": oa_x, "oa_y": oa_y,
             "oa_weight": oa_weight}
+
+
+def make_result_dict(n_sensors, theta, age_weights, population_weight,
+                     workplace_weight, oa_x, oa_y, oa11cd, sensors,
+                     total_satisfaction, oa_satisfaction):
+    n_poi = len(oa_x)
+    sensor_locations = [{"x": oa_x[i], "y": oa_y[i],
+                         "oa11cd": oa11cd[i]}
+                        for i in range(n_poi) if sensors[i] == 1]
+    
+    oa_satisfaction = [{"oa11cd": oa11cd[i],
+                        "satisfaction": oa_satisfaction[i]}
+                       for i in range(n_poi)]
+    
+    if type(age_weights) == pd.Series:
+        # can't directly pass pandas objects to json.dump
+        age_weights = age_weights.to_dict()
+    
+    result = {"n_sensors": n_sensors,
+              "theta": theta,
+              "age_weights": age_weights,
+              "population_weight": population_weight,
+              "workplace_weight": workplace_weight,
+              "sensors": sensor_locations,
+              "total_satisfaction": total_satisfaction,
+              "oa_satisfaction": oa_satisfaction}
+    
+    return result

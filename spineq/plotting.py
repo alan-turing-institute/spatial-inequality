@@ -20,10 +20,11 @@ def get_color_axis(ax):
 
 
 def plot_optimisation_result(result, title=None, save_path=None,
-                             figsize=(10, 10), cmap="YlGn",
-                             legend=True, alpha=0.75, sensor_size=36,
-                             sensor_color='darkgreen', sensor_edgecolor='white',
-                             fontsize=20, vmin=0, vmax=1):
+                             figsize=(10, 10), fill_oa=True,
+                             cmap="YlGn", legend=True, alpha=0.75,
+                             sensor_size=36, sensor_color='darkgreen',
+                             sensor_edgecolor='white', fontsize=20, vmin=0,
+                             vmax=1):
     """
     Plot map with sensor locations (red points), output area centroids (black points),
     and satisfaction (shaded areas).
@@ -42,13 +43,21 @@ def plot_optimisation_result(result, title=None, save_path=None,
     # to make colorbar same size as graph:
     # https://www.science-emergence.com/Articles/How-to-match-the-colorbar-size-with-the-figure-size-in-matpltolib-/
     ax = plt.figure(figsize=figsize).gca()
-    cax = get_color_axis(ax)
+    if legend and fill_oa:
+        cax = get_color_axis(ax)
+        cax.set_title("Coverage")
+    else:
+        cax = None
 
-    ax = oa_shapes.plot(column="satisfaction",
-                        alpha=alpha,
-                        cmap=cmap, legend=legend,
-                        ax=ax, cax=cax, vmin=vmin, vmax=vmax)
-
+    if fill_oa:
+        ax = oa_shapes.plot(column="satisfaction",
+                            alpha=alpha,
+                            cmap=cmap, legend=legend,
+                            ax=ax, cax=cax, vmin=vmin, vmax=vmax)
+    else:
+        ax = oa_shapes.plot(alpha=alpha, ax=ax, facecolor='none', edgecolor='k',
+                            linewidth=0.5)
+    
     ax.scatter(sensors["x"], sensors["y"], s=sensor_size, color=sensor_color,
                edgecolor=sensor_edgecolor)
 
@@ -58,16 +67,17 @@ def plot_optimisation_result(result, title=None, save_path=None,
 
     ax.set_axis_off()
     if title is None:
-        ax.set_title("n_sensors = {:.0f}, satisfaction = {:.2f}".format(
+        ax.set_title("n_sensors = {:.0f}, coverage = {:.2f}".format(
                      len(sensors), result["total_satisfaction"]),
                      fontsize=fontsize)
     else:
         ax.set_title(title)
     
     if save_path:
-        plt.savefig(save_path, dpi=200)    
-    else:
         plt.tight_layout()
+        plt.savefig(save_path, dpi=200)
+        plt.close()
+    else:
         plt.show()
 
 
@@ -139,7 +149,7 @@ def plot_coverage_grid(sensors, xlim, ylim,
 
     # match colorbar axis height to figure height
     cax = get_color_axis()
-
+    
     # plot grid points, coloured by coverage
     sc = ax.scatter(grid_x,
                     grid_y,
@@ -168,6 +178,7 @@ def plot_coverage_grid(sensors, xlim, ylim,
     
     if save_path:
         plt.savefig(save_path, dpi=200)
+        plt.close()
     
     return fig, ax
 
@@ -196,13 +207,15 @@ def plot_oa_weights(oa_weights, title="", save_path=None, figsize=(10,10),
     
     if save_path:
         plt.savefig(save_path, dpi=200)
+        plt.close()
     else:
         plt.show()
 
 
 def plot_oa_importance(oa_weights, theta=500,
                        title="", save_path=None, figsize=(10,10),
-                       alpha=0.75, cmap="plasma", legend=True):
+                       alpha=0.75, cmap="plasma", legend=True, vmin=None,
+                       vmax=None):
         
     oa_centroids = get_oa_centroids()
     oa_centroids["weight"] = oa_weights
@@ -238,11 +251,14 @@ def plot_oa_importance(oa_weights, theta=500,
     
     if legend:
         cax = get_color_axis(ax)
+        cax.set_title("Density")
+
     else:
         cax = None
     
     ax = oa_shapes.plot(column="importance", figsize=figsize, alpha=alpha,
-                        cmap=cmap, legend=legend, ax=ax, cax=cax)
+                        cmap=cmap, legend=legend, ax=ax, cax=cax, vmin=vmin,
+                        vmax=vmax)
 
     ctx.add_basemap(ax,
                     url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
@@ -252,6 +268,7 @@ def plot_oa_importance(oa_weights, theta=500,
     
     if save_path:
         plt.savefig(save_path, dpi=200)
+        plt.close()
     else:
         plt.show()
     
