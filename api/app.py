@@ -84,12 +84,12 @@ def route_optimise_job():
     else:
         population_weight = 0
               
-    job_dict = submit_optimise_job(n_sensors=parameters["n_sensors"],
-                                   theta=parameters["theta"],
+    job_dict = submit_optimise_job(n_sensors=n_sensors,
+                                   theta=theta,
                                    age_weights=age_weights,
                                    population_weight=population_weight,
                                    workplace_weight=workplace_weight,
-                                   socket=True,
+                                   socket=False,
                                    redis_url=redis_url)
         
     return job_dict
