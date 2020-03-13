@@ -7,18 +7,17 @@ Repository for the [Spatial Inequality in the Smart City](https://www.turing.ac.
 ### Start the API
 
 ```bash
-docker build .
 docker-compose up
 ```
 
 Should then be available on `0.0.0.0:5000`
 
-### WebSockets
+### SocketIO
 
 * Submit an optimisation job:
   - Client emits event `submitJob` with data `{"n_sensors": 10, "theta": 500}`
   - Server emits event `job` with job data.
-  - On job completion, server emits `jobFinished` with job_id.
+  - On job completion, server emits `jobFinished` with job_id and result.
   
 * Retrieve the result/status of a job:
   - Client emits event `getJob` with data `<the_job_id>`

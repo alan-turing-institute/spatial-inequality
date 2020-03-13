@@ -18,6 +18,3 @@ COPY . /app
 RUN cd /app && pip install -r requirements.txt
 
 WORKDIR /app/api
-
-# Start Redis, worker and gunicorn
-#ENTRYPOINT cd api && bash start_services.sh

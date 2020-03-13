@@ -4,6 +4,7 @@ channels:
   - defaults
 dependencies:
   - python=3.7
+  - pip
   - matplotlib
   - pandas
   - jupyter
@@ -14,3 +15,5 @@ dependencies:
   - contextily
   - flask
   - gunicorn
+  - pip:
+    - -r requirements.txt
