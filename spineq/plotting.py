@@ -251,7 +251,7 @@ def plot_oa_importance(oa_weights, theta=500,
     
     if legend:
         cax = get_color_axis(ax)
-        cax.set_title("Density")
+        cax.set_title("Importance")
 
     else:
         cax = None

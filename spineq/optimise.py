@@ -149,7 +149,7 @@ def optimise(n_sensors=20, theta=500,
                                       oa_x, oa_y, oa11cd, sensors,
                                       best_total_satisfaction, oa_satisfaction)
             
-            save_path = "{}/{}_nsensors_{}.png".format(save_dir, run_name, s+1)
+            save_path = "{}/{}_nsensors_{:03d}.png".format(save_dir, run_name, s+1)
             plot_optimisation_result(result, save_path=save_path, **kwargs)
     
     result = make_result_dict(n_sensors, theta, age_weights, population_weight,
@@ -166,8 +166,8 @@ def optimise(n_sensors=20, theta=500,
             socketIO.emit("jobFinished", jobDict)
             
     if save_plots == "final":
-        save_path = "{}/{}_nsensors_{}.png".format(save_dir, run_name,
-                                                   n_sensors)
+        save_path = "{}/{}_nsensors_{:03d}.png".format(save_dir, run_name,
+                                                       n_sensors)
         plot_optimisation_result(result, save_path=save_path, **kwargs)
         
     if save_result:
@@ -291,3 +291,38 @@ def make_result_dict(n_sensors, theta, age_weights, population_weight,
               "oa_satisfaction": oa_satisfaction}
     
     return result
+
+
+def calc_coverage(sensors, oa_weight, theta=500):    
+    centroids = get_oa_centroids()
+    centroids["weight"] = oa_weight
+    
+    centroids["has_sensor"] = 0
+    for sensor in sensors:
+        centroids.loc[sensor["oa11cd"], "has_sensor"] = 1
+    
+    oa11cd = centroids.index.values
+    oa_x = centroids["x"].values
+    oa_y = centroids["y"].values
+    oa_weight = centroids["weight"].values
+    sensors = centroids["has_sensor"].values
+    
+    n_poi = len(oa_x)
+    
+    satisfaction = satisfaction_matrix(oa_x, oa_y, theta=theta)
+    
+    # only keep satisfactions due to sites where a sensor is present
+    mask_sat = np.multiply(satisfaction, sensors[np.newaxis, :])
+
+    # satisfaction at each site = satisfaction due to nearest sensor
+    oa_satisfaction = np.max(mask_sat, axis=1)
+    
+    # Avg satisfaction = weighted sum across all points of interest
+    total_satisfaction = (oa_weight * oa_satisfaction).sum() / oa_weight.sum()
+        
+    oa_satisfaction = [{"oa11cd": oa11cd[i],
+                        "coverage": oa_satisfaction[i]}
+                       for i in range(n_poi)]
+
+    return {"total_coverage": total_satisfaction,
+            "oa_coverage": oa_satisfaction}

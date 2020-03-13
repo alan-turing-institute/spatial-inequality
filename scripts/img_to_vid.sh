@@ -1,4 +1,6 @@
 
+# For all sub-directories in the input directory:
+    # Runs ffmpeg to create a video from all the .png files in that directory
 for dir in "$1"/*
 do
     echo $dir
