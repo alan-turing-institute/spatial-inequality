@@ -30,7 +30,7 @@ def distance_matrix(x1, y1, x2=None, y2=None):
         
         dist_sq = np.sum((coords_1[:, np.newaxis, :] -
                           coords_2[np.newaxis, :, :]) ** 2,
-                          axis=-1)
+                         axis=-1)
     
     elif (x2 is None and y2 is not None) or (y2 is None and x2 is not None):
         raise ValueError("x2 and y2 both must be defined or undefined.")
@@ -39,7 +39,7 @@ def distance_matrix(x1, y1, x2=None, y2=None):
         # calculate distances distances between points in one set of coordinates
         dist_sq = np.sum((coords_1[:, np.newaxis, :] -
                          coords_1[np.newaxis, :, :]) ** 2,
-                         axis = -1)
+                         axis=-1)
     
     distances = np.sqrt(dist_sq)
     
@@ -111,5 +111,20 @@ def make_job_dict(job):
             "last_message": last_message,       
             "result": result}
 
+
+def make_age_range(min_age=0, max_age=90):
+    """Create a pandas series of age weights as needed for the optimisation.
+    Index is from 0 to 90 (inclusive), returns weight 1 for
+    min_age <= age <= max_age and 0 for all other ages.
     
+    Keyword Arguments:
+        min_age {int} -- [description] (default: {0})
+        max_age {int} -- [description] (default: {90})
     
+    Returns:
+        [type] -- [description]
+    """
+    age_weights = pd.Series(0, index=range(91))
+    age_weights[(age_weights.index >= min_age) &
+                (age_weights.index <= max_age)] = 1
+    return age_weights

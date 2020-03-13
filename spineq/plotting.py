@@ -63,7 +63,7 @@ def plot_optimisation_result(result, title=None, save_path=None,
 
     ctx.add_basemap(ax,
                     url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
-                    crs=oa_shapes.crs)
+                    crs=oa_shapes.crs.to_epsg())
 
     ax.set_axis_off()
     if title is None:
@@ -201,7 +201,7 @@ def plot_oa_weights(oa_weights, title="", save_path=None, figsize=(10,10),
 
     ctx.add_basemap(ax,
                     url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
-                    crs=oa_shapes.crs)
+                    crs=oa_shapes.crs.to_epsg())
     ax.set_title(title)
     ax.set_axis_off()
     
@@ -262,7 +262,7 @@ def plot_oa_importance(oa_weights, theta=500,
 
     ctx.add_basemap(ax,
                     url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
-                    crs=oa_shapes.crs)
+                    crs=oa_shapes.crs.to_epsg())
     ax.set_title(title)
     ax.set_axis_off()
     

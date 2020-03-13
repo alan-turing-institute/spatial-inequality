@@ -12,6 +12,19 @@ docker-compose up
 
 Should then be available on `0.0.0.0:5000`
 
+Command to force a rebuild if something hasn't udpated correctly:
+```bash
+docker-compose up --build --force-recreate
+```
+
+If all else fails delete everything first (this deletes all docker images on your system!):
+```bash
+docker-compose rm -f
+docker stop $(docker ps -a -q)
+docker rm -f $(docker ps -a -q)
+docker rmi -f $(docker images -a -q)
+```
+
 ### SocketIO
 
 * Submit an optimisation job:
@@ -35,9 +48,15 @@ Should then be available on `0.0.0.0:5000`
   - Client emits event `deleteQueue`
   - Server emits event `message` with deletion result.
 
-## Notebooks
+### Dependencies
 
-Depdencies for this project are managed with [conda](https://docs.conda.io/en/latest/) and listed in the `environment.yml` file. To create a virtual environment  with all dependencies installed clone this repo and from the parent `spatial-inequality` directory run:
+The dockerised version uses only `pip` and the packages in `requirements.txt`.
+This doesn't include any plotting libraries.
+
+A [conda](https://docs.conda.io/en/latest/) environment file `environment.yml`
+is provided which installs all the pip requirements as well as additional
+libraries for plotting, notebooks etc.
+To create a virtual environment  with all dependencies installed clone this repo and from the parent `spatial-inequality` directory run:
 ```bash
 > conda env create
 ```

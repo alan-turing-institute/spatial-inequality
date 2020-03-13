@@ -142,7 +142,7 @@ def socket_optimise_job(parameters):
     
     if "n_sensors" not in parameters.keys() or "theta" not in parameters.keys():
         emit("job", {"code": 400,
-                              "message": "Must supply n_sensors and theta."})
+                     "message": "Must supply n_sensors and theta."})
     
     else:
         job_dict = submit_optimise_job(n_sensors=parameters["n_sensors"],
