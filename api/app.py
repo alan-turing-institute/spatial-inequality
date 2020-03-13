@@ -80,9 +80,9 @@ def route_optimise_job():
         population_weight = 1
         
     if "workplace_weight" in request.args:
-        population_weight = float(request.args.get("workplace_weight"))
+        workplace_weight = float(request.args.get("workplace_weight"))
     else:
-        population_weight = 0
+        workplace_weight = 0
               
     job_dict = submit_optimise_job(n_sensors=n_sensors,
                                    theta=theta,
@@ -193,9 +193,9 @@ def socket_optimise_job(parameters):
             population_weight = 1
             
         if "workplace_weight" in parameters.keys():
-            population_weight = parameters["workplace_weight"]
+            workplace_weight = parameters["workplace_weight"]
         else:
-            population_weight = 0
+            workplace_weight = 0
               
         job_dict = submit_optimise_job(n_sensors=parameters["n_sensors"],
                                        theta=parameters["theta"],
