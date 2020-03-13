@@ -31,6 +31,11 @@ docker rmi -f $(docker images -a -q)
   - Client emits event `submitJob` with data `{"n_sensors": 10, "theta": 500}`
   - Server emits event `job` with job data.
   - On job completion, server emits `jobFinished` with job_id and result.
+  - Optionally can give the following parameters with `submitJob`:
+    - `min_age`: Minimum age to include for population coverage (default: 0)
+    - `max_age`: Maximum age to include for population coverage (default: 90)
+    - `population_weight`: Weight for population coverage (default: 1)
+    - `workplace_weight`: Weight for place of work coverage (default: 0)
   
 * Retrieve the result/status of a job:
   - Client emits event `getJob` with data `<the_job_id>`
