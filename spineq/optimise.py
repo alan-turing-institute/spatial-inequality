@@ -1,6 +1,5 @@
 from .data_fetcher import get_oa_centroids, get_oa_stats
 from .utils import coverage_matrix, make_job_dict
-from .plotting import plot_optimisation_result
 
 import numpy as np
 import pandas as pd
@@ -67,12 +66,15 @@ def optimise(n_sensors=20, theta=500,
     if job:
         job.meta["status"] = "Fetching data"
         job.save_meta()
-        
-    if save_plots and save_dir:
-        os.makedirs(save_dir, exist_ok=True)
-    if save_plots and not run_name:
-        now = datetime.datetime.now()
-        run_name = now.strftime("%Y%m%d%H%M")
+    
+    if save_plots:
+        from .plotting import plot_optimisation_result
+
+        if save_dir:
+            os.makedirs(save_dir, exist_ok=True)
+        if not run_name:
+            now = datetime.datetime.now()
+            run_name = now.strftime("%Y%m%d%H%M")
     
     data = get_optimisation_inputs(age_weights=age_weights,
                                    population_weight=population_weight,
