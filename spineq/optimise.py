@@ -1,5 +1,5 @@
 from .data_fetcher import get_oa_centroids, get_oa_stats
-from .utils import satisfaction_matrix, make_job_dict
+from .utils import coverage_matrix, make_job_dict
 from .plotting import plot_optimisation_result
 
 import numpy as np
@@ -18,7 +18,7 @@ def optimise(n_sensors=20, theta=500,
              rq_job=False, socket=False, redis_url="redis://",
              save_result=False, save_plots=False, save_dir="", run_name="",
              **kwargs):
-    """Greedily place sensors to maximise satisfaction.
+    """Greedily place sensors to maximise coverage.
     
     Keyword Arguments:
         n_sensors {int} -- number of sensors to place (default: {20})
@@ -83,14 +83,14 @@ def optimise(n_sensors=20, theta=500,
     oa11cd = data["oa11cd"]
         
     n_poi = len(oa_x)
-    satisfaction = satisfaction_matrix(oa_x, oa_y, theta=theta)
+    coverage = coverage_matrix(oa_x, oa_y, theta=theta)
     
     # binary array - 1 if sensor at this location, 0 if not
     sensors = np.zeros(n_poi)
 
-    # satisfaction obtained with each number of sensors
-    satisfaction_history = []
-    oa_satisfaction = []
+    # coverage obtained with each number of sensors
+    coverage_history = []
+    oa_coverage = []
     
     for s in range(n_sensors):
         # greedily add sensors
@@ -107,9 +107,9 @@ def optimise(n_sensors=20, theta=500,
                                               "progress": progress})
 
         # initialise arrays to store best result so far
-        best_total_satisfaction = 0
+        best_total_coverage = 0
         best_sensors = sensors.copy()
-        best_oa_satisfaction = sensors.copy()
+        best_oa_coverage = sensors.copy()
         
         for site in range(n_poi):
             # try adding sensor at potential sensor site
@@ -122,39 +122,39 @@ def optimise(n_sensors=20, theta=500,
                 new_sensors = sensors.copy()
                 new_sensors[site] = 1
                 
-                # only keep satisfactions due to sites where a sensor is present
-                mask_sat = np.multiply(satisfaction, new_sensors[np.newaxis, :])
+                # only keep coverages due to sites where a sensor is present
+                mask_cov = np.multiply(coverage, new_sensors[np.newaxis, :])
 
-                # satisfaction at each site = satisfaction due to nearest sensor
-                max_mask_sat = np.max(mask_sat, axis=1)
+                # coverage at each site = coverage due to nearest sensor
+                max_mask_cov = np.max(mask_cov, axis=1)
                 
-                # Avg satisfaction = weighted sum across all points of interest
-                new_satisfaction = (oa_weight * max_mask_sat).sum() / oa_weight.sum()
+                # Avg coverage = weighted sum across all points of interest
+                new_coverage = (oa_weight * max_mask_cov).sum() / oa_weight.sum()
                 
-                if new_satisfaction > best_total_satisfaction:
+                if new_coverage > best_total_coverage:
                     # this site is the best site for next sensor found so far
                     best_sensors = new_sensors.copy()
-                    best_total_satisfaction = new_satisfaction
-                    best_oa_satisfaction = max_mask_sat
+                    best_total_coverage = new_coverage
+                    best_oa_coverage = max_mask_cov
         
         sensors = best_sensors.copy()
-        satisfaction_history.append(best_total_satisfaction)
-        oa_satisfaction = best_oa_satisfaction.copy()
+        coverage_history.append(best_total_coverage)
+        oa_coverage = best_oa_coverage.copy()
         
-        print("satisfaction = {:.2f}".format(best_total_satisfaction))
+        print("coverage = {:.2f}".format(best_total_coverage))
         
         if save_plots == "all":
             result = make_result_dict(n_sensors, theta, age_weights,
                                       population_weight, workplace_weight,
                                       oa_x, oa_y, oa11cd, sensors,
-                                      best_total_satisfaction, oa_satisfaction)
+                                      best_total_coverage, oa_coverage)
             
             save_path = "{}/{}_nsensors_{:03d}.png".format(save_dir, run_name, s+1)
             plot_optimisation_result(result, save_path=save_path, **kwargs)
     
     result = make_result_dict(n_sensors, theta, age_weights, population_weight,
                               workplace_weight, oa_x, oa_y, oa11cd, sensors,
-                              best_total_satisfaction, oa_satisfaction)
+                              best_total_coverage, oa_coverage)
     
     if job:
         job.meta["progress"] = 100
@@ -193,7 +193,7 @@ def calc_oa_weights(age_weights=1, population_weight=1, workplace_weight=0):
         (default: {0})
     
     Returns:
-        dict -- Optimisation input data
+        pd.Series -- Weights for each OA (indexed by oa11cd).
     """
     
     data = get_oa_stats()
@@ -267,15 +267,15 @@ def get_optimisation_inputs(age_weights=1, population_weight=1,
 
 def make_result_dict(n_sensors, theta, age_weights, population_weight,
                      workplace_weight, oa_x, oa_y, oa11cd, sensors,
-                     total_satisfaction, oa_satisfaction):
+                     total_coverage, oa_coverage):
     n_poi = len(oa_x)
     sensor_locations = [{"x": oa_x[i], "y": oa_y[i],
                          "oa11cd": oa11cd[i]}
                         for i in range(n_poi) if sensors[i] == 1]
     
-    oa_satisfaction = [{"oa11cd": oa11cd[i],
-                        "satisfaction": oa_satisfaction[i]}
-                       for i in range(n_poi)]
+    oa_coverage = [{"oa11cd": oa11cd[i],
+                    "coverage": oa_coverage[i]}
+                    for i in range(n_poi)]
     
     if type(age_weights) == pd.Series:
         # can't directly pass pandas objects to json.dump
@@ -287,13 +287,27 @@ def make_result_dict(n_sensors, theta, age_weights, population_weight,
               "population_weight": population_weight,
               "workplace_weight": workplace_weight,
               "sensors": sensor_locations,
-              "total_satisfaction": total_satisfaction,
-              "oa_satisfaction": oa_satisfaction}
+              "total_coverage": total_coverage,
+              "oa_coverage": oa_coverage}
     
     return result
 
 
-def calc_coverage(sensors, oa_weight, theta=500):    
+def calc_coverage(sensors, oa_weight, theta=500):
+    """Calculate the coverage of a network for arbitrary OA weightings.
+    
+    Arguments:
+        sensors {list} -- List of sensors in the network, each sensors is a
+        dict which must include the key "oa11cd".
+        oa_weight {pd.Series} -- Weight for each OA, pandas series with index
+        oa11cd and weights as values.
+    
+    Keyword Arguments:
+        theta {int} -- coverage decay rate (default: {500})
+    
+    Returns:
+        dict -- Coverage stats with keys "total_coverage" and "oa_coverage".
+    """
     centroids = get_oa_centroids()
     centroids["weight"] = oa_weight
     
@@ -309,20 +323,20 @@ def calc_coverage(sensors, oa_weight, theta=500):
     
     n_poi = len(oa_x)
     
-    satisfaction = satisfaction_matrix(oa_x, oa_y, theta=theta)
+    coverage = coverage_matrix(oa_x, oa_y, theta=theta)
     
-    # only keep satisfactions due to sites where a sensor is present
-    mask_sat = np.multiply(satisfaction, sensors[np.newaxis, :])
+    # only keep coverages due to sites where a sensor is present
+    mask_cov = np.multiply(coverage, sensors[np.newaxis, :])
 
-    # satisfaction at each site = satisfaction due to nearest sensor
-    oa_satisfaction = np.max(mask_sat, axis=1)
+    # coverage at each site = coverage due to nearest sensor
+    oa_coverage = np.max(mask_cov, axis=1)
     
-    # Avg satisfaction = weighted sum across all points of interest
-    total_satisfaction = (oa_weight * oa_satisfaction).sum() / oa_weight.sum()
+    # Avg coverage = weighted sum across all points of interest
+    total_coverage = (oa_weight * oa_coverage).sum() / oa_weight.sum()
         
-    oa_satisfaction = [{"oa11cd": oa11cd[i],
-                        "coverage": oa_satisfaction[i]}
-                       for i in range(n_poi)]
+    oa_coverage = [{"oa11cd": oa11cd[i],
+                    "coverage": oa_coverage[i]}
+                    for i in range(n_poi)]
 
-    return {"total_coverage": total_satisfaction,
-            "oa_coverage": oa_satisfaction}
+    return {"total_coverage": total_coverage,
+            "oa_coverage": oa_coverage}

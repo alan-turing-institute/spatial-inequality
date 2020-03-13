@@ -46,9 +46,9 @@ def distance_matrix(x1, y1, x2=None, y2=None):
     return distances
 
 
-def satisfaction_scalar(distance, theta=1):
-    """Calculate "satisfaction" due to a sensor placed a given distance away,
-    where satisfaction is defined as exp(-distance/theta).
+def coverage_scalar(distance, theta=1):
+    """Calculate "coverage" due to a sensor placed a given distance away,
+    where coverage is defined as exp(-distance/theta).
     
     Arguments:
         distance {numeric} -- distance to sensor.
@@ -57,17 +57,17 @@ def satisfaction_scalar(distance, theta=1):
         theta {numeric} -- decay rate (default: {1})
     
     Returns:
-        float -- satisfaction value.
+        float -- coverage value.
     """
     return np.exp(-distance / theta)
 
 
-# vectorized satisfaction function
-satisfaction = np.vectorize(satisfaction_scalar)
+# vectorized coverage function
+coverage = np.vectorize(coverage_scalar)
 
 
-def satisfaction_matrix(x1, y1, x2=None, y2=None, theta=1):
-    """Generate a matrix of satisfactions for a number of locations
+def coverage_matrix(x1, y1, x2=None, y2=None, theta=1):
+    """Generate a matrix of coverages for a number of locations
     
     Arguments:
         x {list-like} -- x coordinate for each location
@@ -77,10 +77,10 @@ def satisfaction_matrix(x1, y1, x2=None, y2=None, theta=1):
         theta {numeric} -- decay rate (default: {1})
     
     Returns:
-        numpy array -- 2D matrix of satisfaction at each location i due to a
+        numpy array -- 2D matrix of coverage at each location i due to a
         sensor placed at another location j.
     """
-    return satisfaction(distance_matrix(x1, y1, x2=x2, y2=y2), theta=theta)
+    return coverage(distance_matrix(x1, y1, x2=x2, y2=y2), theta=theta)
 
 
 def make_job_dict(job):

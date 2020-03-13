@@ -35,7 +35,7 @@ def home():
 def route_optimise_job():
     """Run an optimisation job. Query parameters:
         - n_sensors: generate a network with this many sensors. 
-        - theta: decay rate for satisfaction measure.
+        - theta: decay rate for coverage measure.
     
     Returns:
         dict -- json of information about the created job, including its
@@ -123,7 +123,7 @@ def test_disconnect():
 def socket_optimise_job(parameters):
     """Run an optimisation job. Query parameters:
         - n_sensors: generate a network with this many sensors. 
-        - theta: decay rate for satisfaction measure.
+        - theta: decay rate for coverage measure.
     
     Returns:
         dict -- json of information about the created job, including its
@@ -202,7 +202,7 @@ def submit_optimise_job(n_sensors=5, theta=500,
                         socket=False, redis_url="redis://"):
     """Run an optimisation job. Query parameters:
         - n_sensors: generate a network with this many sensors. 
-        - theta: decay rate for satisfaction measure.
+        - theta: decay rate for coverage measure.
     
     Returns:
         dict -- json of information about the created job, including its

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import contextily as ctx
 
-from .utils import satisfaction_matrix
+from .utils import coverage_matrix
 from .data_fetcher import get_data, get_oa_shapes, get_oa_centroids
 
 
@@ -27,18 +27,18 @@ def plot_optimisation_result(result, title=None, save_path=None,
                              vmax=1):
     """
     Plot map with sensor locations (red points), output area centroids (black points),
-    and satisfaction (shaded areas).
+    and coverage (shaded areas).
     """
     
     sensors = pd.DataFrame(result["sensors"])
     sensors.set_index("oa11cd", inplace=True)
     
-    oa_satisfaction = pd.DataFrame(result["oa_satisfaction"])
-    oa_satisfaction.set_index("oa11cd", inplace=True)
+    oa_coverage = pd.DataFrame(result["oa_coverage"])
+    oa_coverage.set_index("oa11cd", inplace=True)
     
     oa_shapes = get_oa_shapes()
 
-    oa_shapes["satisfaction"] = oa_satisfaction
+    oa_shapes["coverage"] = oa_coverage
     
     # to make colorbar same size as graph:
     # https://www.science-emergence.com/Articles/How-to-match-the-colorbar-size-with-the-figure-size-in-matpltolib-/
@@ -50,7 +50,7 @@ def plot_optimisation_result(result, title=None, save_path=None,
         cax = None
 
     if fill_oa:
-        ax = oa_shapes.plot(column="satisfaction",
+        ax = oa_shapes.plot(column="coverage",
                             alpha=alpha,
                             cmap=cmap, legend=legend,
                             ax=ax, cax=cax, vmin=vmin, vmax=vmax)
@@ -68,7 +68,7 @@ def plot_optimisation_result(result, title=None, save_path=None,
     ax.set_axis_off()
     if title is None:
         ax.set_title("n_sensors = {:.0f}, coverage = {:.2f}".format(
-                     len(sensors), result["total_satisfaction"]),
+                     len(sensors), result["total_coverage"]),
                      fontsize=fontsize)
     else:
         ax.set_title(title)
@@ -128,7 +128,7 @@ def plot_coverage_grid(sensors, xlim, ylim,
     grid_y = grid_y.flatten()
     
     # coverage at each grid point due to each sensor
-    grid_cov = satisfaction_matrix(grid_x,
+    grid_cov = coverage_matrix(grid_x,
                                    grid_y,
                                    x2=sensors[:, 0],
                                    y2=sensors[:, 1],
@@ -226,12 +226,12 @@ def plot_oa_importance(oa_weights, theta=500,
     oa11cd = oa_centroids.index.values
         
     n_poi = len(oa_x)
-    satisfaction = satisfaction_matrix(oa_x, oa_y, theta=theta)
+    coverage = coverage_matrix(oa_x, oa_y, theta=theta)
     
     # binary array - 1 if sensor at this location, 0 if not
     sensors = np.zeros(n_poi)
 
-    # to store total satisfaction due to a sensor at any output area
+    # to store total coverage due to a sensor at any output area
     oa_importance = np.zeros(n_poi)
         
     for site in range(n_poi):
@@ -239,7 +239,7 @@ def plot_oa_importance(oa_weights, theta=500,
         sensors = np.zeros(n_poi)
         sensors[site] = 1
 
-        oa_importance[site] = ((oa_weight * satisfaction[site, :]).sum()
+        oa_importance[site] = ((oa_weight * coverage[site, :]).sum()
                                 / oa_weight.sum())
 
     oa_importance = pd.Series(data=oa_importance, index=oa11cd)
