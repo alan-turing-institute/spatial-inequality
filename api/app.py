@@ -9,7 +9,7 @@ from rq.job import Job
 from worker import conn, queue
 
 from spineq.optimise import optimise
-from spineq.utils import make_job_dict
+from spineq.utils import make_job_dict, make_age_range
 
 from config import FLASK_HOST, FLASK_PORT, REDIS_HOST, REDIS_PORT
 
@@ -35,7 +35,7 @@ def home():
 def route_optimise_job():
     """Run an optimisation job. Query parameters:
         - n_sensors: generate a network with this many sensors. 
-        - theta: decay rate for satisfaction measure.
+        - theta: decay rate for coverage measure.
     
     Returns:
         dict -- json of information about the created job, including its
@@ -62,7 +62,37 @@ def route_optimise_job():
     else:
         theta = 500
         
-    return submit_optimise_job(n_sensors=n_sensors, theta=theta)
+    if "min_age" in request.args:
+        min_age = float(request.args.get("min_age"))
+    else:
+        min_age = 0
+        
+    if "max_age" in request.args:
+        max_age = float(request.args.get("max_age"))
+    else:
+        max_age = 90
+    
+    age_weights = make_age_range(min_age=min_age, max_age=max_age)
+        
+    if "population_weight" in request.args:
+        population_weight = float(request.args.get("population_weight"))
+    else:
+        population_weight = 1
+        
+    if "workplace_weight" in request.args:
+        workplace_weight = float(request.args.get("workplace_weight"))
+    else:
+        workplace_weight = 0
+              
+    job_dict = submit_optimise_job(n_sensors=n_sensors,
+                                   theta=theta,
+                                   age_weights=age_weights,
+                                   population_weight=population_weight,
+                                   workplace_weight=workplace_weight,
+                                   socket=False,
+                                   redis_url=redis_url)
+        
+    return job_dict
 
 
 @app.route("/job/<job_id>", methods=["GET"])
@@ -76,7 +106,7 @@ def route_get_job(job_id):
         dict -- json containing job status information and its result if the
         job has finished.
     """
-    return get_job()
+    return get_job(job_id)
     
 
 @app.route("/queue", methods=["GET"])
@@ -123,7 +153,7 @@ def test_disconnect():
 def socket_optimise_job(parameters):
     """Run an optimisation job. Query parameters:
         - n_sensors: generate a network with this many sensors. 
-        - theta: decay rate for satisfaction measure.
+        - theta: decay rate for coverage measure.
     
     Returns:
         dict -- json of information about the created job, including its
@@ -142,11 +172,36 @@ def socket_optimise_job(parameters):
     
     if "n_sensors" not in parameters.keys() or "theta" not in parameters.keys():
         emit("job", {"code": 400,
-                              "message": "Must supply n_sensors and theta."})
+                     "message": "Must supply n_sensors and theta."})
     
     else:
+        if "min_age" in parameters.keys():
+            min_age = parameters["min_age"]
+        else:
+            min_age = 0
+            
+        if "max_age" in parameters.keys():
+            max_age = parameters["max_age"]
+        else:
+            max_age = 90
+        
+        age_weights = make_age_range(min_age=min_age, max_age=max_age)
+         
+        if "population_weight" in parameters.keys():
+            population_weight = parameters["population_weight"]
+        else:
+            population_weight = 1
+            
+        if "workplace_weight" in parameters.keys():
+            workplace_weight = parameters["workplace_weight"]
+        else:
+            workplace_weight = 0
+              
         job_dict = submit_optimise_job(n_sensors=parameters["n_sensors"],
                                        theta=parameters["theta"],
+                                       age_weights=age_weights,
+                                       population_weight=population_weight,
+                                       workplace_weight=workplace_weight,
                                        socket=True,
                                        redis_url=redis_url)
         emit("job", job_dict)
@@ -199,10 +254,11 @@ def socket_delete_job(job_id):
 
 
 def submit_optimise_job(n_sensors=5, theta=500,
+                        age_weights=1, population_weight=1, workplace_weight=0,
                         socket=False, redis_url="redis://"):
     """Run an optimisation job. Query parameters:
         - n_sensors: generate a network with this many sensors. 
-        - theta: decay rate for satisfaction measure.
+        - theta: decay rate for coverage measure.
     
     Returns:
         dict -- json of information about the created job, including its
@@ -228,7 +284,10 @@ def submit_optimise_job(n_sensors=5, theta=500,
                         theta=theta,
                         rq_job=True,
                         socket=socket,
-                        redis_url=redis_url)  
+                        redis_url=redis_url,
+                        age_weights=age_weights,
+                        population_weight=population_weight,
+                        workplace_weight=workplace_weight)
             
     return make_job_dict(job)
 
@@ -303,7 +362,7 @@ def delete_job(job_id):
         job.delete()
         job = Job.fetch(job_id, connection=conn)
         return {"error": {"code": 400,
-                    "message": "Delete failed for job "+job_id}}
+                "message": "Delete failed for job "+job_id}}
     except rq.exceptions.NoSuchJobError:
         return {"code": 200,
                 "message": "Successfully deleted job "+job_id}

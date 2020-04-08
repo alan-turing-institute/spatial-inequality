@@ -1,8 +1,8 @@
+import numbers
 
 import numpy as np
 import geopandas as gpd
-
-from .data_fetcher import get_data
+import pandas as pd
 
 
 def distance_matrix(x1, y1, x2=None, y2=None):
@@ -30,7 +30,7 @@ def distance_matrix(x1, y1, x2=None, y2=None):
         
         dist_sq = np.sum((coords_1[:, np.newaxis, :] -
                           coords_2[np.newaxis, :, :]) ** 2,
-                          axis=-1)
+                         axis=-1)
     
     elif (x2 is None and y2 is not None) or (y2 is None and x2 is not None):
         raise ValueError("x2 and y2 both must be defined or undefined.")
@@ -39,16 +39,16 @@ def distance_matrix(x1, y1, x2=None, y2=None):
         # calculate distances distances between points in one set of coordinates
         dist_sq = np.sum((coords_1[:, np.newaxis, :] -
                          coords_1[np.newaxis, :, :]) ** 2,
-                         axis = -1)
+                         axis=-1)
     
     distances = np.sqrt(dist_sq)
     
     return distances
 
 
-def satisfaction_scalar(distance, theta=1):
-    """Calculate "satisfaction" due to a sensor placed a given distance away,
-    where satisfaction is defined as exp(-distance/theta).
+def coverage_scalar(distance, theta=1):
+    """Calculate "coverage" due to a sensor placed a given distance away,
+    where coverage is defined as exp(-distance/theta).
     
     Arguments:
         distance {numeric} -- distance to sensor.
@@ -57,17 +57,17 @@ def satisfaction_scalar(distance, theta=1):
         theta {numeric} -- decay rate (default: {1})
     
     Returns:
-        float -- satisfaction value.
+        float -- coverage value.
     """
     return np.exp(-distance / theta)
 
 
-# vectorized satisfaction function
-satisfaction = np.vectorize(satisfaction_scalar)
+# vectorized coverage function
+coverage = np.vectorize(coverage_scalar)
 
 
-def satisfaction_matrix(x1, y1, x2=None, y2=None, theta=1):
-    """Generate a matrix of satisfactions for a number of locations
+def coverage_matrix(x1, y1, x2=None, y2=None, theta=1):
+    """Generate a matrix of coverages for a number of locations
     
     Arguments:
         x {list-like} -- x coordinate for each location
@@ -77,10 +77,10 @@ def satisfaction_matrix(x1, y1, x2=None, y2=None, theta=1):
         theta {numeric} -- decay rate (default: {1})
     
     Returns:
-        numpy array -- 2D matrix of satisfaction at each location i due to a
+        numpy array -- 2D matrix of coverage at each location i due to a
         sensor placed at another location j.
     """
-    return satisfaction(distance_matrix(x1, y1, x2=x2, y2=y2), theta=theta)
+    return coverage(distance_matrix(x1, y1, x2=x2, y2=y2), theta=theta)
 
 
 def make_job_dict(job):
@@ -110,3 +110,21 @@ def make_job_dict(job):
             "progress": progress,
             "last_message": last_message,       
             "result": result}
+
+
+def make_age_range(min_age=0, max_age=90):
+    """Create a pandas series of age weights as needed for the optimisation.
+    Index is from 0 to 90 (inclusive), returns weight 1 for
+    min_age <= age <= max_age and 0 for all other ages.
+    
+    Keyword Arguments:
+        min_age {int} -- [description] (default: {0})
+        max_age {int} -- [description] (default: {90})
+    
+    Returns:
+        [type] -- [description]
+    """
+    age_weights = pd.Series(0, index=range(91))
+    age_weights[(age_weights.index >= min_age) &
+                (age_weights.index <= max_age)] = 1
+    return age_weights
