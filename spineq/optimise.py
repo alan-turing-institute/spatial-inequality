@@ -63,6 +63,8 @@ def optimise(n_sensors=20, theta=500,
         job = None
     if socket:
         socketIO = SocketIO(message_queue=redis_url)
+        print("socket", socket)
+        print("socketIO", socketIO)
 
     print("Fetching data...")
     if job:
