@@ -13,8 +13,8 @@ from spineq.utils import make_job_dict, make_age_range
 
 from config import FLASK_HOST, FLASK_PORT, REDIS_HOST, REDIS_PORT
 
-redis_url = "redis://{}:{}".format(REDIS_HOST, REDIS_PORT)
 
+redis_url = "redis://{}:{}".format(REDIS_HOST, REDIS_PORT)
 
 app = Flask(__name__)
 CORS(app)
@@ -33,23 +33,19 @@ def home():
 
 @app.route("/optimise")
 def route_optimise_job():
-    """Run an optimisation job. Query parameters:
-        - n_sensors: generate a network with this many sensors. 
-        - theta: decay rate for coverage measure.
+    """Run an optimisation job.
+    
+    Query parameters:
+        - n_sensors: generate a network with this many sensors (default: 5)
+        - theta: decay rate for coverage measure (default: 500)
+        - min_age: minimum age to consider (default: 0)
+        - max_age: maximum age to consider (default: 90)
+        - population_weight: overall weight for residential population coverage (default: 1)
+        - workplace_weight: overall weight for place of work coverage (default: 0)
     
     Returns:
         dict -- json of information about the created job, including its
-        id in the queue.
-        
-        
-    @api {get} /optimise:id Request User information
-    @apiName GetUser
-    @apiGroup User
-
-    @apiParam {Number} id Users unique ID.
-
-    @apiSuccess {String} firstname Firstname of the User.
-    @apiSuccess {String} lastname  Lastname of the User.
+        id in the queue.        
     """
     
     if "n_sensors" in request.args:
@@ -141,6 +137,8 @@ def route_delete_job(job_id):
 
 @socketio.on('connect')
 def test_connect():
+    """Open sockdtio connection
+    """
     emit('message', {'data': 'Connected'})
 
 
@@ -151,23 +149,20 @@ def test_disconnect():
 
 @socketio.on("submitJob")
 def socket_optimise_job(parameters):
-    """Run an optimisation job. Query parameters:
-        - n_sensors: generate a network with this many sensors. 
-        - theta: decay rate for coverage measure.
+    """Run an optimisation job.
+    
+   Arguments:
+        parameters {dict} -- Optimisation parameters including:
+            - n_sensors: generate a network with this many sensors. 
+            - theta: decay rate for coverage measure.
+            - min_age: minimum age to consider (default: 0)
+            - max_age: maximum age to consider (default: 90)
+            - population_weight: overall weight for residential population coverage (default: 1)
+            - workplace_weight: overall weight for place of work coverage (default: 0)
     
     Returns:
         dict -- json of information about the created job, including its
         id in the queue.
-        
-        
-    @api {get} /optimise:id Request User information
-    @apiName GetUser
-    @apiGroup User
-
-    @apiParam {Number} id Users unique ID.
-
-    @apiSuccess {String} firstname Firstname of the User.
-    @apiSuccess {String} lastname  Lastname of the User.
     """
     
     if "n_sensors" not in parameters.keys() or "theta" not in parameters.keys():
@@ -256,23 +251,19 @@ def socket_delete_job(job_id):
 def submit_optimise_job(n_sensors=5, theta=500,
                         age_weights=1, population_weight=1, workplace_weight=0,
                         socket=False, redis_url="redis://"):
-    """Run an optimisation job. Query parameters:
-        - n_sensors: generate a network with this many sensors. 
-        - theta: decay rate for coverage measure.
+    """Submit an optimisation job to the Redis queue.
+    
+    Keyword Arguments:
+        - n_sensors {int}: generate a network with this many sensors (default: {5})
+        - theta {float}: decay rate for coverage measure (default: {500})
+        - min_age {int}: minimum age to consider (default: {0})
+        - max_age {int}: maximum age to consider (default: {90})
+        - population_weight {float}: overall weight for residential population coverage (default: {1})
+        - workplace_weight {float}: overall weight for place of work coverage (default: {0})
     
     Returns:
-        dict -- json of information about the created job, including its
-        id in the queue.
-        
-        
-    @api {get} /optimise:id Request User information
-    @apiName GetUser
-    @apiGroup User
-
-    @apiParam {Number} id Users unique ID.
-
-    @apiSuccess {String} firstname Firstname of the User.
-    @apiSuccess {String} lastname  Lastname of the User.
+        dict -- information about the created job, including its
+        id in the queue, as created by utils.make_job_dict.
     """
      
     job = queue.enqueue("spineq.optimise.optimise",
@@ -293,6 +284,14 @@ def submit_optimise_job(n_sensors=5, theta=500,
 
 
 def get_job(job_id):
+    """Get information about a job on the Redis queue.
+    
+    Arguments:
+        job_id {str} -- id of job to get from the queue
+    
+    Returns:
+        dict -- information about the created job, including its
+        id in the queue, as created by utils.make_job_dict.    """
     try:
         job = Job.fetch(job_id, connection=conn)
         return make_job_dict(job)
@@ -345,6 +344,9 @@ def clear_queue():
 
 def delete_job(job_id):
     """Delete a single job from the queue.
+    
+    Arguments:
+        job_id {str} -- id of job to get from the queue
     
     Returns:
         dict -- json with result of whether job was successfully deleted.

@@ -21,7 +21,7 @@ def optimise(n_sensors=20, theta=500,
     
     Keyword Arguments:
         n_sensors {int} -- number of sensors to place (default: {20})
-        theta {int} -- coverage decay rate (default: {500})
+        theta {float} -- coverage decay rate (default: {500})
         
         age_weights {float or pd.DataFrame} -- Either constant, in which case
         use same weighting for all ages, or a dataframe with index age (range
@@ -274,6 +274,31 @@ def get_optimisation_inputs(age_weights=1, population_weight=1,
 def make_result_dict(n_sensors, theta, age_weights, population_weight,
                      workplace_weight, oa_x, oa_y, oa11cd, sensors,
                      total_coverage, oa_coverage):
+    """Package up optimisation parameters and results as a dictionary, which
+    is used by the API and some other functions.
+    
+    Arguments:
+        n_sensors {int} -- number of sensors
+        theta {float} -- coverage decay parameter
+        age_weights {float or pd.DataFrame} -- Either constant, in which case
+        use same weighting for all ages, or a dataframe with index age (range
+        between 0 and 90) and values weight.
+        population_weight {float} -- Weighting for residential population
+        (default: {1})
+        workplace_weight {float} -- Weighting for workplace population
+        (default: {0})
+        oa_x {list} -- x position of each OA
+        oa_y {list} -- y position of each OA
+        oa11cd {list} -- id of each OA
+        sensors {list} -- 1 if OA has sensor, 0 otherwise
+        total_coverage {float} -- total coverage metric for this network
+        oa_coverage {list} -- coverage of each OA for this network
+    
+    Returns:
+        dict -- Optimisation results and parameters. Keys: n_sensors, theta,
+        age_weights, population_weight, workplace_weight, sensors,
+        total_coverage, oa_coverage
+    """
     n_poi = len(oa_x)
     sensor_locations = [{"x": oa_x[i], "y": oa_y[i],
                          "oa11cd": oa11cd[i]}
@@ -281,7 +306,7 @@ def make_result_dict(n_sensors, theta, age_weights, population_weight,
     
     oa_coverage = [{"oa11cd": oa11cd[i],
                     "coverage": oa_coverage[i]}
-                    for i in range(n_poi)]
+                   for i in range(n_poi)]
     
     if type(age_weights) == pd.Series:
         # can't directly pass pandas objects to json.dump

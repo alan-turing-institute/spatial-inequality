@@ -216,6 +216,27 @@ def plot_oa_importance(oa_weights, theta=500,
                        title="", save_path=None, figsize=(10,10),
                        alpha=0.75, cmap="plasma", legend=True, vmin=None,
                        vmax=None):
+    """Plot the "importance" of each OA given a weighting for each
+    OA and a coverage distance (theta). Importance is defined as the
+    total coverage (of the city) by placing a sensor at the OA centroid.
+    With the greedy optimisation algorithm, the OA with the highest
+    importance is where the first sensor in the network will be placed.
+    
+    Arguments:
+        oa_weights {pd.Series} -- Weights for each OA (indexed by oa11cd)
+    
+    Keyword Arguments:
+        theta {int} -- coverage decay rate (default: {500})
+        title {str} -- plot title (default: {""})
+        save_path {str} -- path to save output plot or None to not save
+        (default: {None})
+        figsize {tuple} -- plot figure size (default: {(10,10)})
+        alpha {float} -- transparency of fill areas (default: {0.75})
+        cmap {str} -- matplotlib colormap for fill areas (default: {"plasma"})
+        legend {bool} -- if True show the color scale (default: {True})
+        vmin {[type]} -- minimum value of color scale, or None to autoscale (default: {None})
+        vmax {[type]} -- maximum value of color scale, or None to autoscale (default: {None})
+    """
         
     oa_centroids = get_oa_centroids()
     oa_centroids["weight"] = oa_weights
@@ -227,20 +248,13 @@ def plot_oa_importance(oa_weights, theta=500,
         
     n_poi = len(oa_x)
     coverage = coverage_matrix(oa_x, oa_y, theta=theta)
-    
-    # binary array - 1 if sensor at this location, 0 if not
-    sensors = np.zeros(n_poi)
 
     # to store total coverage due to a sensor at any output area
     oa_importance = np.zeros(n_poi)
         
     for site in range(n_poi):
-        # add sensor at poi
-        sensors = np.zeros(n_poi)
-        sensors[site] = 1
-
         oa_importance[site] = ((oa_weight * coverage[site, :]).sum()
-                                / oa_weight.sum())
+                               / oa_weight.sum())
 
     oa_importance = pd.Series(data=oa_importance, index=oa11cd)
     
