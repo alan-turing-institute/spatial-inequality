@@ -30,7 +30,8 @@ def print_progress(progress):
 
 
 # Define host and callbacks
-socketIO = SocketIO('localhost', 5000)
+#socketIO = SocketIO('localhost', 5000)
+socketIO = SocketIO('optimisation-backend.azurewebsites.net', 80)
 socketIO.on('message', print_message)
 socketIO.on('job', print_job)
 socketIO.on('queue', print_queue)
@@ -46,7 +47,9 @@ print("----------")
 # Submit an optimisation job: client emits submitJob, server responds by
 # emitting job
 print("SUBMIT JOB")
-socketIO.emit('submitJob', {"n_sensors": 3, "theta": 789})
+socketIO.emit('submitJob', {"n_sensors": 3, "theta": 789,
+                            "min_age": 3, "max_age": 18,
+                            "population_weight": 0.5, "workplace_weight": 0.5})
 socketIO.wait(seconds=1)
 print("----------")
 

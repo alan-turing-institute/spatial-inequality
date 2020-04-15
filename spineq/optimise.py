@@ -1,3 +1,5 @@
+"""Main optimisation functions.
+"""
 from .data_fetcher import get_oa_centroids, get_oa_stats
 from .utils import coverage_matrix, make_job_dict
 
@@ -89,6 +91,9 @@ def optimise(n_sensors=20, theta=500,
     oa11cd = data["oa11cd"]
         
     n_poi = len(oa_x)
+    
+    # Compute coverage matrix: coverage at each OA due to a sensor placed at
+    # any other OA.
     coverage = coverage_matrix(oa_x, oa_y, theta=theta)
     
     # binary array - 1 if sensor at this location, 0 if not

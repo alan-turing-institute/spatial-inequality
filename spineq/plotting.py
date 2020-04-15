@@ -1,3 +1,6 @@
+"""Functions for visualising the data, optimisation weights and
+optimisation results.
+"""
 import numpy as np
 import geopandas as gpd
 import pandas as pd

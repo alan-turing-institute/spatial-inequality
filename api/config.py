@@ -1,3 +1,6 @@
+"""Gets app configuration from environment variables, and defines
+default values if environment variable not available.
+"""
 import os
 
 try:

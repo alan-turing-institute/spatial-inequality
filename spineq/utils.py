@@ -1,3 +1,5 @@
+"""Utility functions used by other files.
+"""
 import numbers
 
 import numpy as np
@@ -51,10 +53,10 @@ def coverage_scalar(distance, theta=1):
     where coverage is defined as exp(-distance/theta).
     
     Arguments:
-        distance {numeric} -- distance to sensor.
+        distance {float} -- distance to sensor.
     
     Keyword Arguments:
-        theta {numeric} -- decay rate (default: {1})
+        theta {float} -- decay rate (default: {1})
     
     Returns:
         float -- coverage value.
