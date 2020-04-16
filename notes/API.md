@@ -4,7 +4,7 @@
 
 The optimisation backend is currently set up in docker compose (`docker-compose.yml` in the root of the repo) with the following containers:
 
-![](container_diagram.png)
+![](figs/container_diagram.png)
 
 - **spineq_api**
   - Flask and Flask-SocketIO API for submitting, getting or deleting optimisation jobs.
