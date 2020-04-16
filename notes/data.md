@@ -27,7 +27,7 @@
 - **API Available:** No
 - **Used For:** Weight for each output area for place of work coverage.
 
-No API and the interace to get the data is a bit clunky. 
+No API and the interace to get the data is a bit clunky. I got it by followinig this process starting from the link above:
 
 1) **Place of work:** Choose _"Select Area Within"_ (at top), then: Type of area to select: _2011 Output Areas_, Select All Areas Within: _2011 Census Merged Local Authority Districts_, List Local Authority Districts Within: _North East_, Select all the local authorities.
 2) **Usual Residence:** Choose _"Select From List"_ (at top), then: Countries: _Some_, Select _England and Wales_.
@@ -93,3 +93,23 @@ Data on where people actually are during the day and in particular where there's
 ### Database
 
 Ideally the backend (optimisation code) and frontend (user interface) would pull data from the same common database, rather than the backend using a local copy of the files as is the case currently.
+
+### Data Modelling
+
+Broadly speaking we have (or plan to have) two types of data:
+
+- **Area-based:** E.g. Output area stats (population, workplace etc.)
+- **Point-based:** E.g. Schools, traffic intersections, hospitals.
+
+There are certain caveats/complexities with each that may need to be considered to improve the optimisation. The solution would generally be to transform the data in some way, perhaps having a model to infer data with a higher granularity, for example.
+
+**Complexities with area-based data:**
+- In some cases the area may be large with an uneven distribution of people across it. How to get a representative location/density?
+  - So far used population-weighted centroids.
+  - May be possible to approximate using road network, i.e. assume even number of people per road length, or building locations.
+- Output areas are different shapes and sizes - some algorithms may prefer an even grid.
+  - 1 km square grids are common but output areas are typically much smaller than this (so we would lose granularity by moving to a 1 km grid).
+
+**Complexities with point-based data:**
+- Some point-based measurements may be relevant for a larger area, e.g. traffic at an intersection is related to traffic along all the roads that connect to the intersection. Similarly a measurement for an air quality measurement is relevant for the surrounding area.
+  - Techniques like Kriging (Gaussian Process regression) can be used to approximate values at locations where a measurement isn't available.
