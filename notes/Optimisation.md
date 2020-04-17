@@ -1,6 +1,12 @@
 
 # Optimisation
 
+To define and run an optimisation for generating a network of sensors we need:
+- A set of possible sensor locations.
+- A concept of coverage - to what extent do the areas neighbouring a sensor benefit?
+- An objective, or a set of objectives, to maximise.
+- A set of constraints - conditions that must be met for a solution to be viable.
+- An algorithm to pick the best sensor locations to maximise the objective.
 
 # Sensor Sites
 
@@ -26,9 +32,9 @@ When we add other inputs, such as hospital or traffic intersection locations, th
 
 ## Alternatives
 
-- David has code to generate sets of points based on lamppost locations, an even grid etc. Minor modifications to the optimisation code would allow these to be used as sensor sites instead -  `spnieq.optimise:get_optimisation_inputs` would need to return a list of sensor x and y locations, which should then be passed to `coverage_matrix` as the `x2` and `y2` arguments (with `x1` and `y1` still output area centroids). The length of the `sensors` array would need to be changed to the number of sensor sites instead of the number of points of interest, also.
+- David has code (in the `sensor_sites` directory in this repo) to generate sets of points based on lamppost locations, an even grid etc. Minor modifications to the optimisation code would allow these to be used as sensor sites instead -  `spnieq.optimise:get_optimisation_inputs` would need to return a list of sensor x and y locations, which should then be passed to `coverage_matrix` as the `x2` and `y2` arguments (with `x1` and `y1` still output area centroids). The length of the `sensors` array would need to be changed to the number of sensor sites instead of the number of points of interest, also.
 
-- I have briefly played with arbitrary sensor locations (approach 3) in the `PyGMO: Sensors at any arbitrary position` and `SciPy optimize` sections of the `notebooks/population_optimisation.ipynb` notebook.
+- I have briefly played with arbitrary sensor locations (approach 3) in the _"PyGMO: Sensors at any arbitrary position"_ and _"SciPy optimize"_ sections of the `notebooks/population_optimisation.ipynb` notebook.
 
 
 # Coverage
@@ -93,31 +99,58 @@ To calculate the coverage at an output area given a sensor network (with an arbi
 
 - Large theta values lead to higher coverage values in the final network. So a policy maker may just input a large theta value and claim high coverage. Maybe we need a better word than "coverage"?
 
-# Objective
+# Objectives and Weightings
 
-### Weightings
+The overall objective is to maximise coverage of the points of interest with a given number of sensors. In other words, to maximise the sum of the coverage across all points of interest.
 
-- How to select in a meaningful way in the optimisation backend?
-- How to present in an intuitive way to the user in the frontend?
+The tricky bit is incorporating that some areas are better candidates than others (e.g. a sensor in the city centre will cover more people than one on the outskirts of the city), and that we are planning to incorporate several different concepts. The different concepts we wish to include are:
 
-### Combining Objectives
+- Coverage of the population as a whole:
+   - _**Place of residence**_, **_place of work_**, etc.
+- Coverage of high emission areas.
+   - Traffic intersections etc.
+- Coverage of vulnerable people.
+   - **_Young & elderly_**, schools, hospitals etc.
 
-Options:
+Within each concept there are several different datasets or terms that may contribute, and bold italics above indicate inputs that are currently available in our optimisation.
+
+Each term has to be weighed separately and this is non-trivial - for example is it more important to have a sensor near a school with 500 pupils, a hospital with 500 beds, or at an intersection with 500 queued cars? This is largely determined by the interests of the person/stakeholders generating the network. So they can be variable parameters in the optimisation inputs to some extent, but converting those preferences into sensible values is challenging in itself. There are also different approachea for how those weights can be combined.
+
+## Single Objective
+
+With a single objective, i.e. optimising for a single sub-concept, the weightings are more straightforward to determine. For example, our first optimisations incorporated only total residential population in each output area. The optimisation weight for each output area was then just its population, with the objective to maximise being this weighted sum:
+```
+total_coverage = sum (OA_population * OA_coverage) / sum(OA_population)
+```
+Dividing by `sum(OA_population)` gives a resulting `total_coverage` value that lies between 0 (no coverage) and 1 (full coverage).
+
+
+## Multiple Objectives
+
+### One Optimisation with Combined Weights (current approach)
+
 - One multi-objective optimisation. Each objective has a weighting and we create a single network optimised for those weightings.
   - Pros: Only need to run one optimisation. Will find good compromise locations, e.g. likely to pick locations that are 2nd best for each individual objective.
   - Cons: Maybe less intuitive for decision support tool. Effect of weightings less clear.
-- Separate optimisation for each objective. Weight each objective by assigning a different number of sensors to each one.
+
+### Several Single-Objective Optimisations (Cambridge paper approach)
+
+- Separate optimisation for each objective. Weight each objective by assigning a different number of sensors to each one (the approach in the Cambridge paper)
   - Pros: Nice way to compare good locations for each objective.
   - Cons: Need to run a separate (simpler) optimisation for each objective. May miss compromise locations, e.g. prefer picking a location ranked 1st for one objective than one ranked 2nd for many objectives.
+
+### Multi-Objective Optimisation
+- Pareto Front
+
+# Constraints
+
+Number of sensors
+
 
 ### Equality
 
 - Rather than (or as well as) having a preference for sensors to be evenly distributed throughout the city, we may want to have terms to force an even coverage of demographics, e.g. similar number of sensors for each IMD decile.
 
-
-# Constraints
-
-Number of sensors
 
 
 # Algorithm
@@ -136,7 +169,7 @@ For each sensor to be placed:
 
 ## Alternatives
 
-The exact choice of algorithm is less important (and generally easier to change) than getting the inputs, weights and constraints right, in my opinion. So after having success with a greedy approach as an initial baseline I have not yet invested much time in exploring alternatives. However, genetic algorithms in particular seem to have interesting properties.
+The exact choice of algorithm is less important (and generally easier to change) than getting the inputs, weights and constraints right, in my opinion. So after having success with a greedy approach as an initial baseline I have not yet invested much time in exploring alternatives. However, genetic algorithms in particular seem to have interesting properties, and are what I would choose to try next.
 
 ### Genetic Algorithms
 
@@ -151,6 +184,9 @@ The exact choice of algorithm is less important (and generally easier to change)
 # Considerations for User Interface
 
 ### Complexity
+
+- How to present weights in an intuitive way to the user in the frontend?
+
 
 ### Speed
 
@@ -173,6 +209,8 @@ The exact choice of algorithm is less important (and generally easier to change)
 * scipy
 
 * pytorch
+
+* MIP
 
 # References
 
