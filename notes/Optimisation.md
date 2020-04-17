@@ -2,6 +2,34 @@
 # Optimisation
 
 
+# Sensor Sites
+
+There are three broad options for the set of locations to input as the set of possible sensor sites:
+
+1) Only place sensors at points of interest (e.g. at a school or at an output area centroid):
+  - Pros: Guarantees sensor to be in an interesting location. Reduces number of possible solutions.
+  - Cons: May miss interesting compromise locations. May limit algorithm options.
+2) Lampposts (or any other discrete set of points that is different to the points of interest):
+  - Pros: Sensors can typically be placed on lampposts.
+  - Cons: Many more lampposts than points of interest (will take longer) without obvious benefits for the resulting network.
+3) Arbitrary positions (in continuous space rather than discrete points):
+  - Pros: May give more options in terms of choice of optimisation algorithm.
+  - Cons: May result in undesirable compromises (e.g. sensor halfway between two schools) or infeasible locations (but could snap to nearest viable site afterwards).
+
+Variations of all three are found (or at least discussed) in the literature, including the Cambridge paper.
+
+## Current Approach
+
+The optimisation currently uses option 1 above - the set of sensor sites considered is the same as the points of interest (output area population weighted centroids). I think this makes the most sense for our current inputs - as our stats apply to whole output areas it would seem dubious to make any claims about where sensors should be placed at a higher granularity than output areas (e.g. there's no way we can justify that a lamppost is better than the one next to it).
+
+When we add other inputs, such as hospital or traffic intersection locations, the natural extension would be to simply add those as possible sensor sites also.
+
+## Alternatives
+
+- David has code to generate sets of points based on lamppost locations, an even grid etc. Minor modifications to the optimisation code would allow these to be used as sensor sites instead -  `spnieq.optimise:get_optimisation_inputs` would need to return a list of sensor x and y locations, which should then be passed to `coverage_matrix` as the `x2` and `y2` arguments (with `x1` and `y1` still output area centroids). The length of the `sensors` array would need to be changed to the number of sensor sites instead of the number of points of interest, also.
+
+- I have briefly played with arbitrary sensor locations (approach 3) in the `PyGMO: Sensors at any arbitrary position` and `SciPy optimize` sections of the `notebooks/population_optimisation.ipynb` notebook.
+
 
 # Coverage
 
@@ -11,7 +39,7 @@ Each sensor that is placed gives "coverage" of a certain area. In my opinion, th
 
 2) Whether a region/part of the city contains a sensor. This is relevant for questions such as whether a network gives a representative sample of all the different environments in the city, and whether members of the public feel as though the local government is taking sufficient interest in their area. The distance scale here is maybe the size of a neighbourhood, or hundreds of metres.
 
-3) Required density or distribution of sensors to be able to create an accurate air quality model for the whole city, i.e. whether placing a sensor in a given location will lead to a significant improvement in a model's predictions (potentially for the whole city).
+3) Required density or distribution of sensors to be able to create an accurate air quality model for the whole city, i.e. whether placing a sensor in a given location will lead to a significant improvement in a model's predictions.
 
 Concept 3 is particularly relevant for air quality modelling, whereas Concept 2 is perhaps more relevant for social or political policy decisions. Concept 1 has relevance for both, but in particular prioritises coverage of individuals (or small areas) as opposed to coverage of (larger) areas.
 
@@ -22,7 +50,7 @@ The coverage concept we've used so far is most like concept 2 above. This is mot
 - We'd like our work to be applicable to cities without a pre-existing sensor network or air quality model.
 - There will be a relatively small number of sensors (compared to the size of the population/the size of the city).
 - The focus of the project isn't air quality modelling and developing a model for Newcastle would be a significant time investment (even if building on previous work).
-- The focus of the project _is_ coverage of population, or coverage of under-represented demographics.
+- The focus of the project is coverage of population, or coverage of under-represented demographics.
 
 Our "coverage" metric is inspired by the population "satisfaction" metric in the Cambridge paper. They claim (or approximate) that the level of satisfaction a member of the public has with a given sensor network is dependent only on the distance between their place of residence and the nearest sensor.
 
@@ -37,6 +65,20 @@ The Cambridge paper uses a value of $\theta = 1000$ metres (I believe), which is
 
 Large theta values (I would consider 500 metres to be large) lead to a preference for networks with sensors evenly distributed around the whole city. Small theta values (say 100 metres) lead to a preference for sensors to be placed in areas of high density/interest, even if they are all clustered in the same part of the city.
 
+## Implementation
+
+So far our optimisation has used output area centroids both as possible sensor sites and as points of interest for coverage. There are around 1000 output areas (more like 950). I've taken the approach of pre-computing the coverage values (coverage at any output area due to a sensor placed at any other output area), creating a ~1000 x 1000 matrix. This takes a few seconds (probably could be made quicker) but avoids having to recalculate values during the optimisation.
+
+The relevant functions are in `spineq/utils.py` and rely on array operations in `numpy`. The steps are:
+1) Calculate pairwise distances between output area centroids (distance between each centroid and all the other centroids). Function: `distance_matrix`.
+2) Convert the distances into coverage values using the exponential decay equation above. Function: `coverage_matrix`.
+
+To calculate the coverage at an output area given a sensor network (with an arbitrary number of sensors), the process (currently in `spineq/optimise.py:optimise`) is:
+1) Make an array (of length n_output_areas) which is 1 if a location has a sensor, and 0 otherwise.
+2) Extract the output area's row from the coverage matrix.
+3) Multiply the output area coverage values by the sensor array - leaves only coverage values due to locations that have a sensor.
+4) Take the max of the remaining coverage values - this is the output area coverage with the given sensor network.
+
 ## Challenges/Issues
 
 - So far we have considered only output area stats and sensors placed at output area centroids. If an output area has a sensor at its centroid we consider the whole output area to be 100% covered. This is clearly not the case for larger output areas, but we'd need more granular population data to do better than this.
@@ -50,19 +92,6 @@ Large theta values (I would consider 500 metres to be large) lead to a preferenc
 - Compromise solutions: Is placing a sensor halfway between two point of interest any good for either of them?
 
 - Large theta values lead to higher coverage values in the final network. So a policy maker may just input a large theta value and claim high coverage. Maybe we need a better word than "coverage"?
-
-# Sensor Sites
-
-Options:
-- Only place sensors at points of interest (e.g. at school or at output area centroid)
-  - Pros: Guarantees sensor to be in an interesting location. Reduces number of possible solutions.
-  - Cons: May miss interesting compromise locations. May limit algorithm options.
-- Lampposts
-  - Pros: Sensors can typically be placed on lampposts.
-  - Cons: Many more lampposts than points of interest (will take longer) without obvious benefits.
-- Arbitrary positions (then move to nearest realistic location afterwards?)
-  - Pros: May give more options in terms of choice of optimisation algorithm.
-  - Cons: May result in undesirable compromises (e.g. sensor halfway between two schools).
 
 # Objective
 
@@ -90,9 +119,33 @@ Options:
 
 Number of sensors
 
+
 # Algorithm
 
-- Currently a "homemade" greedy algorithm.
+## Current Approach: Greedy
+
+- Currently a "homemade" greedy algorithm. Place sensors one by one in whichever location leads to maximum total coverage.
+
+```
+For each sensor to be placed:
+    For each output area:
+        Place sensor at output area centroid.
+        Calculate total coverage.
+        Save network if it is the best so far.
+```
+
+## Alternatives
+
+The exact choice of algorithm is less important (and generally easier to change) than getting the inputs, weights and constraints right, in my opinion. So after having success with a greedy approach as an initial baseline I have not yet invested much time in exploring alternatives. However, genetic algorithms in particular seem to have interesting properties.
+
+### Genetic Algorithms
+
+### Exact Solvers 
+
+### Others
+
+- Simulated annealing
+- "Standard" Optimisation Solvers
 
 
 # Considerations for User Interface
