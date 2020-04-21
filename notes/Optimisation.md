@@ -8,6 +8,8 @@ To define and run an optimisation for generating a network of sensors we need:
 - A set of constraints - conditions that must be met for a solution to be viable.
 - An algorithm to pick the best sensor locations to maximise the objective.
 
+In words, the optimisation problem to solve is roughly: _"Choose sensor locations to maximise the coverage of our objectives, subject to the network meeting the defined constraints"_.
+
 # Sensor Sites
 
 There are three broad options for the set of locations to input as the set of possible sensor sites:
@@ -122,12 +124,33 @@ With a single objective, i.e. optimising for a single sub-concept, the weighting
 ```
 total_coverage = sum (OA_population * OA_coverage) / sum(OA_population)
 ```
-Dividing by `sum(OA_population)` gives a resulting `total_coverage` value that lies between 0 (no coverage) and 1 (full coverage).
+Dividing by `sum(OA_population)` gives a resulting `total_coverage` value that lies between 0 (no coverage) and 1 (full coverage). The `OA_coverage` values are determined by the nearest sensor to each output area, as described in the coverage section above. The sums are over output areas.
+
+This can easily be modified for any criteria that can be represented by a single count or rating - for example number of workers in an output area, number of students at a school, number of cars at an intersection per day, or similar, by replacing the `OA_population` terms above with the relevant metric.
 
 
 ## Multiple Objectives
 
+As soon as a second concept/objective is added to the optimisation it becomes more difficult to define what the appropriate weight is for each location. I have come across three main alternatives:
+
 ### One Optimisation with Combined Weights (current approach)
+
+The single objective equation above can be rewritten in a more general form as:
+```
+total_coverage = sum(OA_weight * OA_coverage) / sum(OA_weight)
+```
+This is written as considering output area stats only, but could easily represent other types of location as well. The weight `OA_weight` in this case is not a number representing a single concept but an overall value combining several concepts. For example, we could consider a weighted combination of residential population and place of work by doing:
+```
+OA_weight =
+[(pop_importance * pop_weight) + (worker_importance * worker_weight)] /
+(pop_importance + worker_importance)
+
+pop_weight = OA_population / sum(OA_population)
+
+worker_weight = OA_workers / sum(OA_workers)
+```
+The `pop_weight` term is the same as the single objective weight above, and normalised by the total population so that the sum of the population weights equals one. `worker_weight` is the same but for the number of workers in the output area. In the overal weight (`OA_weight`) these are added together with additional weighting terms `pop_importance` and `worker_importance`, which determine whether stronger preference will be given to coverage of residential population or coverage of workers (plus another normalisation so that the `OA_weights` sum to one).
+
 
 - One multi-objective optimisation. Each objective has a weighting and we create a single network optimised for those weightings.
   - Pros: Only need to run one optimisation. Will find good compromise locations, e.g. likely to pick locations that are 2nd best for each individual objective.
@@ -141,6 +164,7 @@ Dividing by `sum(OA_population)` gives a resulting `total_coverage` value that l
 
 ### Multi-Objective Optimisation
 - Pareto Front
+- ways of selecting from a set of possible solutions
 
 # Constraints
 
@@ -173,7 +197,9 @@ The exact choice of algorithm is less important (and generally easier to change)
 
 ### Genetic Algorithms
 
-### Exact Solvers 
+### Exact Solvers
+
+- Gurobi
 
 ### Others
 
@@ -198,19 +224,26 @@ The exact choice of algorithm is less important (and generally easier to change)
 
 # Libraries
 
-## Genetic Algorithms
+The two main libraries I have or plan to invest time in are:
 
 * PyGMO
+   - European Space Agency developed optimisation library (original source is Pagmo, a C++ library).
+   - Has a wide selection of algorithms of different types each with a common interface.
+   - This is the first package I started playing with, with some examples in `notebooks/population_optimisation.ipynb`. I got it running but had problems with either too many sensors being generated or sensors being placed outside the local authority boundary. Like any library, will need some time understanding the specifics of each algorithm and how they should be implemented to get it working properly.
+   - Links: https://github.com/esa/pygmo2, https://esa.github.io/pygmo2
 
 * pymoo
+  - Looks to be quite new but has implementations of the NSGA algorithm mentioned in the Jankowski paper and clear examples of calculating the Pareto front in its documentation.
+  - Links: https://pymoo.org/, https://github.com/msu-coinlab/pymoo
 
-## Others
 
-* scipy
+Others I'm aware of include:
 
-* pytorch
+* scipy: https://docs.scipy.org/doc/scipy/reference/tutorial/optimize.html ("standard" optimisation algorithms - good for quick/simple implementations)
 
-* MIP
+* PyTorch: https://pytorch.org/docs/stable/optim.html
+  
+* MIP: https://python-mip.com/ (mixed integer programming)
 
 # References
 
@@ -219,3 +252,6 @@ The exact choice of algorithm is less important (and generally easier to change)
 
 - **Boubrima**
   - _"On the Deployment of Wireless Sensor Networks for Air Quality Mapping: Optimization Models and Algorithms"_, Ahmed Boubrima, Walid Bechkit, Hervé Rivano, 2019, HAL
+
+- **Jankowski**
+ - _"An exploratory approach to spatial decision support"_, Piotr Jankowski, Grant Fraley & Edzer Pebesma, 2014, Computers, Environment and Urban Systems 45

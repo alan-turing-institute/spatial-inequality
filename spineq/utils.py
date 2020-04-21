@@ -29,22 +29,22 @@ def distance_matrix(x1, y1, x2=None, y2=None):
     if x2 is not None and y2 is not None:
         # calculate distances between two sets of coordinates
         coords_2 = np.array([x2, y2]).T
-        
-        dist_sq = np.sum((coords_1[:, np.newaxis, :] -
-                          coords_2[np.newaxis, :, :]) ** 2,
-                         axis=-1)
-    
+
+        dist_sq = np.sum(
+            (coords_1[:, np.newaxis, :] - coords_2[np.newaxis, :, :]) ** 2, axis=-1
+        )
+
     elif (x2 is None and y2 is not None) or (y2 is None and x2 is not None):
         raise ValueError("x2 and y2 both must be defined or undefined.")
-    
+
     else:
         # calculate distances distances between points in one set of coordinates
-        dist_sq = np.sum((coords_1[:, np.newaxis, :] -
-                         coords_1[np.newaxis, :, :]) ** 2,
-                         axis=-1)
-    
+        dist_sq = np.sum(
+            (coords_1[:, np.newaxis, :] - coords_1[np.newaxis, :, :]) ** 2, axis=-1
+        )
+
     distances = np.sqrt(dist_sq)
-    
+
     return distances
 
 
@@ -97,21 +97,23 @@ def make_job_dict(job):
     status = job.get_status()
     call_str = job.get_call_string()
     result = job.result
-    
+
     if "progress" in job.meta.keys():
         progress = job.meta["progress"]
     else:
         progress = 0
-    
+
     if "status" in job.meta.keys():
         last_message = job.meta["status"]
-    
-    return {"job_id": job.id,
-            "call_str": call_str,
-            "status": status,
-            "progress": progress,
-            "last_message": last_message,       
-            "result": result}
+
+    return {
+        "job_id": job.id,
+        "call_str": call_str,
+        "status": status,
+        "progress": progress,
+        "last_message": last_message,
+        "result": result,
+    }
 
 
 def make_age_range(min_age=0, max_age=90):
@@ -127,6 +129,5 @@ def make_age_range(min_age=0, max_age=90):
         [type] -- [description]
     """
     age_weights = pd.Series(0, index=range(91))
-    age_weights[(age_weights.index >= min_age) &
-                (age_weights.index <= max_age)] = 1
+    age_weights[(age_weights.index >= min_age) & (age_weights.index <= max_age)] = 1
     return age_weights

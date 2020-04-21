@@ -14,11 +14,21 @@ import datetime
 import json
 
 
-def optimise(n_sensors=20, theta=500,
-             age_weights=1, population_weight=1, workplace_weight=0,
-             rq_job=False, socket=False, redis_url="redis://",
-             save_result=False, save_plots=False, save_dir="", run_name="",
-             **kwargs):
+def optimise(
+    n_sensors=20,
+    theta=500,
+    age_weights=1,
+    population_weight=1,
+    workplace_weight=0,
+    rq_job=False,
+    socket=False,
+    redis_url="redis://",
+    save_result=False,
+    save_plots=False,
+    save_dir="",
+    run_name="",
+    **kwargs
+):
     """Greedily place sensors to maximise coverage.
     
     Keyword Arguments:
@@ -54,7 +64,7 @@ def optimise(n_sensors=20, theta=500,
     Returns:
         dict -- optimisation result.
     """
-    
+
     if rq_job or socket:
         print("Setting up jobs and sockets...")
     if rq_job:
@@ -72,7 +82,7 @@ def optimise(n_sensors=20, theta=500,
     if job:
         job.meta["status"] = "Fetching data"
         job.save_meta()
-    
+
     if save_plots:
         from .plotting import plot_optimisation_result
 
@@ -81,92 +91,111 @@ def optimise(n_sensors=20, theta=500,
         if not run_name:
             now = datetime.datetime.now()
             run_name = now.strftime("%Y%m%d%H%M")
-    
-    data = get_optimisation_inputs(age_weights=age_weights,
-                                   population_weight=population_weight,
-                                   workplace_weight=workplace_weight)
+
+    data = get_optimisation_inputs(
+        age_weights=age_weights,
+        population_weight=population_weight,
+        workplace_weight=workplace_weight,
+    )
     oa_x = data["oa_x"]
     oa_y = data["oa_y"]
     oa_weight = data["oa_weight"]
     oa11cd = data["oa11cd"]
-        
+
     n_poi = len(oa_x)
-    
+
     # Compute coverage matrix: coverage at each OA due to a sensor placed at
-    # any other OA.
+    #  any other OA.
     coverage = coverage_matrix(oa_x, oa_y, theta=theta)
-    
+
     # binary array - 1 if sensor at this location, 0 if not
     sensors = np.zeros(n_poi)
 
     # coverage obtained with each number of sensors
     coverage_history = []
     oa_coverage = []
-    
+
     for s in range(n_sensors):
         # greedily add sensors
-        print("Placing sensor", s+1, "out of", n_sensors, "... ", end='')
-        
+        print("Placing sensor", s + 1, "out of", n_sensors, "... ", end="")
+
         if job:
-            job.meta["status"] = "Placing sensor {} out of {}".format(s+1,
-                                                                      n_sensors)
+            job.meta["status"] = "Placing sensor {} out of {}".format(s + 1, n_sensors)
             progress = 100 * s / n_sensors
             job.meta["progress"] = progress
             job.save_meta()
             if socket:
-                socketIO.emit("jobProgress", {"job_id": job.id,
-                                              "progress": progress})
+                socketIO.emit("jobProgress", {"job_id": job.id, "progress": progress})
 
         # initialise arrays to store best result so far
         best_total_coverage = 0
         best_sensors = sensors.copy()
         best_oa_coverage = sensors.copy()
-        
+
         for site in range(n_poi):
             # try adding sensor at potential sensor site
-            
+
             if sensors[site] == 1:
                 # already have a sensor here, so skip to next
                 continue
-            
+
             else:
                 new_sensors = sensors.copy()
                 new_sensors[site] = 1
-                
+
                 # only keep coverages due to sites where a sensor is present
                 mask_cov = np.multiply(coverage, new_sensors[np.newaxis, :])
 
                 # coverage at each site = coverage due to nearest sensor
                 max_mask_cov = np.max(mask_cov, axis=1)
-                
+
                 # Avg coverage = weighted sum across all points of interest
                 new_coverage = (oa_weight * max_mask_cov).sum() / oa_weight.sum()
-                
+
                 if new_coverage > best_total_coverage:
                     # this site is the best site for next sensor found so far
                     best_sensors = new_sensors.copy()
                     best_total_coverage = new_coverage
                     best_oa_coverage = max_mask_cov
-        
+
         sensors = best_sensors.copy()
         coverage_history.append(best_total_coverage)
         oa_coverage = best_oa_coverage.copy()
-        
+
         print("coverage = {:.2f}".format(best_total_coverage))
-        
+
         if save_plots == "all":
-            result = make_result_dict(n_sensors, theta, age_weights,
-                                      population_weight, workplace_weight,
-                                      oa_x, oa_y, oa11cd, sensors,
-                                      best_total_coverage, oa_coverage)
-            
-            save_path = "{}/{}_nsensors_{:03d}.png".format(save_dir, run_name, s+1)
+            result = make_result_dict(
+                n_sensors,
+                theta,
+                age_weights,
+                population_weight,
+                workplace_weight,
+                oa_x,
+                oa_y,
+                oa11cd,
+                sensors,
+                best_total_coverage,
+                oa_coverage,
+            )
+
+            save_path = "{}/{}_nsensors_{:03d}.png".format(save_dir, run_name, s + 1)
             plot_optimisation_result(result, save_path=save_path, **kwargs)
-    
-    result = make_result_dict(n_sensors, theta, age_weights, population_weight,
-                              workplace_weight, oa_x, oa_y, oa11cd, sensors,
-                              best_total_coverage, oa_coverage)
-    
+
+    result = make_result_dict(
+        n_sensors,
+        theta,
+        age_weights,
+        population_weight,
+        workplace_weight,
+        oa_x,
+        oa_y,
+        oa11cd,
+        sensors,
+        best_total_coverage,
+        oa_coverage,
+    )
+
     if job:
         job.meta["progress"] = 100
         job.meta["status"] = "Finished"
@@ -175,12 +204,11 @@ def optimise(n_sensors=20, theta=500,
             jobDict = make_job_dict(job)
             jobDict["result"] = result
             socketIO.emit("jobFinished", jobDict)
-            
+
     if save_plots == "final":
-        save_path = "{}/{}_nsensors_{:03d}.png".format(save_dir, run_name,
-                                                       n_sensors)
+        save_path = "{}/{}_nsensors_{:03d}.png".format(save_dir, run_name, n_sensors)
         plot_optimisation_result(result, save_path=save_path, **kwargs)
-        
+
     if save_result:
         result_file = "{}/{}_result.json".format(save_dir, run_name)
         with open(result_file, "w") as f:
@@ -206,37 +234,43 @@ def calc_oa_weights(age_weights=1, population_weight=1, workplace_weight=0):
     Returns:
         pd.Series -- Weights for each OA (indexed by oa11cd).
     """
-    
+
     data = get_oa_stats()
     population_ages = data["population_ages"]
     workplace = data["workplace"]
-    
+
     if len(population_ages) != len(workplace):
-        raise ValueError("Lengths of inputs don't match: population_ages={}, workplace={}"
-                         .format(len(population_ages), len(workplace)))
-    
+        raise ValueError(
+            "Lengths of inputs don't match: population_ages={}, workplace={}".format(
+                len(population_ages), len(workplace)
+            )
+        )
+
     # weightings for residential population by age
     oa_pop_weight_age = population_ages * age_weights
     oa_pop_weight = oa_pop_weight_age.sum(axis=1)  # sum of weights for all ages
     if oa_pop_weight.sum() > 0:
-        oa_pop_weight = oa_pop_weight / oa_pop_weight.sum()  # normalise so sum OA weights is 1
-    
+        oa_pop_weight = (
+            oa_pop_weight / oa_pop_weight.sum()
+        )  # normalise so sum OA weights is 1
+
     # weightings for number of workers in OA (normalised to sum to 1)
     oa_work_weight = workplace / workplace.sum()
-    
+
     # sum up weights and renormalise
-    oa_all_weights = pd.DataFrame({"population": oa_pop_weight,
-                                   "workplace": oa_work_weight})
-    oa_all_weights["total"] = (workplace_weight*oa_all_weights["workplace"] +
-                               population_weight*oa_all_weights["population"])
-    oa_all_weights["total"] = (oa_all_weights["total"] /
-                               oa_all_weights["total"].sum())
-    
+    oa_all_weights = pd.DataFrame(
+        {"population": oa_pop_weight, "workplace": oa_work_weight}
+    )
+    oa_all_weights["total"] = (
+        workplace_weight * oa_all_weights["workplace"]
+        + population_weight * oa_all_weights["population"]
+    )
+    oa_all_weights["total"] = oa_all_weights["total"] / oa_all_weights["total"].sum()
+
     return oa_all_weights["total"]
 
 
-def get_optimisation_inputs(age_weights=1, population_weight=1,
-                            workplace_weight=0):
+def get_optimisation_inputs(age_weights=1, population_weight=1, workplace_weight=0):
     """Get input data in format needed for optimisation.
     
     Keyword Arguments:
@@ -255,30 +289,42 @@ def get_optimisation_inputs(age_weights=1, population_weight=1,
         dict -- Optimisation input data
     """
     centroids = get_oa_centroids()
-    weights = calc_oa_weights(age_weights=age_weights,
-                              population_weight=population_weight,
-                              workplace_weight=workplace_weight)
-    
+    weights = calc_oa_weights(
+        age_weights=age_weights,
+        population_weight=population_weight,
+        workplace_weight=workplace_weight,
+    )
+
     if len(centroids) != len(weights):
         raise ValueError(
-            "Lengths of inputs don't match: centroids={}, weights={}"
-            .format(len(centroids), len(weights))
+            "Lengths of inputs don't match: centroids={}, weights={}".format(
+                len(centroids), len(weights)
             )
-    
+        )
+
     centroids["weight"] = weights
-    
+
     oa11cd = centroids.index.values
     oa_x = centroids["x"].values
     oa_y = centroids["y"].values
     oa_weight = centroids["weight"].values
-    
-    return {"oa11cd": oa11cd, "oa_x": oa_x, "oa_y": oa_y,
-            "oa_weight": oa_weight}
+
+    return {"oa11cd": oa11cd, "oa_x": oa_x, "oa_y": oa_y, "oa_weight": oa_weight}
 
 
-def make_result_dict(n_sensors, theta, age_weights, population_weight,
-                     workplace_weight, oa_x, oa_y, oa11cd, sensors,
-                     total_coverage, oa_coverage):
+def make_result_dict(
+    n_sensors,
+    theta,
+    age_weights,
+    population_weight,
+    workplace_weight,
+    oa_x,
+    oa_y,
+    oa11cd,
+    sensors,
+    total_coverage,
+    oa_coverage,
+):
     """Package up optimisation parameters and results as a dictionary, which
     is used by the API and some other functions.
     
@@ -305,27 +351,31 @@ def make_result_dict(n_sensors, theta, age_weights, population_weight,
         total_coverage, oa_coverage
     """
     n_poi = len(oa_x)
-    sensor_locations = [{"x": oa_x[i], "y": oa_y[i],
-                         "oa11cd": oa11cd[i]}
-                        for i in range(n_poi) if sensors[i] == 1]
-    
-    oa_coverage = [{"oa11cd": oa11cd[i],
-                    "coverage": oa_coverage[i]}
-                   for i in range(n_poi)]
-    
+    sensor_locations = [
+        {"x": oa_x[i], "y": oa_y[i], "oa11cd": oa11cd[i]}
+        for i in range(n_poi)
+        if sensors[i] == 1
+    ]
+
+    oa_coverage = [
+        {"oa11cd": oa11cd[i], "coverage": oa_coverage[i]} for i in range(n_poi)
+    ]
+
     if type(age_weights) == pd.Series:
         # can't directly pass pandas objects to json.dump
         age_weights = age_weights.to_dict()
-    
-    result = {"n_sensors": n_sensors,
-              "theta": theta,
-              "age_weights": age_weights,
-              "population_weight": population_weight,
-              "workplace_weight": workplace_weight,
-              "sensors": sensor_locations,
-              "total_coverage": total_coverage,
-              "oa_coverage": oa_coverage}
-    
+
+    result = {
+        "n_sensors": n_sensors,
+        "theta": theta,
+        "age_weights": age_weights,
+        "population_weight": population_weight,
+        "workplace_weight": workplace_weight,
+        "sensors": sensor_locations,
+        "total_coverage": total_coverage,
+        "oa_coverage": oa_coverage,
+    }
+
     return result
 
 
@@ -346,33 +396,32 @@ def calc_coverage(sensors, oa_weight, theta=500):
     """
     centroids = get_oa_centroids()
     centroids["weight"] = oa_weight
-    
+
     centroids["has_sensor"] = 0
     for sensor in sensors:
         centroids.loc[sensor["oa11cd"], "has_sensor"] = 1
-    
+
     oa11cd = centroids.index.values
     oa_x = centroids["x"].values
     oa_y = centroids["y"].values
     oa_weight = centroids["weight"].values
     sensors = centroids["has_sensor"].values
-    
+
     n_poi = len(oa_x)
-    
+
     coverage = coverage_matrix(oa_x, oa_y, theta=theta)
-    
+
     # only keep coverages due to sites where a sensor is present
     mask_cov = np.multiply(coverage, sensors[np.newaxis, :])
 
     # coverage at each site = coverage due to nearest sensor
     oa_coverage = np.max(mask_cov, axis=1)
-    
+
     # Avg coverage = weighted sum across all points of interest
     total_coverage = (oa_weight * oa_coverage).sum() / oa_weight.sum()
-        
-    oa_coverage = [{"oa11cd": oa11cd[i],
-                    "coverage": oa_coverage[i]}
-                    for i in range(n_poi)]
 
-    return {"total_coverage": total_coverage,
-            "oa_coverage": oa_coverage}
+    oa_coverage = [
+        {"oa11cd": oa11cd[i], "coverage": oa_coverage[i]} for i in range(n_poi)
+    ]
+
+    return {"total_coverage": total_coverage, "oa_coverage": oa_coverage}

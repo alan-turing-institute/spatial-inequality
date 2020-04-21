@@ -14,7 +14,7 @@ conn = redis.from_url(redis_url)
 queue = Queue(REDIS_QUEUE, connection=conn)
 listen = [REDIS_QUEUE]
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with Connection(conn):
         worker = Worker(list(map(Queue, listen)))
         worker.work()
