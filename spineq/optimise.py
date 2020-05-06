@@ -334,29 +334,31 @@ def calc_oa_weights(
             return oa_population_group_weights
 
 
-def get_optimisation_inputs(age_weights=1, population_weight=1, workplace_weight=0):
+def get_optimisation_inputs(
+    population_weight=1,
+    workplace_weight=0,
+    pop_age_groups={
+        "total": {"min": 0, "max": 90, "weight": 1},
+        "children": {"min": 0, "max": 16, "weight": 0},
+        "elderly": {"min": 70, "max": 90, "weight": 0},
+    },
+):
     """Get input data in format needed for optimisation.
     
     Keyword Arguments:
+        population_weight, workplace_weight, pop_age_groups -- As defined in
+        calc_oa_weights (parameters directly passed to that function.)
         (all passed to cala_oa_weights)
-        age_weights {float or pd.DataFrame} -- Either constant, in which case
-        use same weighting for all ages, or a dataframe with index age (range
-        between 0 and 90) and values weight (default: {1})
-        
-        population_weight {float} -- Weighting for residential population
-        (default: {1})
-        
-        workplace_weight {float} -- Weighting for workplace population
-        (default: {0})
     
     Returns:
         dict -- Optimisation input data
     """
     centroids = get_oa_centroids()
     weights = calc_oa_weights(
-        age_weights=age_weights,
         population_weight=population_weight,
         workplace_weight=workplace_weight,
+        pop_age_groups=pop_age_groups,
+        combine=True,
     )
 
     if len(centroids) != len(weights):
