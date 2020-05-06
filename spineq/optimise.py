@@ -17,9 +17,13 @@ import json
 def optimise(
     n_sensors=20,
     theta=500,
-    age_weights=1,
     population_weight=1,
     workplace_weight=0,
+    pop_age_groups={
+        "total": {"min": 0, "max": 90, "weight": 1},
+        "children": {"min": 0, "max": 16, "weight": 0},
+        "elderly": {"min": 70, "max": 90, "weight": 0},
+    },
     rq_job=False,
     socket=False,
     redis_url="redis://",
@@ -35,13 +39,9 @@ def optimise(
         n_sensors {int} -- number of sensors to place (default: {20})
         theta {float} -- coverage decay rate (default: {500})
         
-        age_weights {float or pd.DataFrame} -- Either constant, in which case
-        use same weighting for all ages, or a dataframe with index age (range
-        between 0 and 90) and values weight (default: {1})
-        population_weight {float} -- Weighting for residential population
-        (default: {1})
-        workplace_weight {float} -- Weighting for workplace population
-        (default: {0})
+        population_weight, workplace_weight, pop_age_groups -- As defined in
+        calc_oa_weights (parameters directly passed to that function.)
+        (all passed to cala_oa_weights)
         
         rq_job {boolean} -- If True attempt to get the RQ job running this
         function and upate meta data with progress.
@@ -93,9 +93,9 @@ def optimise(
             run_name = now.strftime("%Y%m%d%H%M")
 
     data = get_optimisation_inputs(
-        age_weights=age_weights,
         population_weight=population_weight,
         workplace_weight=workplace_weight,
+        pop_age_groups=pop_age_groups
     )
     oa_x = data["oa_x"]
     oa_y = data["oa_y"]
@@ -168,7 +168,7 @@ def optimise(
             result = make_result_dict(
                 n_sensors,
                 theta,
-                age_weights,
+                pop_age_groups,
                 population_weight,
                 workplace_weight,
                 oa_x,
@@ -185,7 +185,7 @@ def optimise(
     result = make_result_dict(
         n_sensors,
         theta,
-        age_weights,
+        pop_age_groups,
         population_weight,
         workplace_weight,
         oa_x,
@@ -381,7 +381,7 @@ def get_optimisation_inputs(
 def make_result_dict(
     n_sensors,
     theta,
-    age_weights,
+    pop_age_groups,
     population_weight,
     workplace_weight,
     oa_x,
@@ -397,9 +397,7 @@ def make_result_dict(
     Arguments:
         n_sensors {int} -- number of sensors
         theta {float} -- coverage decay parameter
-        age_weights {float or pd.DataFrame} -- Either constant, in which case
-        use same weighting for all ages, or a dataframe with index age (range
-        between 0 and 90) and values weight.
+        pop_age_groups {dict} -- population age groups (see calc_oa_weights)
         population_weight {float} -- Weighting for residential population
         (default: {1})
         workplace_weight {float} -- Weighting for workplace population
@@ -413,7 +411,7 @@ def make_result_dict(
     
     Returns:
         dict -- Optimisation results and parameters. Keys: n_sensors, theta,
-        age_weights, population_weight, workplace_weight, sensors,
+        pop_age_groups, population_weight, workplace_weight, sensors,
         total_coverage, oa_coverage
     """
     n_poi = len(oa_x)
@@ -427,14 +425,10 @@ def make_result_dict(
         {"oa11cd": oa11cd[i], "coverage": oa_coverage[i]} for i in range(n_poi)
     ]
 
-    if type(age_weights) == pd.Series:
-        # can't directly pass pandas objects to json.dump
-        age_weights = age_weights.to_dict()
-
     result = {
         "n_sensors": n_sensors,
         "theta": theta,
-        "age_weights": age_weights,
+        "pop_age_groups": pop_age_groups,
         "population_weight": population_weight,
         "workplace_weight": workplace_weight,
         "sensors": sensor_locations,
