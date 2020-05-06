@@ -217,22 +217,39 @@ def optimise(
     return result
 
 
-def calc_oa_weights(age_weights=1, population_weight=1, workplace_weight=0):
+def calc_oa_weights(
+    population_weight=1,
+    workplace_weight=0,
+    pop_age_groups={
+        "total": {"min": 0, "max": 90, "weight": 1},
+        "children": {"min": 0, "max": 16, "weight": 0},
+        "elderly": {"min": 70, "max": 90, "weight": 0},
+    },
+    combine=True,
+):
     """Calculate weighting factor for each OA.
     
-    Keyword Arguments:
-        age_weights {float or pd.DataFrame} -- Either constant, in which case
-        use same weighting for all ages, or a dataframe with index age (range
-        between 0 and 90) and values weight (default: {1})
-        
+    Keyword Arguments:        
         population_weight {float} -- Weighting for residential population
         (default: {1})
         
         workplace_weight {float} -- Weighting for workplace population
         (default: {0})
+        
+        pop_age_groups {dict} -- Residential population age groups to create
+        objectives for and their corresponding weights. Dict with objective
+        name as key. Each entry should be another dict with keys min (min age
+        in population group), max (max age in group), and weight (objective
+        weight for this group).
+        
+        combine {bool} -- If True combine all the objectives weights into a
+        single overall weight using the defined weighting factors. If False
+        treat all objectives separately, in which case all weights defined in
+        other parameters are ignored.
     
     Returns:
-        pd.Series -- Weights for each OA (indexed by oa11cd).
+        pd.DataFrame -- Weight for each OA (indexed by oa11cd) for each
+        objective.
     """
 
     data = get_oa_stats()
@@ -246,28 +263,75 @@ def calc_oa_weights(age_weights=1, population_weight=1, workplace_weight=0):
             )
         )
 
-    # weightings for residential population by age
-    oa_pop_weight_age = population_ages * age_weights
-    oa_pop_weight = oa_pop_weight_age.sum(axis=1)  # sum of weights for all ages
-    if oa_pop_weight.sum() > 0:
-        oa_pop_weight = (
-            oa_pop_weight / oa_pop_weight.sum()
-        )  # normalise so sum OA weights is 1
+    # weightings for residential population by age group
+    if population_weight > 0:
+        oa_population_group_weights = {}
+        for name, group in pop_age_groups.items():
+            # skip calculation for zeroed objectives
+            if group["weight"] == 0:
+                continue
+
+            # get sum of population in group age range
+            group_population = population_ages.loc[
+                :,
+                (population_ages.columns >= group["min"])
+                & (population_ages.columns <= group["max"]),
+            ].sum(axis=1)
+
+            # normalise total population
+            group_population = group_population / group_population.sum()
+
+            # if objectives will be combined, scale by group weight
+            if combine:
+                group_population = group_population * group["weight"]
+
+            oa_population_group_weights[name] = group_population
+
+        if len(oa_population_group_weights) > 0:
+            use_population = True  # some population groups with non-zero weights
+
+            oa_population_group_weights = pd.DataFrame(oa_population_group_weights)
+            if combine:
+                oa_population_group_weights = oa_population_group_weights.sum(axis=1)
+                oa_population_group_weights = population_weight * (
+                    oa_population_group_weights / oa_population_group_weights.sum()
+                )
+        else:
+            use_population = False  #  all population groups had zero weight
+    else:
+        use_population = False
 
     # weightings for number of workers in OA (normalised to sum to 1)
-    oa_work_weight = workplace / workplace.sum()
+    if workplace_weight > 0:
+        use_workplace = True
+        workplace = workplace / workplace.sum()
+        if combine:
+            workplace = workplace_weight * workplace
+        workplace.name = "workplace"
+    else:
+        use_workplace = False
 
-    # sum up weights and renormalise
-    oa_all_weights = pd.DataFrame(
-        {"population": oa_pop_weight, "workplace": oa_work_weight}
-    )
-    oa_all_weights["total"] = (
-        workplace_weight * oa_all_weights["workplace"]
-        + population_weight * oa_all_weights["population"]
-    )
-    oa_all_weights["total"] = oa_all_weights["total"] / oa_all_weights["total"].sum()
+    if not use_population and not use_workplace:
+        raise ValueError("Must specify at least one non-zero weight.")
 
-    return oa_all_weights["total"]
+    if combine:
+        if use_workplace and use_population:
+            oa_all_weights = pd.DataFrame(
+                {"workplace": workplace, "population": oa_population_group_weights}
+            )
+            oa_all_weights = oa_all_weights.sum(axis=1)
+            return oa_all_weights / oa_all_weights.sum()
+        elif use_workplace:
+            return pd.DataFrame(workplace)
+        elif use_population:
+            return oa_population_group_weights
+    else:
+        if use_workplace and use_population:
+            return oa_population_group_weights.join(workplace)
+        elif use_workplace:
+            return pd.DataFrame(workplace)
+        elif use_population:
+            return oa_population_group_weights
 
 
 def get_optimisation_inputs(age_weights=1, population_weight=1, workplace_weight=0):
