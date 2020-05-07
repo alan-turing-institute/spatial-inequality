@@ -87,9 +87,7 @@ def plot_optimisation_result(
     )
 
     ctx.add_basemap(
-        ax,
-        url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
-        crs=oa_shapes.crs.to_epsg(),
+        ax, url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png", crs=oa_shapes.crs
     )
 
     ax.set_axis_off()
@@ -246,12 +244,12 @@ def plot_oa_weights(
         legend=legend,
         ax=ax,
         cax=cax,
+        vmin=vmin,
+        vmax=vmax,
     )
 
     ctx.add_basemap(
-        ax,
-        url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
-        crs=oa_shapes.crs.to_epsg(),
+        ax, url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png", crs=oa_shapes.crs
     )
     ax.set_title(title)
     ax.set_axis_off()

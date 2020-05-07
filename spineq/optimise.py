@@ -20,9 +20,9 @@ def optimise(
     population_weight=1,
     workplace_weight=0,
     pop_age_groups={
-        "total": {"min": 0, "max": 90, "weight": 1},
-        "children": {"min": 0, "max": 16, "weight": 0},
-        "elderly": {"min": 70, "max": 90, "weight": 0},
+        "pop_total": {"min": 0, "max": 90, "weight": 1},
+        "pop_children": {"min": 0, "max": 16, "weight": 0},
+        "pop_elderly": {"min": 70, "max": 90, "weight": 0},
     },
     rq_job=False,
     socket=False,
@@ -95,7 +95,8 @@ def optimise(
     data = get_optimisation_inputs(
         population_weight=population_weight,
         workplace_weight=workplace_weight,
-        pop_age_groups=pop_age_groups
+        pop_age_groups=pop_age_groups,
+        combine=True,
     )
     oa_x = data["oa_x"]
     oa_y = data["oa_y"]
@@ -112,6 +113,7 @@ def optimise(
     sensors = np.zeros(n_poi)
 
     # coverage obtained with each number of sensors
+    placement_history = []
     coverage_history = []
     oa_coverage = []
 
@@ -154,11 +156,13 @@ def optimise(
 
                 if new_coverage > best_total_coverage:
                     # this site is the best site for next sensor found so far
+                    best_new_site = oa11cd[site]
                     best_sensors = new_sensors.copy()
                     best_total_coverage = new_coverage
                     best_oa_coverage = max_mask_cov
 
         sensors = best_sensors.copy()
+        placement_history.append(best_new_site)
         coverage_history.append(best_total_coverage)
         oa_coverage = best_oa_coverage.copy()
 
@@ -168,15 +172,17 @@ def optimise(
             result = make_result_dict(
                 n_sensors,
                 theta,
-                pop_age_groups,
-                population_weight,
-                workplace_weight,
                 oa_x,
                 oa_y,
                 oa11cd,
                 sensors,
                 best_total_coverage,
                 oa_coverage,
+                placement_history,
+                coverage_history,
+                pop_age_groups=pop_age_groups,
+                population_weight=population_weight,
+                workplace_weight=workplace_weight,
             )
 
             save_path = "{}/{}_nsensors_{:03d}.png".format(save_dir, run_name, s + 1)
@@ -185,15 +191,17 @@ def optimise(
     result = make_result_dict(
         n_sensors,
         theta,
-        pop_age_groups,
-        population_weight,
-        workplace_weight,
         oa_x,
         oa_y,
         oa11cd,
         sensors,
         best_total_coverage,
         oa_coverage,
+        placement_history,
+        coverage_history,
+        pop_age_groups=pop_age_groups,
+        population_weight=population_weight,
+        workplace_weight=workplace_weight,
     )
 
     if job:
@@ -221,9 +229,9 @@ def calc_oa_weights(
     population_weight=1,
     workplace_weight=0,
     pop_age_groups={
-        "total": {"min": 0, "max": 90, "weight": 1},
-        "children": {"min": 0, "max": 16, "weight": 0},
-        "elderly": {"min": 70, "max": 90, "weight": 0},
+        "pop_total": {"min": 0, "max": 90, "weight": 1},
+        "pop_children": {"min": 0, "max": 16, "weight": 0},
+        "pop_elderly": {"min": 70, "max": 90, "weight": 0},
     },
     combine=True,
 ):
@@ -248,8 +256,8 @@ def calc_oa_weights(
         other parameters are ignored.
     
     Returns:
-        pd.DataFrame -- Weight for each OA (indexed by oa11cd) for each
-        objective.
+        pd.DataFrame or pd.Series -- Weight for each OA (indexed by oa11cd) for
+        each objective. Series if only one objective defined or combine is True.
     """
 
     data = get_oa_stats()
@@ -322,33 +330,36 @@ def calc_oa_weights(
             oa_all_weights = oa_all_weights.sum(axis=1)
             return oa_all_weights / oa_all_weights.sum()
         elif use_workplace:
-            return pd.DataFrame(workplace)
+            return workplace
         elif use_population:
             return oa_population_group_weights
     else:
         if use_workplace and use_population:
             return oa_population_group_weights.join(workplace)
         elif use_workplace:
-            return pd.DataFrame(workplace)
-        elif use_population:
+            return workplace
+        elif use_population and len(oa_population_group_weights.columns) > 1:
             return oa_population_group_weights
+        else:
+            return oa_population_group_weights[oa_population_group_weights.columns[0]]
 
 
 def get_optimisation_inputs(
     population_weight=1,
     workplace_weight=0,
     pop_age_groups={
-        "total": {"min": 0, "max": 90, "weight": 1},
-        "children": {"min": 0, "max": 16, "weight": 0},
-        "elderly": {"min": 70, "max": 90, "weight": 0},
+        "pop_total": {"min": 0, "max": 90, "weight": 1},
+        "pop_children": {"min": 0, "max": 16, "weight": 0},
+        "pop_elderly": {"min": 70, "max": 90, "weight": 0},
     },
+    combine=True,
 ):
     """Get input data in format needed for optimisation.
     
     Keyword Arguments:
-        population_weight, workplace_weight, pop_age_groups -- As defined in
-        calc_oa_weights (parameters directly passed to that function.)
-        (all passed to cala_oa_weights)
+        population_weight, workplace_weight, pop_age_groups, combine -- As
+        defined in calc_oa_weights (parameters directly passed to that
+        function.)
     
     Returns:
         dict -- Optimisation input data
@@ -358,8 +369,13 @@ def get_optimisation_inputs(
         population_weight=population_weight,
         workplace_weight=workplace_weight,
         pop_age_groups=pop_age_groups,
-        combine=True,
+        combine=combine,
     )
+    if type(weights) == pd.DataFrame:
+        weights_columns = ["weight_" + name for name in weights.columns]
+        weights.columns = weights_columns
+    else:
+        weights.name = "weights"
 
     if len(centroids) != len(weights):
         raise ValueError(
@@ -368,12 +384,19 @@ def get_optimisation_inputs(
             )
         )
 
-    centroids["weight"] = weights
+    centroids = centroids.join(weights)
 
     oa11cd = centroids.index.values
     oa_x = centroids["x"].values
     oa_y = centroids["y"].values
-    oa_weight = centroids["weight"].values
+
+    if type(weights) == pd.DataFrame:
+        oa_weight = {
+            name.replace("weight_", ""): centroids[name].values
+            for name in weights_columns
+        }
+    else:
+        oa_weight = centroids[weights.name].values
 
     return {"oa11cd": oa11cd, "oa_x": oa_x, "oa_y": oa_y, "oa_weight": oa_weight}
 
@@ -381,15 +404,18 @@ def get_optimisation_inputs(
 def make_result_dict(
     n_sensors,
     theta,
-    pop_age_groups,
-    population_weight,
-    workplace_weight,
     oa_x,
     oa_y,
     oa11cd,
     sensors,
     total_coverage,
     oa_coverage,
+    placement_history,
+    coverage_history,
+    oa_weight=None,
+    pop_age_groups=None,
+    population_weight=None,
+    workplace_weight=None,
 ):
     """Package up optimisation parameters and results as a dictionary, which
     is used by the API and some other functions.
@@ -397,17 +423,18 @@ def make_result_dict(
     Arguments:
         n_sensors {int} -- number of sensors
         theta {float} -- coverage decay parameter
-        pop_age_groups {dict} -- population age groups (see calc_oa_weights)
-        population_weight {float} -- Weighting for residential population
-        (default: {1})
-        workplace_weight {float} -- Weighting for workplace population
-        (default: {0})
         oa_x {list} -- x position of each OA
         oa_y {list} -- y position of each OA
         oa11cd {list} -- id of each OA
         sensors {list} -- 1 if OA has sensor, 0 otherwise
         total_coverage {float} -- total coverage metric for this network
         oa_coverage {list} -- coverage of each OA for this network
+    
+    Keyword Arguments:
+        oa_weight {list} -- weight for each OA
+        pop_age_groups {dict} -- population age groups (see calc_oa_weights)
+        population_weight {float} -- Weighting for residential population
+        workplace_weight {float} -- Weighting for workplace population
     
     Returns:
         dict -- Optimisation results and parameters. Keys: n_sensors, theta,
@@ -425,15 +452,23 @@ def make_result_dict(
         {"oa11cd": oa11cd[i], "coverage": oa_coverage[i]} for i in range(n_poi)
     ]
 
+    if oa_weight is not None:
+        oa_weight = [
+            {"oa11cd": oa11cd[i], "weight": oa_weight[i]} for i in range(n_poi)
+        ]
+
     result = {
         "n_sensors": n_sensors,
         "theta": theta,
-        "pop_age_groups": pop_age_groups,
-        "population_weight": population_weight,
-        "workplace_weight": workplace_weight,
         "sensors": sensor_locations,
         "total_coverage": total_coverage,
         "oa_coverage": oa_coverage,
+        "oa_weight": oa_weight,
+        "placement_history": placement_history,
+        "coverage_history": coverage_history,
+        "pop_age_groups": pop_age_groups,
+        "population_weight": population_weight,
+        "workplace_weight": workplace_weight,
     }
 
     return result
