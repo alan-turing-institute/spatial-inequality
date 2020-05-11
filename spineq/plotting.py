@@ -75,7 +75,7 @@ def plot_optimisation_result(
         )
     else:
         ax = oa_shapes.plot(
-            alpha=alpha, ax=ax, facecolor="none", edgecolor="k", linewidth=0.5
+            alpha=alpha, ax=ax, facecolor="none", edgecolor="none", linewidth=0.5
         )
 
     ax.scatter(
