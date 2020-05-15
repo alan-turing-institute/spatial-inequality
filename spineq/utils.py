@@ -48,26 +48,6 @@ def distance_matrix(x1, y1, x2=None, y2=None):
     return distances
 
 
-def coverage_scalar(distance, theta=1):
-    """Calculate "coverage" due to a sensor placed a given distance away,
-    where coverage is defined as exp(-distance/theta).
-    
-    Arguments:
-        distance {float} -- distance to sensor.
-    
-    Keyword Arguments:
-        theta {float} -- decay rate (default: {1})
-    
-    Returns:
-        float -- coverage value.
-    """
-    return np.exp(-distance / theta)
-
-
-# vectorized coverage function
-coverage = np.vectorize(coverage_scalar)
-
-
 def coverage_matrix(x1, y1, x2=None, y2=None, theta=1):
     """Generate a matrix of coverages for a number of locations
     
@@ -82,7 +62,8 @@ def coverage_matrix(x1, y1, x2=None, y2=None, theta=1):
         numpy array -- 2D matrix of coverage at each location i due to a
         sensor placed at another location j.
     """
-    return coverage(distance_matrix(x1, y1, x2=x2, y2=y2), theta=theta)
+    distances = distance_matrix(x1, y1, x2=x2, y2=y2)
+    return np.exp(-distances / theta)
 
 
 def make_job_dict(job):
