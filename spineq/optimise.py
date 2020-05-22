@@ -474,14 +474,14 @@ def make_result_dict(
     return result
 
 
-def calc_coverage(sensors, oa_weight, theta=500):
+def calc_coverage(sensors, oa_weight=None, theta=500):
     """Calculate the coverage of a network for arbitrary OA weightings.
     
     Arguments:
         sensors {list} -- List of sensors in the network, each sensors is a
         dict which must include the key "oa11cd".
         oa_weight {pd.Series} -- Weight for each OA, pandas series with index
-        oa11cd and weights as values.
+        oa11cd and weights as values. If None weight all OA equally.
     
     Keyword Arguments:
         theta {int} -- coverage decay rate (default: {500})
@@ -513,7 +513,11 @@ def calc_coverage(sensors, oa_weight, theta=500):
     oa_coverage = np.max(mask_cov, axis=1)
 
     # Avg coverage = weighted sum across all points of interest
-    total_coverage = (oa_weight * oa_coverage).sum() / oa_weight.sum()
+    if oa_weight is not None:
+        total_coverage = (oa_weight * oa_coverage).sum() / oa_weight.sum()
+    # or just average if no weightings given
+    else:
+        total_coverage = oa_coverage.sum() / n_poi
 
     oa_coverage = [
         {"oa11cd": oa11cd[i], "coverage": oa_coverage[i]} for i in range(n_poi)
