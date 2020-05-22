@@ -87,7 +87,7 @@ def plot_optimisation_result(
     )
 
     ctx.add_basemap(
-        ax, url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png", crs=oa_shapes.crs
+        ax, source="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png", crs=oa_shapes.crs.to_epsg()
     )
 
     ax.set_axis_off()
@@ -190,7 +190,7 @@ def plot_coverage_grid(
     )
 
     # add basemap
-    ctx.add_basemap(ax, url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png", crs=crs)
+    ctx.add_basemap(ax, source="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png", crs=crs)
 
     # add markers at sensor locations
     ax.scatter(
@@ -249,7 +249,7 @@ def plot_oa_weights(
     )
 
     ctx.add_basemap(
-        ax, url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png", crs=oa_shapes.crs
+        ax, source="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png", crs=oa_shapes.crs.to_epsg()
     )
     ax.set_title(title)
     ax.set_axis_off()
@@ -340,7 +340,7 @@ def plot_oa_importance(
 
     ctx.add_basemap(
         ax,
-        url="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
+        source="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
         crs=oa_shapes.crs.to_epsg(),
     )
     ax.set_title(title)
