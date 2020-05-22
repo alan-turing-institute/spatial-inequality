@@ -125,6 +125,15 @@ def download_workplace(overwrite=False):
     return pd.read_csv(save_path, thousands=",")
 
 
+def download_traffic_data(overwrite=False):
+    save_path = RAW_DIR + "/traffic_counts"
+    if overwrite:
+        warnings.warn(
+            "Downloading DfT data not implemented."
+        )
+
+    return gpd.read_file(save_path)
+
 def download_data_files(overwrite=False):
     print("LOCAL AUTHORITY BOUNDARIES")
     la = download_la(overwrite=overwrite)
@@ -296,6 +305,13 @@ def process_data_files(overwrite=False):
     ):
         warnings.warn("Lengths of processed data don't match, optimisation will fail!")
 
+    traffic_counts = download_traffic_data(overwrite=overwrite)
+    traffic_counts.drop_duplicates(subset="intn_id", inplace=True)
+    traffic_counts["intn_id"] = traffic_counts["intn_id"].astype(int)
+    traffic_counts = traffic_counts[["traffic_co", "geometry", "intn_id"]]
+    traffic_counts.to_file(PROCESSED_DIR + "/traffic_counts")
+    print("Traffic Counts:", len(traffic_counts), "rows")
+
 
 def get_oa_stats():
     """Get output area population (for each age) and place of work statistics.
@@ -327,6 +343,11 @@ def get_oa_shapes():
     shapes = gpd.read_file(PROCESSED_DIR + "/oa_shapes")
     return shapes.set_index("oa11cd")
 
+
+def get_traffic_counts():
+    traffic_counts = gpd.read_file(PROCESSED_DIR + "/traffic_counts")
+    return traffic_counts.set_index("intn_id")
+    
 
 if __name__ == "__main__":
     process_data_files()
