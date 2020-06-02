@@ -308,6 +308,8 @@ def process_data_files(overwrite=False):
     traffic_counts = download_traffic_data(overwrite=overwrite)
     traffic_counts.drop_duplicates(subset="intn_id", inplace=True)
     traffic_counts["intn_id"] = traffic_counts["intn_id"].astype(int)
+    # prepend intn_ to intn_id to make them unique across datasets
+    traffic_counts["intn_id"] = "intn_" + traffic_counts["intn_id"].astype(str)
     traffic_counts = traffic_counts[["traffic_co", "geometry", "intn_id"]]
     traffic_counts.to_file(PROCESSED_DIR + "/traffic_counts")
     print("Traffic Counts:", len(traffic_counts), "rows")

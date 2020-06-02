@@ -1,7 +1,5 @@
 """Utility functions used by other files.
 """
-import numbers
-
 import numpy as np
 import geopandas as gpd
 import pandas as pd
