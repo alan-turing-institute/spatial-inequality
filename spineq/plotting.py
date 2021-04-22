@@ -182,7 +182,7 @@ def plot_coverage_grid(
     fig, ax = plt.subplots(1, 1, figsize=figsize)
 
     # match colorbar axis height to figure height
-    cax = get_color_axis()
+    cax = get_color_axis(ax)
 
     # plot grid points, coloured by coverage
     sc = ax.scatter(
