@@ -26,6 +26,7 @@ def plot_optimisation_result(
     result,
     title=None,
     save_path=None,
+    ax=None,
     figsize=(10, 10),
     fill_oa=True,
     cmap="YlGn",
@@ -34,7 +35,9 @@ def plot_optimisation_result(
     sensor_size=36,
     sensor_color="darkgreen",
     sensor_edgecolor="white",
+    sensor_linewidth=1.5,
     fontsize=20,
+    show=True,
     vmin=0,
     vmax=1,
 ):
@@ -53,9 +56,11 @@ def plot_optimisation_result(
 
     oa_shapes["coverage"] = oa_coverage
 
+    if ax is None:
+        ax = plt.figure(figsize=figsize).gca()
+
     # to make colorbar same size as graph:
     # https://www.science-emergence.com/Articles/How-to-match-the-colorbar-size-with-the-figure-size-in-matpltolib-/
-    ax = plt.figure(figsize=figsize).gca()
     if legend and fill_oa:
         cax = get_color_axis(ax)
         cax.set_title("Coverage")
@@ -84,6 +89,7 @@ def plot_optimisation_result(
         s=sensor_size,
         color=sensor_color,
         edgecolor=sensor_edgecolor,
+        linewidth=sensor_linewidth,
     )
 
     ctx.add_basemap(
@@ -105,7 +111,7 @@ def plot_optimisation_result(
         plt.tight_layout()
         plt.savefig(save_path, dpi=200)
         plt.close()
-    else:
+    elif show:
         plt.show()
 
 
@@ -118,11 +124,13 @@ def plot_coverage_grid(
     crs={"init": "epsg:27700"},
     threshold=0.25,
     alpha=0.75,
+    ax=None,
     title="",
-    figsize=(20, 20),
+    figsize=(15, 15),
     vmin=0,
     vmax=1,
     save_path=None,
+    cmap="viridis",
 ):
     """Generate a square grid of points and show them on a map coloured by
     coverage due to the closest sensor to each grid point.
@@ -179,14 +187,22 @@ def plot_coverage_grid(
     #############
     # make plot #
     #############
-    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    if ax is None:
+        ax = plt.figure(figsize=figsize).gca()
 
     # match colorbar axis height to figure height
     cax = get_color_axis(ax)
 
     # plot grid points, coloured by coverage
     sc = ax.scatter(
-        grid_x, grid_y, c=max_cell_cov, alpha=alpha, vmax=vmax, vmin=vmin, s=64
+        grid_x,
+        grid_y,
+        c=max_cell_cov,
+        alpha=alpha, 
+        vmax=vmax,
+        vmin=vmin,
+        s=64,
+        cmap=cmap,
     )
 
     # add basemap
@@ -196,7 +212,6 @@ def plot_coverage_grid(
     ax.scatter(
         sensors[:, 0],
         sensors[:, 1],
-        edgecolor="blue",
         facecolor="blue",
         s=32,
         marker="x",
@@ -211,17 +226,19 @@ def plot_coverage_grid(
         plt.savefig(save_path, dpi=200)
         plt.close()
 
-    return fig, ax
+    return ax
 
 
 def plot_oa_weights(
     oa_weights,
     title="",
     save_path=None,
+    ax=None,
     figsize=(10, 10),
     alpha=0.75,
     cmap="plasma",
     legend=True,
+    show=True,
     vmin=0,
     vmax=1,
 ):
@@ -229,7 +246,8 @@ def plot_oa_weights(
     oa_shapes = get_oa_shapes()
     oa_shapes["weight"] = oa_weights
 
-    ax = plt.figure(figsize=figsize).gca()
+    if ax is None:
+        ax = plt.figure(figsize=figsize).gca()
 
     if legend:
         cax = get_color_axis(ax)
@@ -257,7 +275,7 @@ def plot_oa_weights(
     if save_path:
         plt.savefig(save_path, dpi=200)
         plt.close()
-    else:
+    elif show:
         plt.show()
 
 
@@ -266,12 +284,14 @@ def plot_oa_importance(
     theta=500,
     title="",
     save_path=None,
+    ax=None,
     figsize=(10, 10),
     alpha=0.75,
     cmap="plasma",
     legend=True,
     vmin=None,
     vmax=None,
+    show=True,
 ):
     """Plot the "importance" of each OA given a weighting for each
     OA and a coverage distance (theta). Importance is defined as the
@@ -287,6 +307,7 @@ def plot_oa_importance(
         title {str} -- plot title (default: {""})
         save_path {str} -- path to save output plot or None to not save
         (default: {None})
+        ax {[type]} -- matplotlib qxis to plot to (create one if None)
         figsize {tuple} -- plot figure size (default: {(10,10)})
         alpha {float} -- transparency of fill areas (default: {0.75})
         cmap {str} -- matplotlib colormap for fill areas (default: {"plasma"})
@@ -317,11 +338,12 @@ def plot_oa_importance(
     oa_shapes = get_oa_shapes()
     oa_shapes["importance"] = oa_importance
 
-    ax = plt.figure(figsize=figsize).gca()
+    if ax is None:
+        ax = plt.figure(figsize=figsize).gca()
 
     if legend:
         cax = get_color_axis(ax)
-        cax.set_title("Importance")
+        cax.set_title("Density")
 
     else:
         cax = None
@@ -349,5 +371,24 @@ def plot_oa_importance(
     if save_path:
         plt.savefig(save_path, dpi=200)
         plt.close()
-    else:
+    elif show:
         plt.show()
+
+
+def plot_sensors(sensors, shapes=True, centroids=True, title=""):
+    _, ax = plt.subplots(1, 1, figsize=(15, 15))
+
+    if shapes:
+        oa = get_oa_shapes()
+        oa.plot(linewidth=2, ax=ax, facecolor="yellow", edgecolor="blue", alpha=0.1)
+
+    if centroids:
+        c = get_oa_centroids()
+        ax.scatter(c["x"], c["y"], s=5)
+
+    sensors.plot(ax=ax, edgecolor="yellow", facecolor="red", markersize=75, linewidth=2)
+    ctx.add_basemap(ax,
+                    source="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
+                    crs=sensors.crs)
+    ax.set_axis_off()
+    ax.set_title(title)

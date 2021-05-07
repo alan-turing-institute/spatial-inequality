@@ -474,7 +474,7 @@ def make_result_dict(
     return result
 
 
-def calc_coverage(sensors, oa_weight=None, theta=500):
+def calc_coverage(sensors, oa_weight, theta=500):
     """Calculate the coverage of a network for arbitrary OA weightings.
     
     Arguments:
@@ -513,11 +513,7 @@ def calc_coverage(sensors, oa_weight=None, theta=500):
     oa_coverage = np.max(mask_cov, axis=1)
 
     # Avg coverage = weighted sum across all points of interest
-    if oa_weight is not None:
-        total_coverage = (oa_weight * oa_coverage).sum() / oa_weight.sum()
-    # or just average if no weightings given
-    else:
-        total_coverage = oa_coverage.sum() / n_poi
+    total_coverage = (oa_weight * oa_coverage).sum() / oa_weight.sum()
 
     oa_coverage = [
         {"oa11cd": oa11cd[i], "coverage": oa_coverage[i]} for i in range(n_poi)
