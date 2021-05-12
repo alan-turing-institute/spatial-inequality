@@ -2,15 +2,18 @@
 optimisation results.
 """
 import numpy as np
-import geopandas as gpd
 import pandas as pd
+from pathlib import Path
 
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1 import make_axes_locatable, ImageGrid
 import contextily as ctx
+import matplotlib as mpl
+from matplotlib_scalebar.scalebar import ScaleBar
 
-from .utils import coverage_matrix
-from .data_fetcher import get_data, get_oa_shapes, get_oa_centroids
+
+from spineq.utils import coverage_matrix
+from spineq.data_fetcher import get_oa_shapes, get_oa_centroids
 
 
 def get_color_axis(ax):
@@ -116,15 +119,12 @@ def plot_optimisation_result(
 
 
 def plot_coverage_grid(
-    sensors,
-    xlim,
-    ylim,
-    grid_size=100,
-    theta=500,
+    grid_cov,
     crs={"init": "epsg:27700"},
-    threshold=0.25,
+    threshold=0.005,
     alpha=0.75,
     ax=None,
+    legend=True,
     title="",
     figsize=(15, 15),
     vmin=0,
@@ -136,14 +136,10 @@ def plot_coverage_grid(
     coverage due to the closest sensor to each grid point.
     
     Arguments:
-        sensors {numpy array} -- array of x,y sensor locations with shape
-        (n_sensors, 2).
-        xlim {list} -- min and max x coordinate to generate grid points between
-        ylim {list} -- min and max y coordinate to generate grid points between
+        grid_cov {GeoDataFrame} -- Grid squares and coverage as calculated by
+        utils.coverage_grid.
     
     Keyword Arguments:
-        grid_size {float} -- distance between grid points (default: {100})
-        theta {int} -- decay rate for coverage metric (default: {500})
         crs {dict} -- coordinate reference system of sensor locations
         (default: {{'init': 'epsg:27700'}})
         threshold {float} -- only plot grid points with coverage above this
@@ -159,68 +155,32 @@ def plot_coverage_grid(
     Returns:
         fig, ax -- matplotlib figure and axis objects for the created plot.
     """
-    ###############
-    # create grid #
-    ###############
-    # make a range of x and y locations for grid points
-    x_range = np.arange(xlim[0], xlim[1] + grid_size, grid_size)
-    y_range = np.arange(ylim[0], ylim[1] + grid_size, grid_size)
-
-    # create flattened list of x, y coordinates for full grid
-    grid_x, grid_y = np.meshgrid(x_range, y_range)
-    grid_x = grid_x.flatten()
-    grid_y = grid_y.flatten()
-
-    # coverage at each grid point due to each sensor
-    grid_cov = coverage_matrix(
-        grid_x, grid_y, x2=sensors[:, 0], y2=sensors[:, 1], theta=theta
-    )
-
-    # max coverage at each grid point (due to nearest sensor)
-    max_cell_cov = grid_cov.max(axis=1)
-
-    # only plot grid points where coverage above threshold
-    grid_x = grid_x[max_cell_cov > threshold]
-    grid_y = grid_y[max_cell_cov > threshold]
-    max_cell_cov = max_cell_cov[max_cell_cov > threshold]
-
-    #############
-    # make plot #
-    #############
     if ax is None:
         ax = plt.figure(figsize=figsize).gca()
 
-    # match colorbar axis height to figure height
-    cax = get_color_axis(ax)
+    if legend:
+        cax = get_color_axis(ax)
+        cax.set_title("Coverage")
+    else:
+        cax = None
 
-    # plot grid points, coloured by coverage
-    sc = ax.scatter(
-        grid_x,
-        grid_y,
-        c=max_cell_cov,
-        alpha=alpha, 
-        vmax=vmax,
-        vmin=vmin,
-        s=64,
+    oa_shapes = get_oa_shapes()
+    oa_shapes.plot(ax=ax, edgecolor="k", facecolor="None")
+    grid_cov.plot(
+        column="coverage",
         cmap=cmap,
+        alpha=[alpha if abs(c) > threshold else 0 for c in grid_cov["coverage"]],
+        ax=ax,
+        vmin=vmin,
+        vmax=vmax,
+        cax=cax,
+        legend=legend,
     )
-
-    # add basemap
-    ctx.add_basemap(ax, source="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png", crs=crs)
-
-    # add markers at sensor locations
-    ax.scatter(
-        sensors[:, 0],
-        sensors[:, 1],
-        facecolor="blue",
-        s=32,
-        marker="x",
+    ctx.add_basemap(
+        ax, source="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png", crs=crs
     )
-
-    # format axes and titles
-    ax.set_title(title, fontsize=24)
     ax.set_axis_off()
-    plt.colorbar(sc, cax=cax)
+    ax.set_title(title, fontsize=20)
 
     if save_path:
         plt.savefig(save_path, dpi=200)
@@ -375,8 +335,9 @@ def plot_oa_importance(
         plt.show()
 
 
-def plot_sensors(sensors, shapes=True, centroids=True, title=""):
-    _, ax = plt.subplots(1, 1, figsize=(15, 15))
+def plot_sensors(sensors, shapes=True, centroids=True, title="", ax=None):
+    if ax is None:
+        _, ax = plt.subplots(1, 1, figsize=(15, 15))
 
     if shapes:
         oa = get_oa_shapes()
@@ -392,3 +353,42 @@ def plot_sensors(sensors, shapes=True, centroids=True, title=""):
                     crs=sensors.crs)
     ax.set_axis_off()
     ax.set_title(title)
+
+
+def get_fig_grid(figsize=(15, 15), nrows_ncols=(2, 2)):
+    fig = plt.figure(figsize=figsize)
+    grid = ImageGrid(
+        fig, 111,
+        nrows_ncols=nrows_ncols,
+        axes_pad=0.35,
+        share_all=True,
+        cbar_location="right",
+        cbar_mode="single",
+        cbar_size="4%",
+        cbar_pad=0.35,
+    )
+    
+    return fig, grid
+
+
+def add_colorbar(ax, vmin=0, vmax=1, cmap="plasma", label=""):
+    ax.cax.colorbar(
+        mpl.cm.ScalarMappable(
+            norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax),
+            cmap=cmap
+        ),
+        label=label
+    )
+
+    
+def add_scalebar(ax):
+    ax.add_artist(ScaleBar(1))
+
+
+def save_fig(
+    fig, filename, save_dir, dpi=300, bbox_inches="tight"
+):
+    fig.savefig(
+        Path(save_dir, filename),
+        dpi=dpi, bbox_inches=bbox_inches
+    )

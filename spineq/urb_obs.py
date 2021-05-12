@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 
 from spineq.data_fetcher import get_uo_sensors, get_oa_centroids, get_oa_shapes
 from spineq.plotting import plot_coverage_grid
+from spineq.utils import coverage_grid
 
 
 def get_uo_sensor_dict(centroids=True):
@@ -36,7 +37,9 @@ def get_uo_sensor_dict(centroids=True):
     return sensor_dict
     
 
-def plot_uo_coverage_grid(ax=None, title=None, theta=500):
+def plot_uo_coverage_grid(
+    ax=None, title=None, grid_size=100, theta=500, legend=True, cmap="Greens"
+):
     uo_sensors = get_uo_sensors()
     sensors = np.array([uo_sensors["geometry"].x, uo_sensors["geometry"].y]).T
 
@@ -44,6 +47,8 @@ def plot_uo_coverage_grid(ax=None, title=None, theta=500):
     bounds = oa["geometry"].bounds
     xlim = (bounds["minx"].min(), bounds["maxx"].max())
     ylim =(bounds["miny"].min(), bounds["maxy"].max())
+
+    grid_cov = coverage_grid(sensors, xlim, ylim, grid_size=grid_size, theta=theta)
 
     if title is None:
         title = "Urban Observatory: {} sensors in {} output areas".format(
@@ -53,15 +58,12 @@ def plot_uo_coverage_grid(ax=None, title=None, theta=500):
     if ax is None:
         _, ax = plt.subplots(1, 1, figsize=(15, 15))
 
-    oa.plot(linewidth=1, ax=ax, facecolor="None", edgecolor="r")
     ax = plot_coverage_grid(
-        sensors,
-        xlim,
-        ylim,
+        grid_cov,
         ax=ax,
         title=title,
-        threshold=0.25,
-        cmap="viridis",
-        alpha=0.5,
-        theta=theta
+        cmap=cmap,
+        legend=legend,
     )
+
+    return ax

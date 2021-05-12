@@ -1,10 +1,9 @@
 """Utility functions used by other files.
 """
-import numbers
-
 import numpy as np
 import geopandas as gpd
 import pandas as pd
+from shapely.geometry import Polygon
 
 
 def distance_matrix(x1, y1, x2=None, y2=None):
@@ -65,6 +64,62 @@ def coverage_matrix(x1, y1, x2=None, y2=None, theta=1):
     distances = distance_matrix(x1, y1, x2=x2, y2=y2)
     return np.exp(-distances / theta)
 
+
+def coverage_from_sensors(sensors, coverage_matrix):
+    # only keep coverages due to output areas where a sensor is present
+    mask_cov = np.multiply(coverage_matrix, sensors[np.newaxis, :])
+    # coverage at each output area = coverage due to nearest sensor
+    max_mask_cov = np.max(mask_cov, axis=1)
+    return max_mask_cov
+
+
+def coverage_grid(sensors, xlim, ylim, grid_size=100, theta=500):
+    """Generate a square grid of points and calculate coverage at each point
+    due to the closest sensor.
+
+    Arguments:
+        sensors {numpy array} -- array of x,y sensor locations with shape
+        (n_sensors, 2).
+        xlim {list} -- min and max x coordinate to generate grid points between
+        ylim {list} -- min and max y coordinate to generate grid points between
+
+    Keyword Arguments:
+        grid_size {float} -- distance between grid points (default: {100})
+        theta {int} -- decay rate for coverage metric (default: {500})
+
+    Returns:
+        grid_cov -- GeoDataFrame of grid squares and coverage values.
+    """
+    # make a range of x and y locations for grid points
+    x_range = np.arange(xlim[0], xlim[1] + grid_size, grid_size)
+    y_range = np.arange(ylim[0], ylim[1] + grid_size, grid_size)
+
+    # create flattened list of x, y coordinates for full grid
+    grid_x, grid_y = np.meshgrid(x_range, y_range)
+    grid_x = grid_x.flatten()
+    grid_y = grid_y.flatten()
+
+    # coverage at each grid point due to each sensor
+    grid_cov = coverage_matrix(
+        grid_x, grid_y, x2=sensors[:, 0], y2=sensors[:, 1], theta=theta
+    )
+    # max coverage at each grid point (due to nearest sensor)
+    grid_cov = grid_cov.max(axis=1)
+
+
+    grid_size = grid_x[1] - grid_x[0]
+    polygons = [ 
+        Polygon([
+            (x - grid_size / 2, y - grid_size / 2),
+            (x + grid_size / 2, y - grid_size / 2),
+            (x + grid_size / 2, y + grid_size / 2),
+            (x - grid_size / 2, y + grid_size / 2)
+        ])
+        for x, y in zip(grid_x, grid_y)
+    ]
+
+    return gpd.GeoDataFrame({"geometry": polygons, "coverage": grid_cov})    
+    
 
 def make_job_dict(job):
     """Construct a dictionary out of RQ job status/results.
