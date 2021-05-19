@@ -6,12 +6,11 @@ from spineq.utils import coverage_matrix, coverage_from_sensors
 
 class OptimiseCoveragePyGMO:
     def __init__(self, oa_x, oa_y, oa_weight, n_sensors, theta):
-        print(oa_weight)
         self.n_sensors = n_sensors
         self.n_locations = len(oa_x)
         if isinstance(oa_weight, dict):
             self.n_obj = len(oa_weight)
-            self.oa_weight = oa_weight.values()
+            self.oa_weight = list(oa_weight.values())
         else:
             self.n_obj = 1
             self.oa_weight = [oa_weight]
@@ -47,37 +46,61 @@ class OptimiseCoveragePyGMO:
         return pg.estimate_gradient_h(lambda x: self.fitness(x), x)
 
 
-def run():
-    from spineq.optimise import get_optimisation_inputs
-    data = get_optimisation_inputs()
-
+def build_problem(
+    optimisation_inputs,
+    n_sensors=20,
+    theta=500,
+):
     prob = pg.problem(OptimiseCoveragePyGMO(
-        data["oa_x"],
-        data["oa_y"],
-        data["oa_weight"],
-        20,
-        500
+        optimisation_inputs["oa_x"],
+        optimisation_inputs["oa_y"],
+        optimisation_inputs["oa_weight"],
+        n_sensors,
+        theta
     ))
-    print(prob)
+    return prob
 
+
+def run_problem(prob, uda=pg.sga(gen=100), population_size=100, verbosity=1):
     # Create algorithm to solve problem with
-    algo = pg.algorithm(uda=pg.sga(gen=100))
-    algo.set_verbosity(1)
-    print(algo)
+    algo = pg.algorithm(uda=uda)
+    algo.set_verbosity(verbosity)
 
     # population of problems
-    pop = pg.population(prob=prob, size=100)
+    pop = pg.population(prob=prob, size=population_size)
 
     # solve problem
     pop = algo.evolve(pop)
     return pop
 
 
-def evaluate(pop):
-    print("f evals", pop.problem.get_fevals())
-    print("g evals", pop.problem.get_gevals())
+def extract_all(pop):
+    """Return all solutions from a population.
 
-    # extract results
-    fits, vectors = pop.get_f(), pop.get_x()
-    # extract non-dominated fronts
-    ndf, dl, dc, ndr = pg.fast_non_dominated_sorting(fits)
+    Parameters
+    ----------
+    pop : pg.population
+        Population of problem solutions
+
+    Returns
+    -------
+    numpy.array, numpy.array
+        Candidate scores and solutions
+    """
+    return pop.get_f(), pop.get_x()
+
+
+def extract_champion(pop):
+    """Return best solution from a population. Works for single-objective problems only.
+
+    Parameters
+    ----------
+    pop : pg.population
+        Population of problem solutions
+
+    Returns
+    -------
+    float, numpy.array
+        Best candidate's score and solution.
+    """
+    return pop.champion_f, pop.champion_x

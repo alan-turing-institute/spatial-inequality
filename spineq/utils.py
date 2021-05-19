@@ -119,7 +119,7 @@ def coverage_grid(sensors, xlim, ylim, grid_size=100, theta=500):
     ]
 
     return gpd.GeoDataFrame({"geometry": polygons, "coverage": grid_cov})    
-    
+
 
 def make_job_dict(job):
     """Construct a dictionary out of RQ job status/results.
