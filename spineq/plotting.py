@@ -4,13 +4,14 @@ optimisation results.
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from typing import Union
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable, ImageGrid
 import contextily as ctx
 import matplotlib as mpl
 from matplotlib_scalebar.scalebar import ScaleBar
-
+import seaborn as sns
 
 from spineq.utils import coverage_matrix
 from spineq.data_fetcher import get_oa_shapes, get_oa_centroids
@@ -96,7 +97,9 @@ def plot_optimisation_result(
     )
 
     ctx.add_basemap(
-        ax, source="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png", crs=oa_shapes.crs.to_epsg()
+        ax,
+        source="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
+        crs=oa_shapes.crs.to_epsg(),
     )
 
     ax.set_axis_off()
@@ -134,11 +137,11 @@ def plot_coverage_grid(
 ):
     """Generate a square grid of points and show them on a map coloured by
     coverage due to the closest sensor to each grid point.
-    
+
     Arguments:
         grid_cov {GeoDataFrame} -- Grid squares and coverage as calculated by
         utils.coverage_grid.
-    
+
     Keyword Arguments:
         crs {dict} -- coordinate reference system of sensor locations
         (default: {{'init': 'epsg:27700'}})
@@ -151,7 +154,7 @@ def plot_coverage_grid(
         vmax {float} -- max coverage value for colorbar range (default: {1})
         save_path {str} -- path to save output plot or None to not save
         (default: {None})
-    
+
     Returns:
         fig, ax -- matplotlib figure and axis objects for the created plot.
     """
@@ -227,7 +230,9 @@ def plot_oa_weights(
     )
 
     ctx.add_basemap(
-        ax, source="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png", crs=oa_shapes.crs.to_epsg()
+        ax,
+        source="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
+        crs=oa_shapes.crs.to_epsg(),
     )
     ax.set_title(title)
     ax.set_axis_off()
@@ -258,10 +263,10 @@ def plot_oa_importance(
     total coverage (of the city) by placing a sensor at the OA centroid.
     With the greedy optimisation algorithm, the OA with the highest
     importance is where the first sensor in the network will be placed.
-    
+
     Arguments:
         oa_weights {pd.Series} -- Weights for each OA (indexed by oa11cd)
-    
+
     Keyword Arguments:
         theta {int} -- coverage decay rate (default: {500})
         title {str} -- plot title (default: {""})
@@ -348,9 +353,9 @@ def plot_sensors(sensors, shapes=True, centroids=True, title="", ax=None):
         ax.scatter(c["x"], c["y"], s=5)
 
     sensors.plot(ax=ax, edgecolor="yellow", facecolor="red", markersize=75, linewidth=2)
-    ctx.add_basemap(ax,
-                    source="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png",
-                    crs=sensors.crs)
+    ctx.add_basemap(
+        ax, source="http://a.tile.stamen.com/toner/{z}/{x}/{y}.png", crs=sensors.crs
+    )
     ax.set_axis_off()
     ax.set_title(title)
 
@@ -358,7 +363,8 @@ def plot_sensors(sensors, shapes=True, centroids=True, title="", ax=None):
 def get_fig_grid(figsize=(15, 15), nrows_ncols=(2, 2)):
     fig = plt.figure(figsize=figsize)
     grid = ImageGrid(
-        fig, 111,
+        fig,
+        111,
         nrows_ncols=nrows_ncols,
         axes_pad=0.35,
         share_all=True,
@@ -367,28 +373,108 @@ def get_fig_grid(figsize=(15, 15), nrows_ncols=(2, 2)):
         cbar_size="4%",
         cbar_pad=0.35,
     )
-    
+
     return fig, grid
 
 
 def add_colorbar(ax, vmin=0, vmax=1, cmap="plasma", label=""):
     ax.cax.colorbar(
         mpl.cm.ScalarMappable(
-            norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax),
-            cmap=cmap
+            norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax), cmap=cmap
         ),
-        label=label
+        label=label,
     )
 
-    
+
 def add_scalebar(ax):
     ax.add_artist(ScaleBar(1))
 
 
-def save_fig(
-    fig, filename, save_dir, dpi=300, bbox_inches="tight"
-):
-    fig.savefig(
-        Path(save_dir, filename),
-        dpi=dpi, bbox_inches=bbox_inches
-    )
+def save_fig(fig, filename, save_dir, dpi=300, bbox_inches="tight"):
+    fig.savefig(Path(save_dir, filename), dpi=dpi, bbox_inches=bbox_inches)
+
+
+def networks_swarmplot(
+    scores: np.ndarray,
+    objectives: list,
+    thresholds: Union[float, dict, None] = None,
+    colors: list = ["pink", "blue"],
+    ax: plt.Axes = None,
+) -> plt.Axes:
+    """Create a swarrmplot showing the coverage values for each individual objective
+    for all networks in a population of multi-objective optimisation results.
+
+    Parameters
+    ----------
+    scores : np.ndarray
+        Coverage scores for each objective in each network
+        (shape: n_networks, n_objectives)
+    objectives : list
+        Name of each objective
+    thresholds : Union[float, dict, None], optional
+        Optionally apply a selection threshold to each objective. Either a float which
+        applies the same threshold to all objectives, or a dict of objective: threshold
+        pairs. By default None
+    colors : list, optional
+        Colours to use to show networks that don't an do exceed the set thresholds,
+        by default ["pink", "blue"]
+    ax : plt.Axes, optional
+        Matplotlib axis to plot to, by default None
+
+    Returns
+    -------
+    plt.Axes
+        Matplotlib axis with swarm plot.
+    """
+    df = pd.DataFrame(scores, columns=objectives)
+
+    selected = None
+    if isinstance(thresholds, float):
+        selected = df[objectives[0]] > thresholds
+        for obj in objectives[1:]:
+            selected = selected & (df[obj] > thresholds)
+
+    elif isinstance(thresholds, dict):
+        for obj, t in thresholds.items():
+            if selected is None:
+                selected = df[obj] > t
+            else:
+                selected = selected & (df[obj] > t)
+
+    df = df[objectives].stack()
+    df.name = "coverage"
+    df.index.set_names(["idx", "objective"], inplace=True)
+    df = pd.DataFrame(df)
+
+    if selected is not None:
+        selected.name = "selected"
+        selected.index.name = "idx"
+        df = pd.merge(df, selected, how="left", left_index=True, right_index=True)
+
+    if ax is None:
+        _, ax = plt.subplots(1, 1, figsize=(10, 5))
+
+    if selected is not None:
+        sns.set_palette(sns.color_palette(colors))
+        sns.swarmplot(
+            x="objective",
+            y="coverage",
+            hue="selected",
+            data=df.reset_index(),
+            size=4,
+            ax=ax,
+        )
+        ax.get_legend().remove()
+
+    else:
+        sns.swarmplot(x="objective", y="coverage", data=df.reset_index(), size=4, ax=ax)
+
+    ax.set_xlabel("")
+    if isinstance(thresholds, float):
+        ax.axhline(thresholds, color="k", linewidth=0.5)
+    elif isinstance(thresholds, dict):
+        for i, obj in enumerate(objectives):
+            if obj in thresholds.keys():
+                ax.hlines(thresholds[obj], i - 0.35, i + 0.35, color="k", linewidth=0.5)
+
+    return ax

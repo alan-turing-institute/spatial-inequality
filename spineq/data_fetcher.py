@@ -135,10 +135,12 @@ def download_uo_sensors(overwrite=False):
     response = requests.get(query)
     sensors = json.loads(response.content)["sensors"]
     df = pd.DataFrame(sensors)
-    gdf = gpd.GeoDataFrame(df,
-        geometry=gpd.points_from_xy(df["Sensor Centroid Longitude"],
-        df["Sensor Centroid Latitude"]),
-        crs="EPSG:4326"
+    gdf = gpd.GeoDataFrame(
+        df,
+        geometry=gpd.points_from_xy(
+            df["Sensor Centroid Longitude"], df["Sensor Centroid Latitude"]
+        ),
+        crs="EPSG:4326",
     )
     # remove duplicate column - available as "geometry"
     gdf.drop("Location (WKT)", inplace=True, axis=1)
@@ -152,8 +154,8 @@ def download_uo_sensors(overwrite=False):
             "Ground Height Above Sea Level": "h_sea",
             "Third Party": "3rdparty",
             "Sensor Name": "name",
-        }, 
-        inplace=True
+        },
+        inplace=True,
     )
     # Convert to British National Grid CRS (same as ONS data)
     gdf = gdf.to_crs(epsg=27700)
@@ -161,7 +163,7 @@ def download_uo_sensors(overwrite=False):
     gdf.to_file(save_path)
 
     return gdf
-    
+
 
 def download_data_files(overwrite=False):
     print("LOCAL AUTHORITY BOUNDARIES")
@@ -183,7 +185,7 @@ def download_data_files(overwrite=False):
     print("WORKPLACE")
     workplace = download_workplace(overwrite=overwrite)
     print(workplace.head())
-    
+
     print("URBAN OBSERVATORY SENSORS")
     uo_sensors = download_uo_sensors(overwrite=overwrite)
     print(uo_sensors.head())
@@ -268,10 +270,10 @@ def query_ons_records(
 
 def columns_to_lowercase(df):
     """Convert all columns with string names in a dataframe to lowercase.
-    
+
     Arguments:
         df {pd.DataFrame} -- pandas dataframe
-        
+
     Returns:
         pd.DataFrame -- input dataframe with columns converted to lowercase
     """
@@ -343,15 +345,15 @@ def process_data_files(overwrite=False):
 
 def process_uo_sensors(overwrite=False):
     uo_sensors = download_uo_sensors(overwrite=overwrite)
-    # Get sensors in local authority only
+    # Get sensors in local authority only
     la = download_la(overwrite=overwrite).iloc[0]
-    uo_sensors = uo_sensors[uo_sensors.intersects(la["geometry"])]  
+    uo_sensors = uo_sensors[uo_sensors.intersects(la["geometry"])]
     uo_sensors = columns_to_lowercase(uo_sensors)
     # add OA each sensor is in
     oa = get_oa_shapes()
-    uo_sensors = gpd.sjoin(
-        uo_sensors, oa, how="left"
-    ).rename(columns={"index_right": "oa11cd"})
+    uo_sensors = gpd.sjoin(uo_sensors, oa, how="left").rename(
+        columns={"index_right": "oa11cd"}
+    )
 
     save_path = PROCESSED_DIR + "/uo_sensors/uo_sensors.shp"
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -365,7 +367,7 @@ def get_uo_sensors():
 
 def get_oa_stats():
     """Get output area population (for each age) and place of work statistics.
-    
+
     Returns:
         dict -- Dictionary of dataframe with keys population_ages and workplace.
     """
@@ -382,7 +384,7 @@ def get_oa_stats():
 
 def get_oa_centroids():
     """Get output area population weighted centroids
-    
+
     Returns:
         pd.DataFrame -- Dataframe with index oa11cd and columns x and y.
     """

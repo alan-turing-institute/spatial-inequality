@@ -11,13 +11,13 @@ def distance_matrix(x1, y1, x2=None, y2=None):
     pairwise distances between all locations in one set of x and y coordinates,
     or pairwise distances between one set of x,y coordinates (x1, y1) and
     another set of coordinates (x2,y2)
-    
+
     Arguments:
         x1 {list-like} -- x coordinate for each location
         y1 {list-like} -- y coordinate for each location
         x2 {list-like} -- x coordinate for each location
         y2 {list-like} -- y coordinate for each location
-    
+
     Returns:
         numpy array -- 2D matrix of distance between location i and location j,
         for each i and j.
@@ -49,14 +49,14 @@ def distance_matrix(x1, y1, x2=None, y2=None):
 
 def coverage_matrix(x1, y1, x2=None, y2=None, theta=1):
     """Generate a matrix of coverages for a number of locations
-    
+
     Arguments:
         x {list-like} -- x coordinate for each location
         y {list-like} -- y coordinate for each location
-    
+
     Keyword Arguments:
         theta {numeric} -- decay rate (default: {1})
-    
+
     Returns:
         numpy array -- 2D matrix of coverage at each location i due to a
         sensor placed at another location j.
@@ -106,27 +106,28 @@ def coverage_grid(sensors, xlim, ylim, grid_size=100, theta=500):
     # max coverage at each grid point (due to nearest sensor)
     grid_cov = grid_cov.max(axis=1)
 
-
     grid_size = grid_x[1] - grid_x[0]
-    polygons = [ 
-        Polygon([
-            (x - grid_size / 2, y - grid_size / 2),
-            (x + grid_size / 2, y - grid_size / 2),
-            (x + grid_size / 2, y + grid_size / 2),
-            (x - grid_size / 2, y + grid_size / 2)
-        ])
+    polygons = [
+        Polygon(
+            [
+                (x - grid_size / 2, y - grid_size / 2),
+                (x + grid_size / 2, y - grid_size / 2),
+                (x + grid_size / 2, y + grid_size / 2),
+                (x - grid_size / 2, y + grid_size / 2),
+            ]
+        )
         for x, y in zip(grid_x, grid_y)
     ]
 
-    return gpd.GeoDataFrame({"geometry": polygons, "coverage": grid_cov})    
+    return gpd.GeoDataFrame({"geometry": polygons, "coverage": grid_cov})
 
 
 def make_job_dict(job):
     """Construct a dictionary out of RQ job status/results.
-    
+
     Arguments:
         job {RQ job} -- RQ job object
-    
+
     Returns:
         dict -- json like dictionary of job status/results
     """
@@ -156,11 +157,11 @@ def make_age_range(min_age=0, max_age=90):
     """Create a pandas series of age weights as needed for the optimisation.
     Index is from 0 to 90 (inclusive), returns weight 1 for
     min_age <= age <= max_age and 0 for all other ages.
-    
+
     Keyword Arguments:
         min_age {int} -- [description] (default: {0})
         max_age {int} -- [description] (default: {90})
-    
+
     Returns:
         [type] -- [description]
     """

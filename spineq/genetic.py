@@ -28,7 +28,7 @@ class OptimiseCoveragePyGMO:
 
     def get_bounds(self):
         """Min and max value for each parameter."""
-        return ([0]*self.n_sensors, [self.n_locations-1]*self.n_sensors)
+        return ([0] * self.n_sensors, [self.n_locations - 1] * self.n_sensors)
 
     def get_nobj(self):
         """Number of objectives"""
@@ -51,13 +51,15 @@ def build_problem(
     n_sensors=20,
     theta=500,
 ):
-    prob = pg.problem(OptimiseCoveragePyGMO(
-        optimisation_inputs["oa_x"],
-        optimisation_inputs["oa_y"],
-        optimisation_inputs["oa_weight"],
-        n_sensors,
-        theta
-    ))
+    prob = pg.problem(
+        OptimiseCoveragePyGMO(
+            optimisation_inputs["oa_x"],
+            optimisation_inputs["oa_y"],
+            optimisation_inputs["oa_weight"],
+            n_sensors,
+            theta,
+        )
+    )
     return prob
 
 
