@@ -397,9 +397,9 @@ def save_fig(fig, filename, save_dir, dpi=300, bbox_inches="tight"):
 def networks_swarmplot(
     scores: np.ndarray,
     objectives: list,
-    thresholds: Union[float, dict, None] = None,
+    thresholds: Union[float, dict, int, None] = None,
     colors: list = ["pink", "blue"],
-    ax: plt.Axes = None,
+    ax: Union[plt.Axes, None] = None,
 ) -> plt.Axes:
     """Create a swarrmplot showing the coverage values for each individual objective
     for all networks in a population of multi-objective optimisation results.
@@ -411,10 +411,11 @@ def networks_swarmplot(
         (shape: n_networks, n_objectives)
     objectives : list
         Name of each objective
-    thresholds : Union[float, dict, None], optional
+    thresholds : Union[float, dict, int, None], optional
         Optionally apply a selection threshold to each objective. Either a float which
-        applies the same threshold to all objectives, or a dict of objective: threshold
-        pairs. By default None
+        applies the same threshold to all objectives, a dict of objective: threshold
+        pairs, or an int representing the index of a single network to highlight. By
+        default None
     colors : list, optional
         Colours to use to show networks that don't an do exceed the set thresholds,
         by default ["pink", "blue"]
@@ -433,6 +434,11 @@ def networks_swarmplot(
         selected = df[objectives[0]] > thresholds
         for obj in objectives[1:]:
             selected = selected & (df[obj] > thresholds)
+            
+    elif isinstance(thresholds, int):
+        selected = np.zeros(len(df)).astype(bool)
+        selected[thresholds] = True
+        selected = pd.Series(selected)
 
     elif isinstance(thresholds, dict):
         for obj, t in thresholds.items():
