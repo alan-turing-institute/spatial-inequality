@@ -38,19 +38,26 @@ def load_gdf(path, epsg=27700):
     return gdf
 
 
-def download_la(overwrite=False):
+def download_la(la="Newcastle upon Tyne", overwrite=False):
     save_path = RAW_DIR + "/la/la.shp"
     if os.path.exists(save_path) and not overwrite:
         return gpd.read_file(save_path)
-    url = "https://ons-inspire.esriuk.com/arcgis/rest/services/Administrative_Boundaries/Local_Athority_Districts_December_2018_Boundaries_GB_BFC/MapServer/0/query?where=UPPER(lad18nm)%20like%20'%25NEWCASTLE%20UPON%20TYNE%25'&outFields=*&outSR=27700&f=json"
+    
+    la = la.upper()
+    # From https://geoportal.statistics.gov.uk/maps/ons::local-authority-districts-december-2011-boundaries/about
+    base = "https://ons-inspire.esriuk.com/arcgis/rest/services"
+    dataset = "Administrative_Boundaries/Local_Athority_Districts_December_2018_Boundaries_GB_BFC/MapServer/0"
+    query = f"query?where=UPPER(lad18nm)%20like%20'%25{la}%25'&outFields=*&outSR=27700&f=json"
+    url = f"{base}/{dataset}/{query}"
     return query_ons_records(url, save_path=save_path)
 
 
-def download_oa(overwrite=False):
+def download_oa(lad11cd="E08000021", overwrite=False):
     save_path = RAW_DIR + "/oa/oa.shp"
     if os.path.exists(save_path) and not overwrite:
         return gpd.read_file(save_path)
-    url = "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/OA_DEC_2011_EW_BFC/FeatureServer/0/query?where=1%3D1&outFields=*&geometry=-2.6%2C54.4%2C-0.7%2C55.3&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=27700&f=json"
+    # From https://geoportal.statistics.gov.uk/datasets/ons::output-areas-december-2011-boundaries-ew-bgc-1/about
+    url = f"https://ons-inspire.esriuk.com/arcgis/rest/services/Census_Boundaries/Output_Area_December_2011_Boundaries/FeatureServer/2/query?where=lad11cd%20%3D%20'{lad11cd}'&outFields=*&outSR=27700&f=json"
     return query_ons_records(url, save_path=save_path)
 
 
@@ -59,15 +66,10 @@ def download_centroids(overwrite=False):
     if os.path.exists(save_path) and not overwrite:
         return pd.read_csv(save_path)
 
-    url = "https://ons-inspire.esriuk.com/arcgis/rest/services/Census_Boundaries/Output_Area_December_2011_Centroids/MapServer/0/query?where=1%3D1&outFields=*&geometry=-2.6%2C54.4%2C-0.7%2C55.3&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=27700&f=json"
-    centroids = query_ons_records(url)
-    centroids["X"] = centroids["geometry"].x
-    centroids["Y"] = centroids["geometry"].y
-
-    df = pd.DataFrame(index=centroids.index)
-    df["X"] = centroids["X"]
-    df["Y"] = centroids["Y"]
-    df["oa11cd"] = centroids["oa11cd"]
+    # From https://geoportal.statistics.gov.uk/datasets/ons::output-areas-december-2011-population-weighted-centroids-1/about
+    url = "https://opendata.arcgis.com/api/v3/datasets/b0c86eaafc5a4f339eb36785628da904_0/downloads/data?format=csv&spatialRefId=27700"
+    df = pd.read_csv(url)
+    df = df[["X", "Y", "OA11CD"]]
 
     df.to_csv(save_path, index=False)
 
@@ -83,8 +85,8 @@ def download_populations(overwrite=False):
         and not overwrite
     ):
         return pd.read_csv(save_path_total), pd.read_csv(save_path_ages)
-
-    url = "https://www.ons.gov.uk/file?uri=%2fpeoplepopulationandcommunity%2fpopulationandmigration%2fpopulationestimates%2fdatasets%2fcensusoutputareaestimatesinthenortheastregionofengland%2fmid2018sape21dt10d/sape21dt10dmid2018northeast.zip"
+    # From https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenortheastregionofengland
+    url = "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenortheastregionofengland/mid2019sape22dt10d/sape22dt10dmid2019northeast.zip"
     r = requests.get(url)
 
     zip_file = zipfile.ZipFile(BytesIO(r.content))
@@ -101,7 +103,7 @@ def download_populations(overwrite=False):
     xl_file = zip_file.open(file_name)
 
     df = pd.read_excel(
-        xl_file, sheet_name="Mid-2018 Persons", skiprows=4, thousands=","
+        xl_file, sheet_name="Mid-2019 Persons", skiprows=4, thousands=","
     )
 
     df_total = df[["OA11CD", "All Ages"]]
