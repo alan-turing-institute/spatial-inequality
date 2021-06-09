@@ -40,7 +40,7 @@ def print_progress(progress):
 
 # Make connection
 print("CONNECT")
-#sio.connect("https://optimisation-backend.azurewebsites.net")
+# sio.connect("https://optimisation-backend.azurewebsites.net")
 sio.connect("http://localhost:5000")
 
 time.sleep(1)

@@ -10,5 +10,6 @@ dependencies:
   - descartes=1.1.0
   - pygmo=2.16.1
   - contextily=1.1.0
+  - seaborn=0.11.1
   - pip:
     - -r requirements.txt

@@ -2,8 +2,8 @@ import os
 from io import BytesIO
 import zipfile
 import time
-
 import warnings
+import json
 
 import requests
 
@@ -119,10 +119,50 @@ def download_workplace(overwrite=False):
     save_path = RAW_DIR + "/workplace.csv"
     if overwrite:
         warnings.warn(
-            "Not possible to download workplace data directly. Go to https://www.nomisweb.co.uk/query/construct/summary.asp?reset=yes&mode=construct&dataset=1228&version=0&anal=1&initsel="
+            "Not possible to download workplace data directly. Go to "
+            "https://www.nomisweb.co.uk/query/construct/summary.asp?reset=yes&mode=construct&dataset=1228&version=0&anal=1&initsel="
         )
 
     return pd.read_csv(save_path, thousands=",")
+
+
+def download_uo_sensors(overwrite=False):
+    save_path = RAW_DIR + "/uo_sensors/uo_sensors.shp"
+    if os.path.exists(save_path) and not overwrite:
+        return gpd.read_file(save_path)
+
+    query = "http://uoweb3.ncl.ac.uk/api/v1.1/sensors/json/?theme=Air+Quality&bbox_p1_x=-1.988472&bbox_p1_y=54.784364&bbox_p2_x=-1.224922&bbox_p2_y=55.190148"
+    response = requests.get(query)
+    sensors = json.loads(response.content)["sensors"]
+    df = pd.DataFrame(sensors)
+    gdf = gpd.GeoDataFrame(
+        df,
+        geometry=gpd.points_from_xy(
+            df["Sensor Centroid Longitude"], df["Sensor Centroid Latitude"]
+        ),
+        crs="EPSG:4326",
+    )
+    # remove duplicate column - available as "geometry"
+    gdf.drop("Location (WKT)", inplace=True, axis=1)
+    gdf.rename(
+        columns={
+            "Sensor Height Above Ground": "h_ground",
+            "Sensor Centroid Longitude": "longitude",
+            "Raw ID": "id",
+            "Broker Name": "broker",
+            "Sensor Centroid Latitude": "latitude",
+            "Ground Height Above Sea Level": "h_sea",
+            "Third Party": "3rdparty",
+            "Sensor Name": "name",
+        },
+        inplace=True,
+    )
+    # Convert to British National Grid CRS (same as ONS data)
+    gdf = gdf.to_crs(epsg=27700)
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    gdf.to_file(save_path)
+
+    return gdf
 
 
 def download_data_files(overwrite=False):
@@ -145,6 +185,10 @@ def download_data_files(overwrite=False):
     print("WORKPLACE")
     workplace = download_workplace(overwrite=overwrite)
     print(workplace.head())
+
+    print("URBAN OBSERVATORY SENSORS")
+    uo_sensors = download_uo_sensors(overwrite=overwrite)
+    print(uo_sensors.head())
 
 
 def query_ons_records(
@@ -226,10 +270,10 @@ def query_ons_records(
 
 def columns_to_lowercase(df):
     """Convert all columns with string names in a dataframe to lowercase.
-    
+
     Arguments:
         df {pd.DataFrame} -- pandas dataframe
-        
+
     Returns:
         pd.DataFrame -- input dataframe with columns converted to lowercase
     """
@@ -282,7 +326,7 @@ def process_data_files(overwrite=False):
     population_ages.to_csv(PROCESSED_DIR + "/population_ages.csv", index=False)
     print("Population by Age:", len(population_ages), "rows")
 
-    # filter worokplace
+    # filter workplace
     workplace = columns_to_lowercase(workplace)
     workplace = workplace[workplace["oa11cd"].isin(oa_to_keep)]
     workplace.to_csv(PROCESSED_DIR + "/workplace.csv", index=False)
@@ -296,10 +340,34 @@ def process_data_files(overwrite=False):
     ):
         warnings.warn("Lengths of processed data don't match, optimisation will fail!")
 
+    process_uo_sensors(overwrite=overwrite)
+
+
+def process_uo_sensors(overwrite=False):
+    uo_sensors = download_uo_sensors(overwrite=overwrite)
+    # Get sensors in local authority only
+    la = download_la(overwrite=overwrite).iloc[0]
+    uo_sensors = uo_sensors[uo_sensors.intersects(la["geometry"])]
+    uo_sensors = columns_to_lowercase(uo_sensors)
+    # add OA each sensor is in
+    oa = get_oa_shapes()
+    uo_sensors = gpd.sjoin(uo_sensors, oa, how="left").rename(
+        columns={"index_right": "oa11cd"}
+    )
+
+    save_path = PROCESSED_DIR + "/uo_sensors/uo_sensors.shp"
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    uo_sensors.to_file(save_path)
+    print("Urban Observatory Sensors:", len(uo_sensors), "rows")
+
+
+def get_uo_sensors():
+    return gpd.read_file(PROCESSED_DIR + "/uo_sensors/uo_sensors.shp").set_index("id")
+
 
 def get_oa_stats():
     """Get output area population (for each age) and place of work statistics.
-    
+
     Returns:
         dict -- Dictionary of dataframe with keys population_ages and workplace.
     """
@@ -316,7 +384,7 @@ def get_oa_stats():
 
 def get_oa_centroids():
     """Get output area population weighted centroids
-    
+
     Returns:
         pd.DataFrame -- Dataframe with index oa11cd and columns x and y.
     """

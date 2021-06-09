@@ -34,22 +34,22 @@ def optimise(
     **kwargs
 ):
     """Greedily place sensors to maximise coverage.
-    
+
     Keyword Arguments:
         n_sensors {int} -- number of sensors to place (default: {20})
         theta {float} -- coverage decay rate (default: {500})
-        
+
         population_weight, workplace_weight, pop_age_groups -- As defined in
         calc_oa_weights (parameters directly passed to that function.)
         (all passed to cala_oa_weights)
-        
+
         rq_job {boolean} -- If True attempt to get the RQ job running this
         function and upate meta data with progress.
         socket {boolean} -- If True attempt to make a SocketIO connection to
         send updates to.
         redis_url {str} -- URL of Redis server for SocketIO message queue
         (default: {"redis://"})
-        
+
         save_result {boolean} -- If True save a json of optimisation results to
         file {save_dir}/{run_name}_result.json {default: {False}}
         save_plots {str} -- If 'final' save plot of final sensor network,
@@ -236,25 +236,25 @@ def calc_oa_weights(
     combine=True,
 ):
     """Calculate weighting factor for each OA.
-    
-    Keyword Arguments:        
+
+    Keyword Arguments:
         population_weight {float} -- Weighting for residential population
         (default: {1})
-        
+
         workplace_weight {float} -- Weighting for workplace population
         (default: {0})
-        
+
         pop_age_groups {dict} -- Residential population age groups to create
         objectives for and their corresponding weights. Dict with objective
         name as key. Each entry should be another dict with keys min (min age
         in population group), max (max age in group), and weight (objective
         weight for this group).
-        
+
         combine {bool} -- If True combine all the objectives weights into a
         single overall weight using the defined weighting factors. If False
         treat all objectives separately, in which case all weights defined in
         other parameters are ignored.
-    
+
     Returns:
         pd.DataFrame or pd.Series -- Weight for each OA (indexed by oa11cd) for
         each objective. Series if only one objective defined or combine is True.
@@ -355,12 +355,12 @@ def get_optimisation_inputs(
     combine=True,
 ):
     """Get input data in format needed for optimisation.
-    
+
     Keyword Arguments:
         population_weight, workplace_weight, pop_age_groups, combine -- As
         defined in calc_oa_weights (parameters directly passed to that
         function.)
-    
+
     Returns:
         dict -- Optimisation input data
     """
@@ -419,7 +419,7 @@ def make_result_dict(
 ):
     """Package up optimisation parameters and results as a dictionary, which
     is used by the API and some other functions.
-    
+
     Arguments:
         n_sensors {int} -- number of sensors
         theta {float} -- coverage decay parameter
@@ -429,13 +429,13 @@ def make_result_dict(
         sensors {list} -- 1 if OA has sensor, 0 otherwise
         total_coverage {float} -- total coverage metric for this network
         oa_coverage {list} -- coverage of each OA for this network
-    
+
     Keyword Arguments:
         oa_weight {list} -- weight for each OA
         pop_age_groups {dict} -- population age groups (see calc_oa_weights)
         population_weight {float} -- Weighting for residential population
         workplace_weight {float} -- Weighting for workplace population
-    
+
     Returns:
         dict -- Optimisation results and parameters. Keys: n_sensors, theta,
         pop_age_groups, population_weight, workplace_weight, sensors,
@@ -474,18 +474,18 @@ def make_result_dict(
     return result
 
 
-def calc_coverage(sensors, oa_weight=None, theta=500):
+def calc_coverage(sensors, oa_weight, theta=500):
     """Calculate the coverage of a network for arbitrary OA weightings.
-    
+
     Arguments:
         sensors {list} -- List of sensors in the network, each sensors is a
         dict which must include the key "oa11cd".
         oa_weight {pd.Series} -- Weight for each OA, pandas series with index
         oa11cd and weights as values. If None weight all OA equally.
-    
+
     Keyword Arguments:
         theta {int} -- coverage decay rate (default: {500})
-    
+
     Returns:
         dict -- Coverage stats with keys "total_coverage" and "oa_coverage".
     """
@@ -513,11 +513,7 @@ def calc_coverage(sensors, oa_weight=None, theta=500):
     oa_coverage = np.max(mask_cov, axis=1)
 
     # Avg coverage = weighted sum across all points of interest
-    if oa_weight is not None:
-        total_coverage = (oa_weight * oa_coverage).sum() / oa_weight.sum()
-    # or just average if no weightings given
-    else:
-        total_coverage = oa_coverage.sum() / n_poi
+    total_coverage = (oa_weight * oa_coverage).sum() / oa_weight.sum()
 
     oa_coverage = [
         {"oa11cd": oa11cd[i], "coverage": oa_coverage[i]} for i in range(n_poi)

@@ -38,7 +38,7 @@ class PointSet:
     def __init__(self, npoints=100, lad_codes=None, loghandle=__name__):
         """
         |  Constructor
-        |  
+        |
         |  Keyword arguments:
         |  npoints      -- Number of points to generate (default 100)
         |  lad_codes    -- LAD codes specifying the area of interest (AOI)
