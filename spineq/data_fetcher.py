@@ -42,7 +42,7 @@ def download_la(la="Newcastle upon Tyne", overwrite=False):
     save_path = RAW_DIR + "/la/la.shp"
     if os.path.exists(save_path) and not overwrite:
         return gpd.read_file(save_path)
-    
+
     la = la.upper()
     # From https://geoportal.statistics.gov.uk/maps/ons::local-authority-districts-december-2011-boundaries/about
     base = "https://ons-inspire.esriuk.com/arcgis/rest/services"
@@ -59,6 +59,21 @@ def download_oa(lad11cd="E08000021", overwrite=False):
     # From https://geoportal.statistics.gov.uk/datasets/ons::output-areas-december-2011-boundaries-ew-bgc-1/about
     url = f"https://ons-inspire.esriuk.com/arcgis/rest/services/Census_Boundaries/Output_Area_December_2011_Boundaries/FeatureServer/2/query?where=lad11cd%20%3D%20'{lad11cd}'&outFields=*&outSR=27700&f=json"
     return query_ons_records(url, save_path=save_path)
+
+
+def download_oa_mappings(overwrite=False):
+    save_path = RAW_DIR + "/oa_mappings.csv"
+    if os.path.exists(save_path) and not overwrite:
+        return pd.read_csv(save_path)
+
+    # https://geoportal.statistics.gov.uk/datasets/ons::output-area-to-lower-layer-super-output-area-to-middle-layer-super-output-area-to-local-authority-district-december-2011-lookup-in-england-and-wales/about
+    url = "https://opendata.arcgis.com/api/v3/datasets/6ecda95a83304543bc8feedbd1a58303_0/downloads/data?format=csv&spatialRefId=4326"
+    df = pd.read_csv(url)
+    df = df[["X", "Y", "OA11CD"]]
+    df.drop("ObjectID", axis=1, inplace=True)
+
+    df.to_csv(save_path, index=False)
+    return df
 
 
 def download_centroids(overwrite=False):
