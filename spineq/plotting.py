@@ -49,14 +49,13 @@ def plot_optimisation_result(
     Plot map with sensor locations (red points), output area centroids (black points),
     and coverage (shaded areas).
     """
-
     sensors = pd.DataFrame(result["sensors"])
     sensors.set_index("oa11cd", inplace=True)
 
     oa_coverage = pd.DataFrame(result["oa_coverage"])
     oa_coverage.set_index("oa11cd", inplace=True)
 
-    oa_shapes = get_oa_shapes()
+    oa_shapes = get_oa_shapes(result["lad20cd"])
 
     oa_shapes["coverage"] = oa_coverage
 
@@ -193,6 +192,7 @@ def plot_coverage_grid(
 
 
 def plot_oa_weights(
+    lad20cd,
     oa_weights,
     title="",
     save_path=None,
@@ -206,7 +206,7 @@ def plot_oa_weights(
     vmax=1,
 ):
     # YlGnBu
-    oa_shapes = get_oa_shapes()
+    oa_shapes = get_oa_shapes(lad20cd)
     oa_shapes["weight"] = oa_weights
 
     if ax is None:
@@ -245,6 +245,7 @@ def plot_oa_weights(
 
 
 def plot_oa_importance(
+    lad20cd,
     oa_weights,
     theta=500,
     title="",
@@ -281,7 +282,7 @@ def plot_oa_importance(
         vmax {[type]} -- maximum value of color scale, or None to autoscale (default: {None})
     """
 
-    oa_centroids = get_oa_centroids()
+    oa_centroids = get_oa_centroids(lad20cd)
     oa_centroids["weight"] = oa_weights
 
     oa_x = oa_centroids["x"].values
@@ -300,7 +301,7 @@ def plot_oa_importance(
 
     oa_importance = pd.Series(data=oa_importance, index=oa11cd)
 
-    oa_shapes = get_oa_shapes()
+    oa_shapes = get_oa_shapes(lad20cd)
     oa_shapes["importance"] = oa_importance
 
     if ax is None:

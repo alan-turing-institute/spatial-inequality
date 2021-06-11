@@ -33,10 +33,10 @@ def download_la_shape(lad20cd="E08000021", overwrite=False):
     base = "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Local_Authority_Districts_December_2020_UK_BGC/FeatureServer/0"
     query = f"query?where=LAD20CD%20%3D%20%27{lad20cd}%27&outFields=*&outSR=27700&f=json"
     url = f"{base}/{query}"
-    la = query_ons_records(url, save_path=save_path)
-
+    la = query_ons_records(url, save_path=None)
     la = columns_to_lowercase(la)
     la = la[["geometry", "lad20cd", "lad20nm"]]
+    la.to_file(save_path)
     return la
 
 
@@ -85,11 +85,12 @@ def download_oa_shape(lad11cd="E08000021", lad20cd=None, overwrite=False):
     for la in lad11cd:
         # From https://geoportal.statistics.gov.uk/datasets/ons::output-areas-december-2011-boundaries-ew-bgc-1/about
         url = f"https://ons-inspire.esriuk.com/arcgis/rest/services/Census_Boundaries/Output_Area_December_2011_Boundaries/FeatureServer/2/query?where=lad11cd%20%3D%20'{la}'&outFields=*&outSR=27700&f=json"
-        oa.append(query_ons_records(url, save_path=save_path))
+        oa.append(query_ons_records(url, save_path=None))
 
     oa = pd.concat(oa)
     oa = columns_to_lowercase(oa)
     oa = oa[["oa11cd", "geometry"]]
+    oa.to_file(save_path)
     return oa
 
 
