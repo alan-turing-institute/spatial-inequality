@@ -6,17 +6,17 @@ from spineq.plotting import plot_coverage_grid
 from spineq.utils import coverage_grid
 
 
-def get_uo_sensor_dict(centroids=True):
+def get_uo_sensor_dict(lad20cd, centroids=True):
     """
     Get list of sensor dictionaries (compatible with coverage and plotting
     functions) for sensors in the Urban Observatory network. If centroids
     is True return only the centroid of
     """
-    uo_sensors = get_uo_sensors()
+    uo_sensors = get_uo_sensors(lad20cd)
 
     if centroids:
         sensor_oa = uo_sensors["oa11cd"].unique()
-        oa_centroids = get_oa_centroids()
+        oa_centroids = get_oa_centroids(lad20cd)
         sensor_dict = (
             oa_centroids[oa_centroids.index.isin(sensor_oa)][["x", "y"]]
             .reset_index()
@@ -32,12 +32,12 @@ def get_uo_sensor_dict(centroids=True):
 
 
 def plot_uo_coverage_grid(
-    ax=None, title=None, grid_size=100, theta=500, legend=True, cmap="Greens"
+    lad20cd, ax=None, title=None, grid_size=100, theta=500, legend=True, cmap="Greens"
 ):
-    uo_sensors = get_uo_sensors()
+    uo_sensors = get_uo_sensors(lad20cd)
     sensors = np.array([uo_sensors["geometry"].x, uo_sensors["geometry"].y]).T
 
-    oa = get_oa_shapes()
+    oa = get_oa_shapes(lad20cd)
     bounds = oa["geometry"].bounds
     xlim = (bounds["minx"].min(), bounds["maxx"].max())
     ylim = (bounds["miny"].min(), bounds["maxy"].max())
@@ -53,6 +53,7 @@ def plot_uo_coverage_grid(
         _, ax = plt.subplots(1, 1, figsize=(15, 15))
 
     ax = plot_coverage_grid(
+        lad20cd,
         grid_cov,
         ax=ax,
         title=title,

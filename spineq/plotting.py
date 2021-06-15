@@ -121,6 +121,7 @@ def plot_optimisation_result(
 
 
 def plot_coverage_grid(
+    lad20cd,
     grid_cov,
     crs={"init": "epsg:27700"},
     threshold=0.005,
@@ -166,7 +167,7 @@ def plot_coverage_grid(
     else:
         cax = None
 
-    oa_shapes = get_oa_shapes()
+    oa_shapes = get_oa_shapes(lad20cd)
     oa_shapes.plot(ax=ax, edgecolor="k", facecolor="None")
     grid_cov.plot(
         column="coverage",
@@ -341,16 +342,16 @@ def plot_oa_importance(
         plt.show()
 
 
-def plot_sensors(sensors, shapes=True, centroids=True, title="", ax=None):
+def plot_sensors(lad20cd, sensors, shapes=True, centroids=True, title="", ax=None):
     if ax is None:
         _, ax = plt.subplots(1, 1, figsize=(15, 15))
 
     if shapes:
-        oa = get_oa_shapes()
+        oa = get_oa_shapes(lad20cd)
         oa.plot(linewidth=2, ax=ax, facecolor="yellow", edgecolor="blue", alpha=0.1)
 
     if centroids:
-        c = get_oa_centroids()
+        c = get_oa_centroids(lad20cd)
         ax.scatter(c["x"], c["y"], s=5)
 
     sensors.plot(ax=ax, edgecolor="yellow", facecolor="red", markersize=75, linewidth=2)
