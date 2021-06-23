@@ -6,7 +6,7 @@ click==7.1.2
 click-plugins==1.1.1
 cligj==0.7.1
 dnspython==1.16.0
-eventlet==0.31.0
+eventlet==0.30.2
 Fiona==1.8.19
 Flask==1.1.2
 Flask-Cors==3.0.10

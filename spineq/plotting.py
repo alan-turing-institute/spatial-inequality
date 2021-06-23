@@ -436,7 +436,7 @@ def networks_swarmplot(
         selected = df[objectives[0]] > thresholds
         for obj in objectives[1:]:
             selected = selected & (df[obj] > thresholds)
-            
+
     elif isinstance(thresholds, int):
         selected = np.zeros(len(df)).astype(bool)
         selected[thresholds] = True

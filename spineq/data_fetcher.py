@@ -31,7 +31,9 @@ def download_la_shape(lad20cd="E08000021", overwrite=False):
 
     # From https://geoportal.statistics.gov.uk/datasets/ons::local-authority-districts-december-2020-uk-bgc/about
     base = "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Local_Authority_Districts_December_2020_UK_BGC/FeatureServer/0"
-    query = f"query?where=LAD20CD%20%3D%20%27{lad20cd}%27&outFields=*&outSR=27700&f=json"
+    query = (
+        f"query?where=LAD20CD%20%3D%20%27{lad20cd}%27&outFields=*&outSR=27700&f=json"
+    )
     url = f"{base}/{query}"
     la = query_ons_records(url, save_path=None)
     la = columns_to_lowercase(la)
@@ -132,21 +134,10 @@ def download_centroids(overwrite=False):
     return df
 
 
-def download_populations(overwrite=False):
-    save_path_total = Path(RAW_DIR, "population_total.csv")
-    save_path_ages = Path(RAW_DIR, "population_ages.csv")
-    if (
-        os.path.exists(save_path_total)
-        and os.path.exists(save_path_ages)
-        and not overwrite
-    ):
-        return pd.read_csv(save_path_total), pd.read_csv(save_path_ages)
-    # From https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenortheastregionofengland
-    url = "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenortheastregionofengland/mid2019sape22dt10d/sape22dt10dmid2019northeast.zip"
+def download_populations_region(url):
     r = requests.get(url)
 
     zip_file = zipfile.ZipFile(BytesIO(r.content))
-
     file_name = None
     for name in zip_file.namelist():
         if ".xlsx" in name:
@@ -166,11 +157,49 @@ def download_populations(overwrite=False):
     df_total.rename(columns={"All Ages": "population"}, inplace=True)
     df_total = columns_to_lowercase(df_total)
     df_total = df_total[["oa11cd", "population"]]
-    df_total.to_csv(save_path_total, index=False)
 
     df_ages = df.drop(["All Ages", "LSOA11CD"], axis=1)
     df_ages.rename(columns={"90+": 90}, inplace=True)
     df_ages = columns_to_lowercase(df_ages)
+
+    return df_total, df_ages
+
+
+def download_populations(overwrite=False):
+    save_path_total = Path(RAW_DIR, "population_total.csv")
+    save_path_ages = Path(RAW_DIR, "population_ages.csv")
+    if (
+        os.path.exists(save_path_total)
+        and os.path.exists(save_path_ages)
+        and not overwrite
+    ):
+        return pd.read_csv(save_path_total), pd.read_csv(save_path_ages)
+
+    # From https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenortheastregionofengland
+    region_urls = [
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthelondonregionofengland/mid2019sape22dt10a/sape22dt10amid2019london.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesintheyorkshireandthehumberregionofengland/mid2019sape22dt10c/sape22dt10cmid2019yorkshireandthehumber.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthesouthwestregionofengland/mid2019sape22dt10g/sape22dt10gmid2019southwest.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesintheeastmidlandsregionofengland/mid2019sape22dt10f/sape22dt10fmid2019eastmidlands.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthesoutheastregionofengland/mid2019sape22dt10i/sape22dt10imid2019southeast.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesintheeastregionofengland/mid2019sape22dt10h/sape22dt10hmid2019east.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthewestmidlandsregionofengland/mid2019sape22dt10e/sape22dt10emid2019westmidlands.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenorthwestregionofengland/mid2019sape22dt10b/sape22dt10bmid2019northwest.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenortheastregionofengland/mid2019sape22dt10d/sape22dt10dmid2019northeast.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinwales/mid2019sape22dt10j/sape22dt10jmid2019wales.zip",
+    ]
+
+    df_total = []
+    df_ages = []
+    for i, r in enumerate(region_urls):
+        print("Dowloading region", i + 1, "out of", len(region_urls), ":", r)
+        region_total, region_ages = download_populations_region(r)
+        df_total.append(region_total)
+        df_ages.append(region_ages)
+
+    df_total = pd.concat(df_total)
+    df_ages = pd.concat(df_ages)
+    df_total.to_csv(save_path_total, index=False)
     df_ages.to_csv(save_path_ages, index=False)
 
     return df_total, df_ages
@@ -193,7 +222,7 @@ def download_uo_sensors(overwrite=False):
     if os.path.exists(save_path) and not overwrite:
         return gpd.read_file(save_path)
 
-    query = "http://uoweb3.ncl.ac.uk/api/v1.1/sensors/json/?theme=Air+Quality&bbox_p1_x=-1.988472&bbox_p1_y=54.784364&bbox_p2_x=-1.224922&bbox_p2_y=55.190148"
+    query = "http://uoweb3.ncl.ac.uk/api/v1.1/sensors/json/?theme=Air+Quality"  # &bbox_p1_x=-1.988472&bbox_p1_y=54.784364&bbox_p2_x=-1.224922&bbox_p2_y=55.190148"
     response = requests.get(query)
     sensors = json.loads(response.content)["sensors"]
     df = pd.DataFrame(sensors)
@@ -402,16 +431,19 @@ def process_uo_sensors(lad20cd="E08000021", overwrite=False):
     # Get sensors in local authority only
     la = get_la_shape(lad20cd=lad20cd)
     uo_sensors = uo_sensors[uo_sensors.intersects(la["geometry"])]
-    # add OA each sensor is in
-    oa = get_oa_shapes(lad20cd=lad20cd)
-    uo_sensors = gpd.sjoin(uo_sensors, oa, how="left").rename(
-        columns={"index_right": "oa11cd"}
-    )
+    if len(uo_sensors) > 0:
+        # add OA each sensor is in
+        oa = get_oa_shapes(lad20cd=lad20cd)
+        uo_sensors = gpd.sjoin(uo_sensors, oa, how="left").rename(
+            columns={"index_right": "oa11cd"}
+        )
 
-    save_path = Path(PROCESSED_DIR, lad20cd, "uo_sensors", "uo_sensors.shp")
-    os.makedirs(save_path.parent, exist_ok=True)
-    uo_sensors.to_file(save_path)
-    print("Urban Observatory Sensors:", len(uo_sensors), "rows")
+        save_path = Path(PROCESSED_DIR, lad20cd, "uo_sensors", "uo_sensors.shp")
+        os.makedirs(save_path.parent, exist_ok=True)
+        uo_sensors.to_file(save_path)
+        print("Urban Observatory Sensors:", len(uo_sensors), "rows")
+    else:
+        print("No Urban Observatory sensors found in local authority", lad20cd)
 
 
 def get_uo_sensors(lad20cd="E08000021"):
@@ -460,9 +492,9 @@ def get_oa_shapes(lad20cd="E08000021"):
 
 
 if __name__ == "__main__":
-    #extract_la_data(lad20cd="E08000021", overwrite=True)
-    #extract_la_data(lad20cd="E08000037", overwrite=True)
-    #download_raw_data(overwrite=True)
+    # extract_la_data(lad20cd="E08000021", overwrite=True)
+    # extract_la_data(lad20cd="E08000037", overwrite=True)
+    # download_raw_data(overwrite=True)
 
     parser = argparse.ArgumentParser(
         description="Save output area data for a local authority district"
@@ -476,7 +508,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--overwrite",
         help="If set download and overwrite any pre-existing files",
-        action="store_true"
+        action="store_true",
     )
     args = parser.parse_args()
 
