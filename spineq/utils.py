@@ -73,6 +73,24 @@ def coverage_from_sensors(sensors, coverage_matrix):
     return max_mask_cov
 
 
+def total_coverage(point_coverage: np.array, point_weights: np.array = None) -> float:
+    """Total coverage metric from coverage of each point
+
+    Parameters
+    ----------
+    point_coverage : np.array
+        Coverage provided at each point (due to a sensor network)
+    point_weights : np.array
+        Weight for each point
+
+    Returns
+    -------
+    float
+        Total coverage (between 0 and 1)
+    """
+    return np.average(point_coverage, weights=point_weights)
+
+
 def square_grid(xlim: list, ylim: list, grid_size: float):
     """Generate flat lists of x and y coordinates for points in a square grid.
 
