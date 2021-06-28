@@ -17,6 +17,7 @@ vmax = None
 save_dir = "/Users/jroberts/OneDrive - The Alan Turing Institute/UrbanObservatorySpatialInequality/AIUK/importance"
 
 oa_weights = calc_oa_weights(
+    lad20cd="E08000021",
     age_weights=age_weights,
     population_weight=population_weight,
     workplace_weight=workplace_weight,

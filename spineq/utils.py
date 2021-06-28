@@ -73,6 +73,52 @@ def coverage_from_sensors(sensors, coverage_matrix):
     return max_mask_cov
 
 
+def total_coverage(point_coverage: np.array, point_weights: np.array = None) -> float:
+    """Total coverage metric from coverage of each point
+
+    Parameters
+    ----------
+    point_coverage : np.array
+        Coverage provided at each point (due to a sensor network)
+    point_weights : np.array
+        Weight for each point
+
+    Returns
+    -------
+    float
+        Total coverage (between 0 and 1)
+    """
+    return np.average(point_coverage, weights=point_weights)
+
+
+def square_grid(xlim: list, ylim: list, grid_size: float):
+    """Generate flat lists of x and y coordinates for points in a square grid.
+
+    Parameters
+    ----------
+    xlim : list
+        min and max x coordinate to generate grid points between
+    ylim : list
+        min and max y coordinate to generate grid points between
+    grid_size : float
+        distance between grid points (default: {100})
+
+    Returns
+    -------
+    (np.Array, np.Array)
+       x and y coordinates for points in the grid
+    """
+    # make a range of x and y locations for grid points
+    x_range = np.arange(xlim[0], xlim[1] + grid_size, grid_size)
+    y_range = np.arange(ylim[0], ylim[1] + grid_size, grid_size)
+
+    # create flattened list of x, y coordinates for full grid
+    grid_x, grid_y = np.meshgrid(x_range, y_range)
+    grid_x = grid_x.flatten()
+    grid_y = grid_y.flatten()
+    return grid_x, grid_y
+
+
 def coverage_grid(sensors, xlim, ylim, grid_size=100, theta=500):
     """Generate a square grid of points and calculate coverage at each point
     due to the closest sensor.
@@ -91,13 +137,7 @@ def coverage_grid(sensors, xlim, ylim, grid_size=100, theta=500):
         grid_cov -- GeoDataFrame of grid squares and coverage values.
     """
     # make a range of x and y locations for grid points
-    x_range = np.arange(xlim[0], xlim[1] + grid_size, grid_size)
-    y_range = np.arange(ylim[0], ylim[1] + grid_size, grid_size)
-
-    # create flattened list of x, y coordinates for full grid
-    grid_x, grid_y = np.meshgrid(x_range, y_range)
-    grid_x = grid_x.flatten()
-    grid_y = grid_y.flatten()
+    grid_x, grid_y = square_grid(xlim, ylim, grid_size)
 
     # coverage at each grid point due to each sensor
     grid_cov = coverage_matrix(
@@ -106,7 +146,6 @@ def coverage_grid(sensors, xlim, ylim, grid_size=100, theta=500):
     # max coverage at each grid point (due to nearest sensor)
     grid_cov = grid_cov.max(axis=1)
 
-    grid_size = grid_x[1] - grid_x[0]
     polygons = [
         Polygon(
             [

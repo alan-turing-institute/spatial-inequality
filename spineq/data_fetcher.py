@@ -4,32 +4,17 @@ import zipfile
 import time
 import warnings
 import json
-
+from pathlib import Path
+import argparse
 import requests
 
 import pandas as pd
 import geopandas as gpd
 import fiona
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "../data")
-RAW_DIR = os.path.join(DATA_DIR, "raw")
-PROCESSED_DIR = os.path.join(DATA_DIR, "processed")
-
-
-def get_data():
-    tyne_oa = gpd.read_file(PROCESSED_DIR + "/tyne_oa")
-
-    # Location of points of interest (in this case output area population
-    # weighted centroids)
-    poi_x = tyne_oa["X"].values
-    poi_y = tyne_oa["Y"].values
-    oa11cd = tyne_oa["oa11cd"].values
-
-    # Weight for each point of interest (in this case population estimate for
-    # each output area)
-    poi_weight = tyne_oa["Population"].values
-
-    return {"poi_x": poi_x, "poi_y": poi_y, "poi_weight": poi_weight, "oa11cd": oa11cd}
+DATA_DIR = Path(os.path.dirname(__file__), "../data")
+RAW_DIR = Path(DATA_DIR, "raw")
+PROCESSED_DIR = Path(DATA_DIR, "processed")
 
 
 def load_gdf(path, epsg=27700):
@@ -38,57 +23,121 @@ def load_gdf(path, epsg=27700):
     return gdf
 
 
-def download_la(overwrite=False):
-    save_path = RAW_DIR + "/la/la.shp"
+def download_la_shape(lad20cd="E08000021", overwrite=False):
+    save_path = Path(PROCESSED_DIR, lad20cd, "la_shape", "la.shp")
     if os.path.exists(save_path) and not overwrite:
         return gpd.read_file(save_path)
-    url = "https://ons-inspire.esriuk.com/arcgis/rest/services/Administrative_Boundaries/Local_Athority_Districts_December_2018_Boundaries_GB_BFC/MapServer/0/query?where=UPPER(lad18nm)%20like%20'%25NEWCASTLE%20UPON%20TYNE%25'&outFields=*&outSR=27700&f=json"
-    return query_ons_records(url, save_path=save_path)
+    os.makedirs(save_path.parent, exist_ok=True)
+
+    # From https://geoportal.statistics.gov.uk/datasets/ons::local-authority-districts-december-2020-uk-bgc/about
+    base = "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Local_Authority_Districts_December_2020_UK_BGC/FeatureServer/0"
+    query = (
+        f"query?where=LAD20CD%20%3D%20%27{lad20cd}%27&outFields=*&outSR=27700&f=json"
+    )
+    url = f"{base}/{query}"
+    la = query_ons_records(url, save_path=None)
+    la = columns_to_lowercase(la)
+    la = la[["geometry", "lad20cd", "lad20nm"]]
+    la.to_file(save_path)
+    return la
 
 
-def download_oa(overwrite=False):
-    save_path = RAW_DIR + "/oa/oa.shp"
+def lad20cd_to_lad11cd(lad20cd, mappings=None):
+    if mappings is None:
+        mappings = download_oa_mappings()
+    return mappings[mappings.lad20cd == lad20cd]["lad11cd"].unique()
+
+
+def lad11cd_to_lad20cd(lad11cd, mappings=None):
+    if mappings is None:
+        mappings = download_oa_mappings()
+    return mappings[mappings.lad11cd == lad11cd]["lad20cd"].unique()
+
+
+def lad20nm_to_lad20cd(lad20nm, mappings=None):
+    if mappings is None:
+        mappings = download_oa_mappings()
+    return mappings[mappings.lad20nm == lad20nm]["lad20cd"].iloc[0]
+
+
+def lad20cd_to_lad20nm(lad20cd, mappings=None):
+    if mappings is None:
+        mappings = download_oa_mappings()
+    return mappings[mappings.lad20cd == lad20cd]["lad20nm"].iloc[0]
+
+
+def lad11nm_to_lad11cd(lad11nm, mappings=None):
+    if mappings is None:
+        mappings = download_oa_mappings()
+    return mappings[mappings.lad11nm == lad11nm]["lad11cd"].iloc[0]
+
+
+def download_oa_shape(lad11cd="E08000021", lad20cd=None, overwrite=False):
+    if isinstance(lad11cd, str):
+        lad11cd = [lad11cd]
+    if lad20cd is None:
+        lad20cd = lad11cd_to_lad20cd(lad11cd[0])[0]
+
+    save_path = Path(PROCESSED_DIR, lad20cd, "oa_shape", "oa.shp")
     if os.path.exists(save_path) and not overwrite:
         return gpd.read_file(save_path)
-    url = "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/OA_DEC_2011_EW_BFC/FeatureServer/0/query?where=1%3D1&outFields=*&geometry=-2.6%2C54.4%2C-0.7%2C55.3&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=27700&f=json"
-    return query_ons_records(url, save_path=save_path)
+    os.makedirs(save_path.parent, exist_ok=True)
+
+    oa = []
+    for la in lad11cd:
+        # From https://geoportal.statistics.gov.uk/datasets/ons::output-areas-december-2011-boundaries-ew-bgc-1/about
+        url = f"https://ons-inspire.esriuk.com/arcgis/rest/services/Census_Boundaries/Output_Area_December_2011_Boundaries/FeatureServer/2/query?where=lad11cd%20%3D%20'{la}'&outFields=*&outSR=27700&f=json"
+        oa.append(query_ons_records(url, save_path=None))
+
+    oa = pd.concat(oa)
+    oa = columns_to_lowercase(oa)
+    oa = oa[["oa11cd", "geometry"]]
+    oa.to_file(save_path)
+    return oa
 
 
-def download_centroids(overwrite=False):
-    save_path = RAW_DIR + "/centroids.csv"
+def download_oa_mappings(overwrite=False):
+    save_path = Path(RAW_DIR, "oa_mappings.csv")
     if os.path.exists(save_path) and not overwrite:
         return pd.read_csv(save_path)
 
-    url = "https://ons-inspire.esriuk.com/arcgis/rest/services/Census_Boundaries/Output_Area_December_2011_Centroids/MapServer/0/query?where=1%3D1&outFields=*&geometry=-2.6%2C54.4%2C-0.7%2C55.3&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=27700&f=json"
-    centroids = query_ons_records(url)
-    centroids["X"] = centroids["geometry"].x
-    centroids["Y"] = centroids["geometry"].y
+    # 2011
+    # https://geoportal.statistics.gov.uk/datasets/ons::output-area-to-lower-layer-super-output-area-to-middle-layer-super-output-area-to-local-authority-district-december-2011-lookup-in-england-and-wales/about
+    url = "https://opendata.arcgis.com/api/v3/datasets/6ecda95a83304543bc8feedbd1a58303_0/downloads/data?format=csv&spatialRefId=4326"
+    df2011 = pd.read_csv(url)
+    df2011.drop("ObjectId", axis=1, inplace=True)
 
-    df = pd.DataFrame(index=centroids.index)
-    df["X"] = centroids["X"]
-    df["Y"] = centroids["Y"]
-    df["oa11cd"] = centroids["oa11cd"]
+    # 2020
+    # https://geoportal.statistics.gov.uk/datasets/ons::output-area-to-lower-layer-super-output-area-to-middle-layer-super-output-area-to-local-authority-district-december-2020-lookup-in-england-and-wales/about
+    url = "https://opendata.arcgis.com/api/v3/datasets/65664b00231444edb3f6f83c9d40591f_0/downloads/data?format=csv&spatialRefId=4326"
+    df2020 = pd.read_csv(url)
+    df2020.drop("FID", axis=1, inplace=True)
 
+    merged = pd.merge(df2011, df2020, how="outer")
+    merged = columns_to_lowercase(merged)
+    merged.to_csv(save_path, index=False)
+    return merged
+
+
+def download_centroids(overwrite=False):
+    save_path = Path(RAW_DIR, "centroids.csv")
+    if os.path.exists(save_path) and not overwrite:
+        return pd.read_csv(save_path)
+
+    # From https://geoportal.statistics.gov.uk/datasets/ons::output-areas-december-2011-population-weighted-centroids-1/about
+    url = "https://opendata.arcgis.com/api/v3/datasets/b0c86eaafc5a4f339eb36785628da904_0/downloads/data?format=csv&spatialRefId=27700"
+    df = pd.read_csv(url)
+    df = columns_to_lowercase(df)
+    df = df[["oa11cd", "x", "y"]]
     df.to_csv(save_path, index=False)
 
     return df
 
 
-def download_populations(overwrite=False):
-    save_path_total = RAW_DIR + "/population_total.csv"
-    save_path_ages = RAW_DIR + "/population_ages.csv"
-    if (
-        os.path.exists(save_path_total)
-        and os.path.exists(save_path_ages)
-        and not overwrite
-    ):
-        return pd.read_csv(save_path_total), pd.read_csv(save_path_ages)
-
-    url = "https://www.ons.gov.uk/file?uri=%2fpeoplepopulationandcommunity%2fpopulationandmigration%2fpopulationestimates%2fdatasets%2fcensusoutputareaestimatesinthenortheastregionofengland%2fmid2018sape21dt10d/sape21dt10dmid2018northeast.zip"
+def download_populations_region(url):
     r = requests.get(url)
 
     zip_file = zipfile.ZipFile(BytesIO(r.content))
-
     file_name = None
     for name in zip_file.namelist():
         if ".xlsx" in name:
@@ -101,37 +150,79 @@ def download_populations(overwrite=False):
     xl_file = zip_file.open(file_name)
 
     df = pd.read_excel(
-        xl_file, sheet_name="Mid-2018 Persons", skiprows=4, thousands=","
+        xl_file, sheet_name="Mid-2019 Persons", skiprows=4, thousands=","
     )
 
     df_total = df[["OA11CD", "All Ages"]]
     df_total.rename(columns={"All Ages": "population"}, inplace=True)
-    df_total.to_csv(save_path_total, index=False)
+    df_total = columns_to_lowercase(df_total)
+    df_total = df_total[["oa11cd", "population"]]
 
     df_ages = df.drop(["All Ages", "LSOA11CD"], axis=1)
     df_ages.rename(columns={"90+": 90}, inplace=True)
+    df_ages = columns_to_lowercase(df_ages)
+
+    return df_total, df_ages
+
+
+def download_populations(overwrite=False):
+    save_path_total = Path(RAW_DIR, "population_total.csv")
+    save_path_ages = Path(RAW_DIR, "population_ages.csv")
+    if (
+        os.path.exists(save_path_total)
+        and os.path.exists(save_path_ages)
+        and not overwrite
+    ):
+        return pd.read_csv(save_path_total), pd.read_csv(save_path_ages)
+
+    # From https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenortheastregionofengland
+    region_urls = [
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthelondonregionofengland/mid2019sape22dt10a/sape22dt10amid2019london.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesintheyorkshireandthehumberregionofengland/mid2019sape22dt10c/sape22dt10cmid2019yorkshireandthehumber.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthesouthwestregionofengland/mid2019sape22dt10g/sape22dt10gmid2019southwest.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesintheeastmidlandsregionofengland/mid2019sape22dt10f/sape22dt10fmid2019eastmidlands.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthesoutheastregionofengland/mid2019sape22dt10i/sape22dt10imid2019southeast.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesintheeastregionofengland/mid2019sape22dt10h/sape22dt10hmid2019east.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthewestmidlandsregionofengland/mid2019sape22dt10e/sape22dt10emid2019westmidlands.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenorthwestregionofengland/mid2019sape22dt10b/sape22dt10bmid2019northwest.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenortheastregionofengland/mid2019sape22dt10d/sape22dt10dmid2019northeast.zip",
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinwales/mid2019sape22dt10j/sape22dt10jmid2019wales.zip",
+    ]
+
+    df_total = []
+    df_ages = []
+    for i, r in enumerate(region_urls):
+        print("Dowloading region", i + 1, "out of", len(region_urls), ":", r)
+        region_total, region_ages = download_populations_region(r)
+        df_total.append(region_total)
+        df_ages.append(region_ages)
+
+    df_total = pd.concat(df_total)
+    df_ages = pd.concat(df_ages)
+    df_total.to_csv(save_path_total, index=False)
     df_ages.to_csv(save_path_ages, index=False)
 
     return df_total, df_ages
 
 
 def download_workplace(overwrite=False):
-    save_path = RAW_DIR + "/workplace.csv"
+    save_path = Path(RAW_DIR, "workplace.csv")
     if overwrite:
         warnings.warn(
             "Not possible to download workplace data directly. Go to "
-            "https://www.nomisweb.co.uk/query/construct/summary.asp?reset=yes&mode=construct&dataset=1228&version=0&anal=1&initsel="
+            "https://www.nomisweb.co.uk/query/construct/summary.asp?mode=construct&version=0&dataset=1300"
         )
-
-    return pd.read_csv(save_path, thousands=",")
+    workplace = pd.read_csv(save_path, thousands=",")
+    workplace = columns_to_lowercase(workplace)
+    return workplace
 
 
 def download_uo_sensors(overwrite=False):
-    save_path = RAW_DIR + "/uo_sensors/uo_sensors.shp"
+    save_path = Path(RAW_DIR, "uo_sensors", "uo_sensors.shp")
     if os.path.exists(save_path) and not overwrite:
         return gpd.read_file(save_path)
 
-    query = "http://uoweb3.ncl.ac.uk/api/v1.1/sensors/json/?theme=Air+Quality&bbox_p1_x=-1.988472&bbox_p1_y=54.784364&bbox_p2_x=-1.224922&bbox_p2_y=55.190148"
+    query = "http://uoweb3.ncl.ac.uk/api/v1.1/sensors/json/?theme=Air+Quality"  # &bbox_p1_x=-1.988472&bbox_p1_y=54.784364&bbox_p2_x=-1.224922&bbox_p2_y=55.190148"
     response = requests.get(query)
     sensors = json.loads(response.content)["sensors"]
     df = pd.DataFrame(sensors)
@@ -157,29 +248,26 @@ def download_uo_sensors(overwrite=False):
         },
         inplace=True,
     )
+    gdf = columns_to_lowercase(gdf)
     # Convert to British National Grid CRS (same as ONS data)
     gdf = gdf.to_crs(epsg=27700)
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    os.makedirs(save_path.parent, exist_ok=True)
     gdf.to_file(save_path)
 
     return gdf
 
 
-def download_data_files(overwrite=False):
-    print("LOCAL AUTHORITY BOUNDARIES")
-    la = download_la(overwrite=overwrite)
-    print(la.head())
-
-    print("OUTPUT AREA BOUNDARIES")
-    oa = download_oa(overwrite=overwrite)
-    print(oa.head())
+def download_raw_data(overwrite=False):
+    print("OUTPUT AREA TO LOCAL AUTHORITY MAPPINGS")
+    mappings = download_oa_mappings(overwrite=overwrite)
+    print(mappings.head())
 
     print("OUTPUT AREA CENTROIDS")
     centroids = download_centroids(overwrite=overwrite)
     print(centroids.head())
 
     print("OUTPUT AREA POPULATIONS")
-    population_total, population_ages = download_populations(overwrite=overwrite)
+    population_total, _ = download_populations(overwrite=overwrite)
     print(population_total.head())
 
     print("WORKPLACE")
@@ -262,7 +350,8 @@ def query_ons_records(
             break
 
     if save_path:
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        os.makedirs(save_path.parent, exist_ok=True)
+        print(all_records.columns)
         all_records.to_file(save_path)
 
     return all_records
@@ -284,52 +373,46 @@ def columns_to_lowercase(df):
     return df.rename(columns=cols_replace_dict)
 
 
-def process_data_files(overwrite=False):
-    la = download_la(overwrite=overwrite)
-    oa = download_oa(overwrite=overwrite)
+def filter_oa(oa11cd, df):
+    return df[df["oa11cd"].isin(oa11cd)]
+
+
+def extract_la_data(lad20cd="E08000021", overwrite=False):
+    save_dir = Path(PROCESSED_DIR, lad20cd)
+    os.makedirs(save_dir, exist_ok=True)
+
+    la = download_la_shape(lad20cd=lad20cd, overwrite=overwrite)
+    print("LA shape:", len(la), "rows")
+
+    mappings = download_oa_mappings(overwrite=overwrite)
+    oa_in_la = mappings.loc[mappings["lad20cd"] == lad20cd, "oa11cd"]
+    print("OA in this LA (mappings):", len(oa_in_la), "rows")
+
+    lad11cd = lad20cd_to_lad11cd(lad20cd, mappings)
+    oa = download_oa_shape(lad11cd=lad11cd, overwrite=overwrite)
+    print("OA shapes:", len(oa), "rows")
+
+    # centroids
     centroids = download_centroids(overwrite=overwrite)
-    workplace = download_workplace(overwrite=overwrite)
-    population_total, population_ages = download_populations(overwrite=overwrite)
-
-    # OAs to keep: those that intersect LA geometry
-    for _, row in la.iterrows():
-        oa = oa[oa.intersects(row["geometry"])]
-
-    if len(oa) == 0:
-        raise ValueError(
-            "None of {} OAs intersect any of {} LAs".format(len(oa), len(la))
-        )
-
-    oa = columns_to_lowercase(oa)
-    oa = oa[["oa11cd", "geometry"]]
-    os.makedirs(PROCESSED_DIR + "/oa_shapes", exist_ok=True)
-    oa.to_file(PROCESSED_DIR + "/oa_shapes/oa_shapes.shp")
-    oa_to_keep = oa["oa11cd"].values
-    print("OA:", len(oa), "rows")
-
-    # filter centroids
-    centroids = columns_to_lowercase(centroids)
-    centroids = centroids[centroids["oa11cd"].isin(oa_to_keep)]
-    centroids = centroids[["oa11cd", "x", "y"]]
-    centroids.to_csv(PROCESSED_DIR + "/centroids.csv", index=False)
+    centroids = filter_oa(oa_in_la, centroids)
+    centroids.to_csv(Path(save_dir, "centroids.csv"), index=False)
     print("Centroids:", len(centroids), "rows")
 
-    # filter population data
-    population_total = columns_to_lowercase(population_total)
-    population_total = population_total[population_total["oa11cd"].isin(oa_to_keep)]
-    population_total = population_total[["oa11cd", "population"]]
-    population_total.to_csv(PROCESSED_DIR + "/population_total.csv", index=False)
+    # population data
+    population_total, population_ages = download_populations(overwrite=overwrite)
+    population_total = filter_oa(oa_in_la, population_total)
+    population_total.to_csv(Path(save_dir, "population_total.csv"), index=False)
     print("Total Population:", len(population_total), "rows")
 
     population_ages = columns_to_lowercase(population_ages)
-    population_ages = population_ages[population_ages["oa11cd"].isin(oa_to_keep)]
-    population_ages.to_csv(PROCESSED_DIR + "/population_ages.csv", index=False)
+    population_ages = filter_oa(oa_in_la, population_ages)
+    population_ages.to_csv(Path(save_dir, "population_ages.csv"), index=False)
     print("Population by Age:", len(population_ages), "rows")
 
-    # filter workplace
-    workplace = columns_to_lowercase(workplace)
-    workplace = workplace[workplace["oa11cd"].isin(oa_to_keep)]
-    workplace.to_csv(PROCESSED_DIR + "/workplace.csv", index=False)
+    # workplace
+    workplace = download_workplace(overwrite=overwrite)
+    workplace = filter_oa(oa_in_la, workplace)
+    workplace.to_csv(Path(save_dir, "workplace.csv"), index=False)
     print("Place of Work:", len(workplace), "rows")
 
     if not (
@@ -340,61 +423,102 @@ def process_data_files(overwrite=False):
     ):
         warnings.warn("Lengths of processed data don't match, optimisation will fail!")
 
-    process_uo_sensors(overwrite=overwrite)
+    process_uo_sensors(lad20cd=lad20cd, overwrite=overwrite)
 
 
-def process_uo_sensors(overwrite=False):
+def process_uo_sensors(lad20cd="E08000021", overwrite=False):
     uo_sensors = download_uo_sensors(overwrite=overwrite)
     # Get sensors in local authority only
-    la = download_la(overwrite=overwrite).iloc[0]
+    la = get_la_shape(lad20cd=lad20cd)
     uo_sensors = uo_sensors[uo_sensors.intersects(la["geometry"])]
-    uo_sensors = columns_to_lowercase(uo_sensors)
-    # add OA each sensor is in
-    oa = get_oa_shapes()
-    uo_sensors = gpd.sjoin(uo_sensors, oa, how="left").rename(
-        columns={"index_right": "oa11cd"}
-    )
+    if len(uo_sensors) > 0:
+        # add OA each sensor is in
+        oa = get_oa_shapes(lad20cd=lad20cd)
+        uo_sensors = gpd.sjoin(uo_sensors, oa, how="left").rename(
+            columns={"index_right": "oa11cd"}
+        )
 
-    save_path = PROCESSED_DIR + "/uo_sensors/uo_sensors.shp"
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    uo_sensors.to_file(save_path)
-    print("Urban Observatory Sensors:", len(uo_sensors), "rows")
-
-
-def get_uo_sensors():
-    return gpd.read_file(PROCESSED_DIR + "/uo_sensors/uo_sensors.shp").set_index("id")
+        save_path = Path(PROCESSED_DIR, lad20cd, "uo_sensors", "uo_sensors.shp")
+        os.makedirs(save_path.parent, exist_ok=True)
+        uo_sensors.to_file(save_path)
+        print("Urban Observatory Sensors:", len(uo_sensors), "rows")
+    else:
+        print("No Urban Observatory sensors found in local authority", lad20cd)
 
 
-def get_oa_stats():
+def get_uo_sensors(lad20cd="E08000021"):
+    return gpd.read_file(
+        Path(PROCESSED_DIR, lad20cd, "uo_sensors", "uo_sensors.shp")
+    ).set_index("id")
+
+
+def get_oa_stats(lad20cd="E08000021"):
     """Get output area population (for each age) and place of work statistics.
 
     Returns:
         dict -- Dictionary of dataframe with keys population_ages and workplace.
     """
     population_ages = pd.read_csv(
-        PROCESSED_DIR + "/population_ages.csv", index_col="oa11cd"
+        Path(PROCESSED_DIR, lad20cd, "population_ages.csv"), index_col="oa11cd"
     )
     population_ages.columns = population_ages.columns.astype(int)
 
-    workplace = pd.read_csv(PROCESSED_DIR + "/workplace.csv", index_col="oa11cd")
+    workplace = pd.read_csv(
+        Path(PROCESSED_DIR, lad20cd, "workplace.csv"), index_col="oa11cd"
+    )
     workplace = workplace["workers"]
 
     return {"population_ages": population_ages, "workplace": workplace}
 
 
-def get_oa_centroids():
+def get_oa_centroids(lad20cd="E08000021"):
     """Get output area population weighted centroids
 
     Returns:
         pd.DataFrame -- Dataframe with index oa11cd and columns x and y.
     """
-    return pd.read_csv(PROCESSED_DIR + "/centroids.csv", index_col="oa11cd")
+    return pd.read_csv(
+        Path(PROCESSED_DIR, lad20cd, "centroids.csv"), index_col="oa11cd"
+    )
 
 
-def get_oa_shapes():
-    shapes = gpd.read_file(PROCESSED_DIR + "/oa_shapes")
+def get_la_shape(lad20cd="E08000021"):
+    return gpd.read_file(Path(PROCESSED_DIR, lad20cd, "la_shape")).iloc[0]
+
+
+def get_oa_shapes(lad20cd="E08000021"):
+    shapes = gpd.read_file(Path(PROCESSED_DIR, lad20cd, "oa_shape"))
     return shapes.set_index("oa11cd")
 
 
 if __name__ == "__main__":
-    process_data_files()
+    # extract_la_data(lad20cd="E08000021", overwrite=True)
+    # extract_la_data(lad20cd="E08000037", overwrite=True)
+    # download_raw_data(overwrite=True)
+
+    parser = argparse.ArgumentParser(
+        description="Save output area data for a local authority district"
+    )
+    parser.add_argument(
+        "--lad20cd", help="LAD20CD (2020 local authority district code)", type=str
+    )
+    parser.add_argument(
+        "--lad20nm", help="LAD20NM (2020 local authority district name)", type=str
+    )
+    parser.add_argument(
+        "--overwrite",
+        help="If set download and overwrite any pre-existing files",
+        action="store_true",
+    )
+    args = parser.parse_args()
+
+    if args.lad20cd:
+        lad20cd = lad20cd_to_lad20nm(args.lad20cd)
+        print(f"Saving data for {args.lad20nm} ({lad20cd})")
+        extract_la_data(lad20cd=args.lad20cd, overwrite=args.overwrite)
+    elif args.lad20nm:
+        lad20cd = lad20nm_to_lad20cd(args.lad20nm)
+        print(f"Saving data for {args.lad20nm} ({lad20cd})")
+        extract_la_data(lad20cd=lad20cd, overwrite=args.overwrite)
+    else:
+        print("Either --lad20cd or --lad20nm must be given")
