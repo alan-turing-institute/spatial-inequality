@@ -1,17 +1,15 @@
 """Creates the Flask and Flask-Socketio endpoints for the
 optimisation backend.
 """
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request
 from flask_cors import CORS
 
 from flask_socketio import SocketIO, emit
 
-from redis import Redis
 import rq
 from rq.job import Job
 from worker import conn, queue
 
-from spineq.optimise import optimise
 from spineq.utils import make_job_dict, make_age_range
 
 from config import FLASK_HOST, FLASK_PORT, REDIS_HOST, REDIS_PORT
