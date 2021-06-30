@@ -1,4 +1,4 @@
-FROM python:slim-buster
+FROM python:3.9-slim-buster
 
 # fixes debconf warnings/errors, see https://github.com/phusion/baseimage-docker/issues/58
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections

@@ -1,5 +1,5 @@
 from spineq.plotting import plot_oa_importance
-from spineq.weights import calc_location_weights
+from spineq.optimise import calc_oa_weights
 import pandas as pd
 
 theta = 500
@@ -16,7 +16,8 @@ vmax = None
 
 save_dir = "/Users/jroberts/OneDrive - The Alan Turing Institute/UrbanObservatorySpatialInequality/AIUK/importance"
 
-oa_weights = calc_location_weights(
+oa_weights = calc_oa_weights(
+    lad20cd="E08000021",
     age_weights=age_weights,
     population_weight=population_weight,
     workplace_weight=workplace_weight,

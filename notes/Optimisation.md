@@ -294,13 +294,13 @@ Others I'm aware of include:
 # References
 
 - **The "Cambridge paper"**
-  - _"Optimal Citizen-Centric Sensor Placement for Air Quality Monitoring: A Case Study of City of Cambridge, the United Kingdom"_, CHENXI SUN, VICTOR O. K. LI et al., 2019, IEEE Access.
+  - [_"Optimal Citizen-Centric Sensor Placement for Air Quality Monitoring: A Case Study of City of Cambridge, the United Kingdom"_, CHENXI SUN, VICTOR O. K. LI et al., 2019, IEEE Access.](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=8681135)
 
 - **Boubrima**
-  - _"On the Deployment of Wireless Sensor Networks for Air Quality Mapping: Optimization Models and Algorithms"_, Ahmed Boubrima, Walid Bechkit, Hervé Rivano, 2019, HAL
+  - [_"On the Deployment of Wireless Sensor Networks for Air Quality Mapping: Optimization Models and Algorithms"_, Ahmed Boubrima, Walid Bechkit, Hervé Rivano, 2019, HAL](https://hal.inria.fr/hal-02157476/document)
 
 - **Jankowski**
-  - _"An exploratory approach to spatial decision support"_, Piotr Jankowski, Grant Fraley & Edzer Pebesma, 2014, Computers, Environment and Urban Systems 45
+  - [_"An exploratory approach to spatial decision support"_, Piotr Jankowski, Grant Fraley & Edzer Pebesma, 2014, Computers, Environment and Urban Systems 45](https://www.sciencedirect.com/science/article/pii/S0198971514000246?via%3Dihub)
 
 - **Tong**
-  - _"Heuristics in Spatial Analysis: A Genetic Algorithm for Coverage Maximization"_, Daoqin Tong , Alan Murray & Ningchuan Xiao, 2009, Annals of the Association of American Geographers
+  - [_"Heuristics in Spatial Analysis: A Genetic Algorithm for Coverage Maximization"_, Daoqin Tong , Alan Murray & Ningchuan Xiao, 2009, Annals of the Association of American Geographers](https://www.tandfonline.com/doi/abs/10.1080/00045600903120594?journalCode=raag20)

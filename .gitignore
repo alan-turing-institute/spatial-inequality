@@ -2,6 +2,7 @@
 data/raw/
 data/backup/
 data/img/
+notebooks/paper_figures/
 
 # Mac config files
 .DS_Store

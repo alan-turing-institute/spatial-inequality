@@ -1,17 +1,15 @@
 """Creates the Flask and Flask-Socketio endpoints for the
 optimisation backend.
 """
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request
 from flask_cors import CORS
 
 from flask_socketio import SocketIO, emit
 
-from redis import Redis
 import rq
 from rq.job import Job
 from worker import conn, queue
 
-from spineq.optimise import optimise
 from spineq.utils import make_job_dict, make_age_range
 
 from config import FLASK_HOST, FLASK_PORT, REDIS_HOST, REDIS_PORT
@@ -38,7 +36,7 @@ def home():
 @app.route("/optimise")
 def route_optimise_job():
     """Run an optimisation job.
-    
+
     Query parameters:
         - n_sensors: generate a network with this many sensors (default: 5)
         - theta: decay rate for coverage measure (default: 500)
@@ -46,10 +44,10 @@ def route_optimise_job():
         - max_age: maximum age to consider (default: 90)
         - population_weight: overall weight for residential population coverage (default: 1)
         - workplace_weight: overall weight for place of work coverage (default: 0)
-    
+
     Returns:
         dict -- json of information about the created job, including its
-        id in the queue.        
+        id in the queue.
     """
 
     if "n_sensors" in request.args:
@@ -100,10 +98,10 @@ def route_optimise_job():
 @app.route("/job/<job_id>", methods=["GET"])
 def route_get_job(job_id):
     """Get a job from the queue using its id.
-    
+
     Arguments:
         job_id {str} -- id for the job on the queue to query.
-    
+
     Returns:
         dict -- json containing job status information and its result if the
         job has finished.
@@ -114,9 +112,9 @@ def route_get_job(job_id):
 @app.route("/queue", methods=["GET"])
 def route_get_queue():
     """List job ids available to query in the queue.
-    
+
     Returns:
-        dict -- json with list of ids under key job_ids. 
+        dict -- json with list of ids under key job_ids.
     """
     return get_queue()
 
@@ -124,7 +122,7 @@ def route_get_queue():
 @app.route("/queue/deleteall")
 def route_clear_queue():
     """Remove all jobs from the queue.
-    
+
     Returns:
         dict -- json with result of whether queue was successfully emptied.
     """
@@ -134,7 +132,7 @@ def route_clear_queue():
 @app.route("/queue/delete/<job_id>")
 def route_delete_job(job_id):
     """Delete a single job from the queue.
-    
+
     Returns:
         dict -- json with result of whether job was successfully deleted.
     """
@@ -143,8 +141,7 @@ def route_delete_job(job_id):
 
 @socketio.on("connect")
 def test_connect():
-    """Open sockdtio connection
-    """
+    """Open sockdtio connection"""
     emit("message", {"data": "Connected"})
 
 
@@ -156,19 +153,19 @@ def test_disconnect():
 @socketio.on("submitJob")
 def socket_optimise_job(parameters):
     """Run an optimisation job.
-    
-   Arguments:
-        parameters {dict} -- Optimisation parameters including:
-            - n_sensors: generate a network with this many sensors. 
-            - theta: decay rate for coverage measure.
-            - min_age: minimum age to consider (default: 0)
-            - max_age: maximum age to consider (default: 90)
-            - population_weight: overall weight for residential population coverage (default: 1)
-            - workplace_weight: overall weight for place of work coverage (default: 0)
-    
-    Returns:
-        dict -- json of information about the created job, including its
-        id in the queue.
+
+    Arguments:
+         parameters {dict} -- Optimisation parameters including:
+             - n_sensors: generate a network with this many sensors.
+             - theta: decay rate for coverage measure.
+             - min_age: minimum age to consider (default: 0)
+             - max_age: maximum age to consider (default: 90)
+             - population_weight: overall weight for residential population coverage (default: 1)
+             - workplace_weight: overall weight for place of work coverage (default: 0)
+
+     Returns:
+         dict -- json of information about the created job, including its
+         id in the queue.
     """
 
     if "n_sensors" not in parameters.keys() or "theta" not in parameters.keys():
@@ -212,10 +209,10 @@ def socket_optimise_job(parameters):
 @socketio.on("getJob")
 def socket_get_job(job_id):
     """Get a job from the queue using its id.
-    
+
     Arguments:
         job_id {str} -- id for the job on the queue to query.
-    
+
     Returns:
         dict -- json containing job status information and its result if the
         job has finished.
@@ -228,9 +225,9 @@ def socket_get_job(job_id):
 @socketio.on("getQueue")
 def socket_get_queue():
     """List job ids available to query in the queue.
-    
+
     Returns:
-        dict -- json with list of ids under key job_ids. 
+        dict -- json with list of ids under key job_ids.
     """
     emit("queue", get_queue())
 
@@ -238,7 +235,7 @@ def socket_get_queue():
 @socketio.on("deleteQueue")
 def socket_clear_queue():
     """Remove all jobs from the queue.
-    
+
     Returns:
         dict -- json with result of whether queue was successfully emptied.
     """
@@ -248,7 +245,7 @@ def socket_clear_queue():
 @socketio.on("deleteJob")
 def socket_delete_job(job_id):
     """Delete a single job from the queue.
-    
+
     Returns:
         dict -- json with result of whether job was successfully deleted.
     """
@@ -265,7 +262,7 @@ def submit_optimise_job(
     redis_url="redis://",
 ):
     """Submit an optimisation job to the Redis queue.
-    
+
     Keyword Arguments:
         - n_sensors {int}: generate a network with this many sensors (default: {5})
         - theta {float}: decay rate for coverage measure (default: {500})
@@ -273,7 +270,7 @@ def submit_optimise_job(
         - max_age {int}: maximum age to consider (default: {90})
         - population_weight {float}: overall weight for residential population coverage (default: {1})
         - workplace_weight {float}: overall weight for place of work coverage (default: {0})
-    
+
     Returns:
         dict -- information about the created job, including its
         id in the queue, as created by utils.make_job_dict.
@@ -300,13 +297,13 @@ def submit_optimise_job(
 
 def get_job(job_id):
     """Get information about a job on the Redis queue.
-    
+
     Arguments:
         job_id {str} -- id of job to get from the queue
-    
+
     Returns:
         dict -- information about the created job, including its
-        id in the queue, as created by utils.make_job_dict.    """
+        id in the queue, as created by utils.make_job_dict."""
     try:
         job = Job.fetch(job_id, connection=conn)
         return make_job_dict(job)
@@ -317,9 +314,9 @@ def get_job(job_id):
 
 def get_queue():
     """List job ids available to query in the queue.
-    
+
     Returns:
-        dict -- json with list of ids under key job_ids. 
+        dict -- json with list of ids under key job_ids.
     """
     queued = queue.job_ids
     started = queue.started_job_registry.get_job_ids()
@@ -338,7 +335,7 @@ def get_queue():
 
 def clear_queue():
     """Remove all jobs from the queue.
-    
+
     Returns:
         dict -- json with result of whether queue was successfully emptied.
     """
@@ -364,10 +361,10 @@ def clear_queue():
 
 def delete_job(job_id):
     """Delete a single job from the queue.
-    
+
     Arguments:
         job_id {str} -- id of job to get from the queue
-    
+
     Returns:
         dict -- json with result of whether job was successfully deleted.
     """
