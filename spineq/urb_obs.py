@@ -6,13 +6,14 @@ from spineq.plotting import plot_coverage_grid
 from spineq.utils import coverage_grid
 
 
-def get_uo_sensor_dict(lad20cd, centroids=True):
+def get_uo_sensor_dict(lad20cd, centroids=True, uo_sensors=None):
     """
     Get list of sensor dictionaries (compatible with coverage and plotting
     functions) for sensors in the Urban Observatory network. If centroids
     is True return only the centroid of
     """
-    uo_sensors = get_uo_sensors(lad20cd)
+    if uo_sensors is None:
+        uo_sensors = get_uo_sensors(lad20cd)
 
     if centroids:
         sensor_oa = uo_sensors["oa11cd"].unique()
@@ -32,9 +33,17 @@ def get_uo_sensor_dict(lad20cd, centroids=True):
 
 
 def plot_uo_coverage_grid(
-    lad20cd, ax=None, title=None, grid_size=100, theta=500, legend=True, cmap="Greens"
+    lad20cd,
+    uo_sensors=None,
+    ax=None,
+    title=None,
+    grid_size=100,
+    theta=500,
+    legend=True,
+    cmap="Greens",
 ):
-    uo_sensors = get_uo_sensors(lad20cd)
+    if uo_sensors is None:
+        uo_sensors = get_uo_sensors(lad20cd)
     sensors = np.array([uo_sensors["geometry"].x, uo_sensors["geometry"].y]).T
 
     oa = get_oa_shapes(lad20cd)

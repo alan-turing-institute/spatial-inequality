@@ -1,0 +1,55 @@
+# Local authority to generate results for.
+# Case sensitive name that must match an ONS lad20nm value
+la: Newcastle upon Tyne
+# Parent directory that all results and figures saved to
+save_dir: results
+
+objectives:
+  population_groups:
+    pop_total:
+      min: 0
+      max: 90
+      weight: 1
+      title: Total Residents
+    pop_children:
+      min: 0
+      max: 15
+      weight: 1
+      title: Residents Under 16
+    pop_elderly:
+      min: 66
+      max: 90
+      weight: 1
+      title: Residents Over 65
+  workplace:
+    weight: 1
+    title: Workers
+
+optimisation:
+  theta:
+    default: 500
+    generate: [100, 500]
+  n_sensors:
+    default: 2
+    generate: [1, 2]
+  networks_dir: networks
+  single_objective:
+    filename: networks_singleobj.pkl
+  multi_objectives:
+    gen: 100
+    population_size: 20
+    seed: 123
+    filename: networks_multiobj.pkl
+  two_objectives:
+    gen: 100
+    population_size: 20
+    seed: 234
+    objectives: ["pop_elderly", "workplace"]
+    filename: networks_2obj.pkl
+
+urb_obs:
+  save_dir: urb_obs
+  filename: uo_sensors.shp
+
+figures:
+  save_dir: figures
