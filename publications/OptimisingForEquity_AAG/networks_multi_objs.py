@@ -1,11 +1,21 @@
-import os
 from pathlib import Path
 import pickle
 import pygmo as pg
-from utils import get_config
+from utils import (
+    get_config,
+    get_objectives,
+    get_all_optimisation_params,
+    get_networks_save_dir,
+)
 from spineq.data_fetcher import lad20nm_to_lad20cd
 from spineq.optimise import get_optimisation_inputs
 from spineq.genetic import build_problem, run_problem
+
+
+def get_multi_objs_filepath(config):
+    networks_dir = get_networks_save_dir(config)
+    filename = config["optimisation"]["multi_objectives"]["filename"]
+    return Path(networks_dir, filename)
 
 
 def get_multi_obj_inputs(lad20cd, population_groups):
@@ -42,16 +52,11 @@ def make_multi_obj_networks(
 
 def main():
     config = get_config()
-    save_dir = config["save_dir"]
     lad20cd = lad20nm_to_lad20cd(config["la"])
-    networks_dir = config["optimisation"]["networks_dir"]
-    filename = config["optimisation"]["multi_objectives"]["filename"]
-    save_path = Path(save_dir, lad20cd, networks_dir, filename)
-    os.makedirs(save_path.parent, exist_ok=True)
+    save_path = get_multi_objs_filepath(config)
 
-    population_groups = config["objectives"]["population_groups"]
-    thetas = config["optimisation"]["theta"]["generate"]
-    n_sensors = config["optimisation"]["n_sensors"]["generate"]
+    population_groups, _ = get_objectives(config)
+    thetas, n_sensors = get_all_optimisation_params(config)
     gen = config["optimisation"]["multi_objectives"]["gen"]
     population_size = config["optimisation"]["multi_objectives"]["population_size"]
     seed = config["optimisation"]["multi_objectives"]["seed"]

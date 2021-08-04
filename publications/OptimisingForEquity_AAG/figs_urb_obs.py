@@ -1,6 +1,5 @@
-import os
 from pathlib import Path
-import pickle
+from publications.OptimisingForEquity_AAG.utils import get_la_save_dir
 
 import contextily as ctx
 import geopandas as gpd
@@ -23,19 +22,31 @@ from spineq.data_fetcher import lad20nm_to_lad20cd, get_oa_shapes
 from spineq.utils import coverage_grid
 from spineq.optimise import calc_coverage
 
-from utils import get_config, set_fig_style, load_pickle
+from utils import (
+    get_config,
+    set_fig_style,
+    load_pickle,
+    get_objectives,
+    get_default_optimisation_params,
+    get_figures_save_dir,
+)
 from figs_demographics import get_weights
+from networks_single_obj import get_single_obj_filepath
 
 
-def load_uo_sensors(save_path):
-    return gpd.read_file(save_path)
+def load_uo_sensors(config):
+    if config is None:
+        config = get_config()
+    uo_dir = config["urb_obs"]["save_dir"]
+    filename = config["urb_obs"]["filename"]
+    la_dir = get_la_save_dir(config)
+    uo_path = Path(la_dir, uo_dir, filename)
+    return gpd.read_file(uo_path)
 
 
-def get_uo_coverage_oa(
-    lad20cd, uo_sensor_dict, theta, all_groups, oa_weights, uo_path=None
-):
+def get_uo_coverage_oa(lad20cd, uo_sensor_dict, theta, all_groups, oa_weights):
     if uo_sensor_dict is None:
-        uo_sensors = load_uo_sensors(uo_path)
+        uo_sensors = load_uo_sensors(None)
         uo_sensor_dict = get_uo_sensor_dict(lad20cd, uo_sensors=uo_sensors)
 
     uo_coverage = {}
@@ -211,42 +222,29 @@ def main():
     set_fig_style()
 
     config = get_config()
-    save_dir = config["save_dir"]
     lad20cd = lad20nm_to_lad20cd(config["la"])
-    networks_dir = config["optimisation"]["networks_dir"]
-    filename = config["optimisation"]["single_objective"]["filename"]
-    networks_path = Path(save_dir, lad20cd, networks_dir, filename)
+    networks_path = get_single_obj_filepath(config)
     networks = load_pickle(networks_path)
+    uo_sensors = load_uo_sensors(config)
 
-    uo_dir = config["urb_obs"]["save_dir"]
-    filename = config["urb_obs"]["filename"]
-    uo_path = Path(save_dir, lad20cd, uo_dir, filename)
-    uo_sensors = load_uo_sensors(uo_path)
+    figs_dir = get_figures_save_dir(config)
 
-    figs_dir = config["figures"]["save_dir"]
-    save_path = Path(save_dir, lad20cd, figs_dir)
-    os.makedirs(save_path, exist_ok=True)
-
-    population_groups = config["objectives"]["population_groups"]
+    population_groups, all_groups = get_objectives(config)
     oa_weights = get_weights(lad20cd, population_groups)
-    all_groups = dict(population_groups)
-    all_groups["workplace"] = config["objectives"]["workplace"]
-    theta = config["optimisation"]["theta"]["default"]
+    theta, _ = get_default_optimisation_params(config)
 
     uo_sensor_dict = get_uo_sensor_dict(lad20cd, uo_sensors=uo_sensors)
     uo_coverage = get_uo_coverage_oa(
         lad20cd, uo_sensor_dict, theta, all_groups, oa_weights
     )
 
-    fig_uo_sensor_locations(lad20cd, uo_sensors, save_path)
-    fig_uo_coverage_grid(lad20cd, uo_sensors, theta, save_path)
+    fig_uo_sensor_locations(lad20cd, uo_sensors, figs_dir)
+    fig_uo_coverage_grid(lad20cd, uo_sensors, theta, figs_dir)
     fig_uo_coverage_grid_diff(
-        lad20cd, uo_sensors, theta, all_groups, networks, save_path
+        lad20cd, uo_sensors, theta, all_groups, networks, figs_dir
     )
-    fig_uo_coverage_oa(uo_coverage, theta, all_groups, save_path)
-    fig_uo_coverage_oa_diff(
-        lad20cd, uo_coverage, theta, all_groups, networks, save_path
-    )
+    fig_uo_coverage_oa(uo_coverage, theta, all_groups, figs_dir)
+    fig_uo_coverage_oa_diff(lad20cd, uo_coverage, theta, all_groups, networks, figs_dir)
 
 
 if __name__ == "__main__":

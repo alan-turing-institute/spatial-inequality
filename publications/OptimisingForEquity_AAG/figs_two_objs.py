@@ -1,5 +1,3 @@
-import os
-from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from spineq.optimise import calc_coverage
@@ -9,13 +7,19 @@ from spineq.plotting import (
     save_fig,
     add_scalebar,
     plot_optimisation_result,
-    networks_swarmplot,
 )
 from spineq.data_fetcher import lad20nm_to_lad20cd
 from spineq.genetic import extract_all
-from figs_urb_obs import get_uo_coverage_oa, load_uo_sensors
 from networks_multi_objs import get_multi_obj_inputs
-from utils import get_config, set_fig_style, load_pickle
+from networks_two_objs import get_two_objs_filepath
+from utils import (
+    get_config,
+    set_fig_style,
+    load_pickle,
+    get_objectives,
+    get_default_optimisation_params,
+    get_figures_save_dir,
+)
 
 
 def fig_obj1_vs_obj2(plot_objs, scores, all_groups, theta, n_sensors, save_dir):
@@ -84,7 +88,7 @@ def fig_two_objs_spectrum(
 
     add_scalebar(ax[1])
     add_colorbar(ax[-1], cmap="Greens", label="Coverage")
-    fig.suptitle(f"n = 55, $\\theta$ = 500 m", y=0.87, fontsize=20)
+    fig.suptitle(f"n = {n_sensors}, $\\theta$ = {theta} m", y=0.87, fontsize=20)
     save_fig(fig, f"2obj_spectrum_theta{theta}_{n_sensors}sensors.png", save_dir)
 
 
@@ -92,30 +96,22 @@ def main():
     set_fig_style()
     config = get_config()
 
-    save_dir = config["save_dir"]
     lad20cd = lad20nm_to_lad20cd(config["la"])
-    networks_dir = config["optimisation"]["networks_dir"]
-    filename = config["optimisation"]["two_objectives"]["filename"]
-    networks_path = Path(save_dir, lad20cd, networks_dir, filename)
+    networks_path = get_two_objs_filepath(config)
     networks = load_pickle(networks_path)
 
-    figs_dir = config["figures"]["save_dir"]
-    save_path = Path(save_dir, lad20cd, figs_dir)
-    os.makedirs(save_path, exist_ok=True)
+    figs_dir = get_figures_save_dir(config)
 
-    theta = config["optimisation"]["theta"]["default"]
-    n_sensors = config["optimisation"]["n_sensors"]["default"]
+    theta, n_sensors = get_default_optimisation_params(config)
     n = networks[f"theta{theta}"][f"{n_sensors}sensors"]
     scores, solutions = extract_all(n)
     scores = -scores
 
-    population_groups = config["objectives"]["population_groups"]
-    all_groups = dict(population_groups)
-    all_groups["workplace"] = config["objectives"]["workplace"]
+    population_groups, all_groups = get_objectives(config)
     plot_objs = config["optimisation"]["two_objectives"]["objectives"]
     inputs = get_multi_obj_inputs(lad20cd, population_groups)
 
-    fig_obj1_vs_obj2(plot_objs, scores, all_groups, theta, n_sensors, save_path)
+    fig_obj1_vs_obj2(plot_objs, scores, all_groups, theta, n_sensors, figs_dir)
     fig_two_objs_spectrum(
         lad20cd,
         plot_objs,
@@ -125,7 +121,7 @@ def main():
         all_groups,
         theta,
         n_sensors,
-        save_path,
+        figs_dir,
     )
 
 

@@ -1,5 +1,3 @@
-import os
-from pathlib import Path
 import matplotlib.pyplot as plt
 from spineq.optimise import calc_coverage
 from spineq.plotting import (
@@ -13,8 +11,15 @@ from spineq.plotting import (
 from spineq.data_fetcher import lad20nm_to_lad20cd
 from spineq.genetic import extract_all
 from figs_urb_obs import get_uo_coverage_oa, load_uo_sensors
-from networks_multi_objs import get_multi_obj_inputs
-from utils import get_config, set_fig_style, load_pickle
+from networks_multi_objs import get_multi_obj_inputs, get_multi_objs_filepath
+from utils import (
+    get_config,
+    set_fig_style,
+    load_pickle,
+    get_objectives,
+    get_default_optimisation_params,
+    get_figures_save_dir,
+)
 
 
 def fig_all_above_threshold(scores, objs, threshold, theta, n_sensors, save_dir):
@@ -84,7 +89,7 @@ def fig_max_child_work_above_threshold(
 
     title = "".join(f"{obj} = {score:.2f}, " for obj, score in zip(objs, cov))
     title = title[:-2]
-    title += f"\n(n = 55, $\\theta$ = {theta} m)"
+    title += f"\n(n = {n_sensors}, $\\theta$ = {theta} m)"
 
     fig, ax = get_fig_grid(nrows_ncols=(1, 1))
     plot_optimisation_result(
@@ -169,7 +174,7 @@ def fig_max_min_coverage(
     )
 
     title = title[:-2]
-    title += f"\n(n = 55, $\\theta$ = {theta} m)"
+    title += f"\n(n = {n_sensors}, $\\theta$ = {theta} m)"
 
     fig, ax = get_fig_grid(nrows_ncols=(1, 1))
     plot_optimisation_result(
@@ -196,35 +201,27 @@ def main():
     set_fig_style()
     config = get_config()
 
-    save_dir = config["save_dir"]
     lad20cd = lad20nm_to_lad20cd(config["la"])
-    networks_dir = config["optimisation"]["networks_dir"]
-    filename = config["optimisation"]["multi_objectives"]["filename"]
-    networks_path = Path(save_dir, lad20cd, networks_dir, filename)
+    networks_path = get_multi_objs_filepath(config)
     networks = load_pickle(networks_path)
 
-    figs_dir = config["figures"]["save_dir"]
-    save_path = Path(save_dir, lad20cd, figs_dir)
-    os.makedirs(save_path, exist_ok=True)
+    figs_dir = get_figures_save_dir(config)
 
-    theta = config["optimisation"]["theta"]["default"]
-    n_sensors = config["optimisation"]["n_sensors"]["default"]
+    theta, n_sensors = get_default_optimisation_params(config)
     n = networks[f"theta{theta}"][f"{n_sensors}sensors"]
     scores, solutions = extract_all(n)
     scores = -scores
 
-    population_groups = config["objectives"]["population_groups"]
-    all_groups = dict(population_groups)
-    all_groups["workplace"] = config["objectives"]["workplace"]
+    population_groups, all_groups = get_objectives(config)
     objs = [g["title"] for g in all_groups.values()]
 
     threshold = config["figures"]["multi_objectives"]["all_coverage_threshold"]
-    fig_all_above_threshold(scores, objs, threshold, theta, n_sensors, save_path)
+    fig_all_above_threshold(scores, objs, threshold, theta, n_sensors, figs_dir)
 
     threshold = config["figures"]["multi_objectives"]["work_coverage_threshold"]
     work_name = config["objectives"]["workplace"]["title"]
     fig_work_above_threshold(
-        scores, objs, threshold, theta, n_sensors, work_name, save_path
+        scores, objs, threshold, theta, n_sensors, work_name, figs_dir
     )
 
     child_name = config["objectives"]["population_groups"]["pop_children"]["title"]
@@ -240,23 +237,20 @@ def main():
         inputs,
         work_name,
         child_name,
-        save_path,
+        figs_dir,
     )
 
-    uo_dir = config["urb_obs"]["save_dir"]
-    filename = config["urb_obs"]["filename"]
-    uo_path = Path(save_dir, lad20cd, uo_dir, filename)
-    uo_sensors = load_uo_sensors(uo_path)
+    uo_sensors = load_uo_sensors(config)
     uo_coverage = get_uo_coverage_oa(
-        lad20cd, None, theta, all_groups, inputs["oa_weight"], uo_path=uo_path
+        lad20cd, None, theta, all_groups, inputs["oa_weight"]
     )
     n_uo_oa = uo_sensors["oa11cd"].nunique()
     fig_coverage_above_uo(
-        uo_coverage, scores, objs, theta, n_uo_oa, all_groups, save_path
+        uo_coverage, scores, objs, theta, n_uo_oa, all_groups, figs_dir
     )
 
     fig_max_min_coverage(
-        lad20cd, scores, objs, theta, n_sensors, solutions, inputs, save_path
+        lad20cd, scores, objs, theta, n_sensors, solutions, inputs, figs_dir
     )
 
 

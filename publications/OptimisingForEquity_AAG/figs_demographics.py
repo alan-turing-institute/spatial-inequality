@@ -1,7 +1,3 @@
-import os
-from pathlib import Path
-
-from matplotlib.pyplot import get
 from spineq.optimise import calc_oa_weights
 from spineq.plotting import (
     get_fig_grid,
@@ -12,8 +8,13 @@ from spineq.plotting import (
     plot_oa_weights,
 )
 from spineq.data_fetcher import lad20nm_to_lad20cd, get_oa_shapes, get_oa_stats
-from utils import get_config
-from utils import set_fig_style
+from utils import (
+    set_fig_style,
+    get_objectives,
+    get_config,
+    get_default_optimisation_params,
+    get_figures_save_dir,
+)
 
 
 def get_weights(lad20cd, population_groups):
@@ -110,21 +111,16 @@ def main():
     set_fig_style()
 
     config = get_config()
-    save_dir = config["save_dir"]
     lad20cd = lad20nm_to_lad20cd(config["la"])
-    figs_dir = config["figures"]["save_dir"]
-    save_path = Path(save_dir, lad20cd, figs_dir)
-    os.makedirs(save_path, exist_ok=True)
+    figs_dir = get_figures_save_dir(config)
 
-    population_groups = config["objectives"]["population_groups"]
-    theta = config["optimisation"]["theta"]["default"]
-    all_groups = dict(population_groups)
-    all_groups["workplace"] = config["objectives"]["workplace"]
+    theta, _ = get_default_optimisation_params(config)
+    population_groups, all_groups = get_objectives(config)
 
     oa_weights = get_weights(lad20cd, population_groups)
-    fig_importance(lad20cd, all_groups, oa_weights, theta, save_path)
+    fig_importance(lad20cd, all_groups, oa_weights, theta, figs_dir)
     oa = calc_oa_density(lad20cd, all_groups, population_groups)
-    fig_density(lad20cd, oa, all_groups, save_path)
+    fig_density(lad20cd, oa, all_groups, figs_dir)
 
 
 if __name__ == "__main__":

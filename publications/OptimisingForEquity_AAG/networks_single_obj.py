@@ -1,9 +1,19 @@
-import os
 from pathlib import Path
 import pickle
 from spineq.data_fetcher import lad20nm_to_lad20cd
 from spineq.optimise import optimise
-from utils import get_config
+from utils import (
+    get_config,
+    get_objectives,
+    get_all_optimisation_params,
+    get_networks_save_dir,
+)
+
+
+def get_single_obj_filepath(config):
+    networks_dir = get_networks_save_dir(config)
+    filename = config["optimisation"]["single_objective"]["filename"]
+    return Path(networks_dir, filename)
 
 
 def make_single_obj_networks(lad20cd, population_groups, thetas, n_sensors, results={}):
@@ -54,16 +64,10 @@ def make_single_obj_networks(lad20cd, population_groups, thetas, n_sensors, resu
 
 def main():
     config = get_config()
-    save_dir = config["save_dir"]
     lad20cd = lad20nm_to_lad20cd(config["la"])
-    networks_dir = config["optimisation"]["networks_dir"]
-    filename = config["optimisation"]["single_objective"]["filename"]
-    save_path = Path(save_dir, lad20cd, networks_dir, filename)
-    os.makedirs(save_path.parent, exist_ok=True)
-
-    population_groups = config["objectives"]["population_groups"]
-    thetas = config["optimisation"]["theta"]["generate"]
-    n_sensors = config["optimisation"]["n_sensors"]["generate"]
+    save_path = get_single_obj_filepath(config)
+    population_groups, _ = get_objectives(config)
+    thetas, n_sensors = get_all_optimisation_params(config)
 
     results = make_single_obj_networks(lad20cd, population_groups, thetas, n_sensors)
     with open(save_path, "wb") as f:

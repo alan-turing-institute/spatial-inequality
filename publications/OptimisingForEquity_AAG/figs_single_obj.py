@@ -1,7 +1,4 @@
 from math import floor, ceil, sqrt
-import os
-from pathlib import Path
-import pickle
 import matplotlib.pyplot as plt
 from spineq.plotting import (
     get_fig_grid,
@@ -10,8 +7,16 @@ from spineq.plotting import (
     add_scalebar,
     plot_optimisation_result,
 )
-from spineq.data_fetcher import lad20nm_to_lad20cd
-from utils import get_config, set_fig_style, load_pickle
+from networks_single_obj import get_single_obj_filepath
+from utils import (
+    get_config,
+    set_fig_style,
+    load_pickle,
+    get_objectives,
+    get_default_optimisation_params,
+    get_all_optimisation_params,
+    get_figures_save_dir,
+)
 
 
 def fig_single_obj(thetas, n_sensors, results, all_groups, save_dir):
@@ -68,27 +73,17 @@ def main():
     set_fig_style()
 
     config = get_config()
-    save_dir = config["save_dir"]
-    lad20cd = lad20nm_to_lad20cd(config["la"])
-    networks_dir = config["optimisation"]["networks_dir"]
-    filename = config["optimisation"]["single_objective"]["filename"]
-    networks_path = Path(save_dir, lad20cd, networks_dir, filename)
+    networks_path = get_single_obj_filepath(config)
     results = load_pickle(networks_path)
 
-    figs_dir = config["figures"]["save_dir"]
-    save_path = Path(save_dir, lad20cd, figs_dir)
-    os.makedirs(save_path, exist_ok=True)
+    figs_dir = get_figures_save_dir(config)
 
-    population_groups = config["objectives"]["population_groups"]
-    thetas = config["optimisation"]["theta"]["generate"]
-    n_sensors = config["optimisation"]["n_sensors"]["generate"]
-    all_groups = dict(population_groups)
-    all_groups["workplace"] = config["objectives"]["workplace"]
-    fig_single_obj(thetas, n_sensors, results, all_groups, save_path)
+    thetas, n_sensors = get_all_optimisation_params(config)
+    _, all_groups = get_objectives(config)
+    fig_single_obj(thetas, n_sensors, results, all_groups, figs_dir)
 
-    theta = config["optimisation"]["theta"]["default"]
-    n_sensors = config["optimisation"]["n_sensors"]["default"]
-    fig_coverage_vs_sensors(results, theta, n_sensors, all_groups, save_path)
+    theta, n_sensors = get_default_optimisation_params(config)
+    fig_coverage_vs_sensors(results, theta, n_sensors, all_groups, figs_dir)
 
 
 if __name__ == "__main__":
