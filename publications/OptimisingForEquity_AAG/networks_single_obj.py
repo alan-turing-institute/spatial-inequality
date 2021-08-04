@@ -3,7 +3,7 @@ from pathlib import Path
 import pickle
 from spineq.data_fetcher import lad20nm_to_lad20cd
 from spineq.optimise import optimise
-from config import config
+from utils import get_config
 
 
 def make_single_obj_networks(lad20cd, population_groups, thetas, n_sensors, results={}):
@@ -53,6 +53,7 @@ def make_single_obj_networks(lad20cd, population_groups, thetas, n_sensors, resu
 
 
 def main():
+    config = get_config()
     save_dir = config["save_dir"]
     lad20cd = lad20nm_to_lad20cd(config["la"])
     networks_dir = config["optimisation"]["networks_dir"]

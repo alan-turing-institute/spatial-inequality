@@ -11,8 +11,7 @@ from spineq.plotting import (
     plot_optimisation_result,
 )
 from spineq.data_fetcher import lad20nm_to_lad20cd
-from config import config
-from figs_style import set_fig_style
+from utils import get_config, set_fig_style, load_pickle
 
 
 def fig_single_obj(thetas, n_sensors, results, all_groups, save_dir):
@@ -65,20 +64,16 @@ def fig_coverage_vs_sensors(results, theta, n_sensors, all_groups, save_dir):
     save_fig(fig, "coverage_vs_nsensors.png", save_dir)
 
 
-def load_networks(path):
-    with open(path, "rb") as f:
-        return pickle.load(f)
-
-
 def main():
     set_fig_style()
 
+    config = get_config()
     save_dir = config["save_dir"]
     lad20cd = lad20nm_to_lad20cd(config["la"])
     networks_dir = config["optimisation"]["networks_dir"]
     filename = config["optimisation"]["single_objective"]["filename"]
     networks_path = Path(save_dir, lad20cd, networks_dir, filename)
-    results = load_networks(networks_path)
+    results = load_pickle(networks_path)
 
     figs_dir = config["figures"]["save_dir"]
     save_path = Path(save_dir, lad20cd, figs_dir)

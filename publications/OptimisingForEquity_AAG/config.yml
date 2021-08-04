@@ -36,13 +36,13 @@ optimisation:
   single_objective:
     filename: networks_singleobj.pkl
   multi_objectives:
-    gen: 100
-    population_size: 20
+    gen: 1000
+    population_size: 200
     seed: 123
     filename: networks_multiobj.pkl
   two_objectives:
-    gen: 100
-    population_size: 20
+    gen: 1000
+    population_size: 200
     seed: 234
     objectives: ["pop_elderly", "workplace"]
     filename: networks_2obj.pkl
@@ -53,3 +53,6 @@ urb_obs:
 
 figures:
   save_dir: figures
+  multi_objectives:
+    all_coverage_threshold: 0.45
+    work_coverage_threshold: 0.65

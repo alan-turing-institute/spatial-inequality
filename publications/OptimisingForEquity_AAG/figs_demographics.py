@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+
+from matplotlib.pyplot import get
 from spineq.optimise import calc_oa_weights
 from spineq.plotting import (
     get_fig_grid,
@@ -10,8 +12,8 @@ from spineq.plotting import (
     plot_oa_weights,
 )
 from spineq.data_fetcher import lad20nm_to_lad20cd, get_oa_shapes, get_oa_stats
-from config import config
-from figs_style import set_fig_style
+from utils import get_config
+from utils import set_fig_style
 
 
 def get_weights(lad20cd, population_groups):
@@ -107,6 +109,7 @@ def fig_density(lad20cd, oa, all_groups, save_dir, vmax=6):
 def main():
     set_fig_style()
 
+    config = get_config()
     save_dir = config["save_dir"]
     lad20cd = lad20nm_to_lad20cd(config["la"])
     figs_dir = config["figures"]["save_dir"]

@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import pickle
 import pygmo as pg
-from config import config
+from utils import get_config
 from spineq.data_fetcher import lad20nm_to_lad20cd
 from spineq.optimise import get_optimisation_inputs
 from spineq.genetic import build_problem, run_problem
@@ -45,6 +45,7 @@ def make_two_obj_networks(inputs, thetas, n_sensors, gen, population_size):
 
 
 def main():
+    config = get_config()
     save_dir = config["save_dir"]
     lad20cd = lad20nm_to_lad20cd(config["la"])
     networks_dir = config["optimisation"]["networks_dir"]

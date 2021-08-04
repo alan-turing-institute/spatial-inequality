@@ -23,21 +23,21 @@ from spineq.data_fetcher import lad20nm_to_lad20cd, get_oa_shapes
 from spineq.utils import coverage_grid
 from spineq.optimise import calc_coverage
 
-from config import config
-from figs_style import set_fig_style
+from utils import get_config, set_fig_style, load_pickle
 from figs_demographics import get_weights
-
-
-def load_networks(save_path):
-    with open(save_path, "rb") as f:
-        return pickle.load(f)
 
 
 def load_uo_sensors(save_path):
     return gpd.read_file(save_path)
 
 
-def get_uo_coverage_oa(lad20cd, uo_sensor_dict, theta, all_groups, oa_weights):
+def get_uo_coverage_oa(
+    lad20cd, uo_sensor_dict, theta, all_groups, oa_weights, uo_path=None
+):
+    if uo_sensor_dict is None:
+        uo_sensors = load_uo_sensors(uo_path)
+        uo_sensor_dict = get_uo_sensor_dict(lad20cd, uo_sensors=uo_sensors)
+
     uo_coverage = {}
     for name, _ in all_groups.items():
         uo_coverage[name] = calc_coverage(
@@ -210,12 +210,13 @@ def fig_uo_coverage_oa_diff(
 def main():
     set_fig_style()
 
+    config = get_config()
     save_dir = config["save_dir"]
     lad20cd = lad20nm_to_lad20cd(config["la"])
     networks_dir = config["optimisation"]["networks_dir"]
     filename = config["optimisation"]["single_objective"]["filename"]
     networks_path = Path(save_dir, lad20cd, networks_dir, filename)
-    networks = load_networks(networks_path)
+    networks = load_pickle(networks_path)
 
     uo_dir = config["urb_obs"]["save_dir"]
     filename = config["urb_obs"]["filename"]
@@ -242,7 +243,7 @@ def main():
     fig_uo_coverage_grid_diff(
         lad20cd, uo_sensors, theta, all_groups, networks, save_path
     )
-    fig_uo_coverage_oa(uo_coverage, theta, all_groups, oa_weights, save_path)
+    fig_uo_coverage_oa(uo_coverage, theta, all_groups, save_path)
     fig_uo_coverage_oa_diff(
         lad20cd, uo_coverage, theta, all_groups, networks, save_path
     )
