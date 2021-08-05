@@ -99,7 +99,7 @@ def download_oa_shape(lad11cd="E08000021", lad20cd=None, overwrite=False):
 def download_oa_mappings(overwrite=False):
     save_path = Path(RAW_DIR, "oa_mappings.csv")
     if os.path.exists(save_path) and not overwrite:
-        return pd.read_csv(save_path)
+        return pd.read_csv(save_path,  dtype=str)
 
     # 2011
     # https://geoportal.statistics.gov.uk/datasets/ons::output-area-to-lower-layer-super-output-area-to-middle-layer-super-output-area-to-local-authority-district-december-2011-lookup-in-england-and-wales/about

@@ -2,12 +2,13 @@
 
 To be submitted to Annals of the American Association of Geographers.
 
-## Instructions - zenodo (?)
+## Zenodo (?)
+
 
 ## Instructions - regenerate
 
 - Checkout specific commit/tag
 - Create, activate virtual environment
 - Config
-- Run scripts
+- Run scripts: `python main.py`
 - View figures

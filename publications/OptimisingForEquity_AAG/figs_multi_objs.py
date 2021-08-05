@@ -81,8 +81,12 @@ def fig_max_child_work_above_threshold(
         for idx in sensor_idx
     ]
 
+    # select weight for 1st objective
+    # (weights don't matter for calculating coverage of each OA, only for calculating
+    # overrall coverage)
+    w = list(inputs["oa_weight"].values())[0]
     coverage = calc_coverage(
-        lad20cd, sensor_dict, oa_weight=inputs["oa_weight"][objs[0]], theta=theta
+        lad20cd, sensor_dict, oa_weight=w, theta=theta
     )
     coverage["sensors"] = sensor_dict
     coverage["lad20cd"] = lad20cd

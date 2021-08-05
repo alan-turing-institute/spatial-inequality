@@ -24,11 +24,10 @@ from utils import (
 
 def fig_obj1_vs_obj2(plot_objs, scores, all_groups, theta, n_sensors, save_dir):
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
-    ax.plot(scores[:, 0], scores[:, 1], "o")
-    ax.set_ylabel(all_groups[plot_objs[0]]["title"], fontsize=14)
+    ax.plot(scores[:, 1], scores[:, 0], "o")
     ax.set_xlabel(all_groups[plot_objs[1]]["title"], fontsize=14)
+    ax.set_ylabel(all_groups[plot_objs[0]]["title"], fontsize=14)
     ax.axis("equal")
-
     save_fig(fig, f"2obj_theta{theta}_{n_sensors}sensors.png", save_dir)
 
 
@@ -95,13 +94,10 @@ def fig_two_objs_spectrum(
 def main():
     set_fig_style()
     config = get_config()
-
-    lad20cd = lad20nm_to_lad20cd(config["la"])
-    networks_path = get_two_objs_filepath(config)
-    networks = load_pickle(networks_path)
-
     figs_dir = get_figures_save_dir(config)
 
+    networks_path = get_two_objs_filepath(config)
+    networks = load_pickle(networks_path)
     theta, n_sensors = get_default_optimisation_params(config)
     n = networks[f"theta{theta}"][f"{n_sensors}sensors"]
     scores, solutions = extract_all(n)
@@ -109,6 +105,7 @@ def main():
 
     population_groups, all_groups = get_objectives(config)
     plot_objs = config["optimisation"]["two_objectives"]["objectives"]
+    lad20cd = lad20nm_to_lad20cd(config["la"])
     inputs = get_multi_obj_inputs(lad20cd, population_groups)
 
     fig_obj1_vs_obj2(plot_objs, scores, all_groups, theta, n_sensors, figs_dir)
