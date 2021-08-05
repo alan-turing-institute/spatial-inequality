@@ -16,10 +16,21 @@
 
 ![]({{fig_coverage_vs_nsensors}})
 
-for each obj:
-###  {{obj}}
+### {{total_pop_name}}
 
-![]({{fig_obj}})
+![]({{fig_totalpop}})
+
+### {{children_name}}
+
+![]({{fig_children}})
+
+### {{older_name}}
+
+![]({{fig_older}})
+
+### {{work_name}}
+
+![]({{fig_workers}})
 
 ## Comparison with Urban Observatory
 
@@ -45,11 +56,11 @@ for each obj:
 
 ![]({{fig_all_above_threshold}})
 
-### Coverage of Workers Above {{work_threshold}}
+### Coverage of {{work_name}} Above {{work_threshold}}
 
 ![]({{fig_work_above_threshold}})
 
-### Max Coverage of Children with Worker Coverage Above {{work_threshold}}
+### Max Coverage of {{children_name}} with {{work_name}} Coverage Above {{work_threshold}}
 
 ![]({{fig_max_child_work_above_threshold}})
 
@@ -63,7 +74,7 @@ for each obj:
 
 ##  Two Objective Networks ({{obj_1}} and {{obj_2}})
 
-### Coverageg of {{obj_1}} vs. {{obj_2}}
+### Coverage of {{obj_1}} vs. {{obj_2}}
 
 ![]({{fig_obj1_vs_obj2}})
 

@@ -44,7 +44,7 @@ def fig_work_above_threshold(
     networks_swarmplot(scores, objs, thresholds={work_name: threshold}, ax=ax)
     save_fig(
         fig,
-        f"multiobj_theta{theta}_{n_sensors}sensors_workabove{threshold * 100}cov.png",
+        f"multiobj_theta{theta}_{n_sensors}sensors_workabove{round(threshold * 100)}cov.png",
         save_dir,
     )
 
@@ -85,9 +85,7 @@ def fig_max_child_work_above_threshold(
     # (weights don't matter for calculating coverage of each OA, only for calculating
     # overrall coverage)
     w = list(inputs["oa_weight"].values())[0]
-    coverage = calc_coverage(
-        lad20cd, sensor_dict, oa_weight=w, theta=theta
-    )
+    coverage = calc_coverage(lad20cd, sensor_dict, oa_weight=w, theta=theta)
     coverage["sensors"] = sensor_dict
     coverage["lad20cd"] = lad20cd
 
