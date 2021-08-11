@@ -56,3 +56,6 @@ figures:
   multi_objectives:
     all_coverage_threshold: 0.45
     work_coverage_threshold: 0.65
+
+report:
+  fig_width: 1000

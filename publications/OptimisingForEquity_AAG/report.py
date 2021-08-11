@@ -1,6 +1,7 @@
 from glob import glob
 from pathlib import Path
 from jinja2 import Template
+from markdown import markdown
 from spineq.data_fetcher import lad20nm_to_lad20cd
 from utils import get_config, get_figures_save_dir, get_objectives
 
@@ -76,6 +77,7 @@ def main():
     obj_2 = all_groups[obj_2]["title"]
     fig_obj1_vs_obj2 = find_fig_path("2obj_theta*_*sensors.png", fig_dir)
     fig_spectrum = find_fig_path("2obj_spectrum_theta*_*sensors.png", fig_dir)
+    fig_width = config["report"]["fig_width"]
 
     filled_template = template.render(
         la_name=la_name,
@@ -107,10 +109,15 @@ def main():
         obj_2=obj_2,
         fig_obj1_vs_obj2=fig_obj1_vs_obj2,
         fig_spectrum=fig_spectrum,
+        fig_width=fig_width,
     )
 
     with open(Path(report_dir, "report.md"), "w") as f:
         f.write(filled_template)
+
+    html = markdown(filled_template)
+    with open(Path(report_dir, "report.html"), "w") as f:
+        f.write(html)
 
 
 if __name__ == "__main__":
