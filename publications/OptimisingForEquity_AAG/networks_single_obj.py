@@ -35,9 +35,10 @@ def make_single_obj_networks(
     n_sensors: list,
     results: dict = {},
 ) -> dict:
-    """Generate networks optimised for a single objective (all age groups defined in 
+    """Generate networks optimised for a single objective (all age groups defined in
     `population_groups` and place of work), for a range of theta values
-    (coverage distances) and numbers of sensors.
+    (coverage distances) and numbers of sensors. Networks are generated with a greedy
+    algorithm.
 
     Parameters
     ----------
@@ -56,7 +57,7 @@ def make_single_obj_networks(
     Returns
     -------
     dict
-        Optimised networks
+        Optimised networks and coverage scores
     """
     for name, weights in population_groups.items():
         if name not in results.keys():
