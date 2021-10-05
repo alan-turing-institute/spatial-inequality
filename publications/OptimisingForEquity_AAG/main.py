@@ -7,6 +7,7 @@ import figs_single_obj
 import figs_urb_obs
 import figs_multi_objs
 import figs_two_objs
+import report
 
 
 def main():
@@ -24,6 +25,7 @@ def main():
     figs_urb_obs.main()
     figs_multi_objs.main()
     figs_two_objs.main()
+    report.main()
 
 
 if __name__ == "__main__":
