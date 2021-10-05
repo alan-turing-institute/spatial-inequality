@@ -1,10 +1,10 @@
-# Optimising for equity: Sensor coverage, networks and the responsive city (DRAFT)
+# Optimising for equity: Sensor coverage, networks and the responsive city
 
 To be submitted to Annals of the American Association of Geographers.
 
 ## Pre-Generated Figures and Data
 
-TODO - can be found at...
+TODO
 
 ## Instructions
 

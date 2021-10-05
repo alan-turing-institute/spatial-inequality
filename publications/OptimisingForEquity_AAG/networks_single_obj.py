@@ -10,13 +10,54 @@ from utils import (
 )
 
 
-def get_single_obj_filepath(config):
+def get_single_obj_filepath(config: dict) -> Path:
+    """Get file path to save or load single objective networks.
+
+    Parameters
+    ----------
+    config : dict
+        Parameters as loaded by utils.get_config()
+
+    Returns
+    -------
+    Path
+        Path to save optimised networks to
+    """
     networks_dir = get_networks_save_dir(config)
     filename = config["optimisation"]["single_objective"]["filename"]
     return Path(networks_dir, filename)
 
 
-def make_single_obj_networks(lad20cd, population_groups, thetas, n_sensors, results={}):
+def make_single_obj_networks(
+    lad20cd: str,
+    population_groups: dict,
+    thetas: list,
+    n_sensors: list,
+    results: dict = {},
+) -> dict:
+    """Generate networks optimised for a single objective (all age groups defined in 
+    `population_groups` and place of work), for a range of theta values
+    (coverage distances) and numbers of sensors.
+
+    Parameters
+    ----------
+    lad20cd : str
+        Local authority code to generate results for
+    population_groups : dict
+        Parameters for residential population objectives, as returned by
+        utils.get_objectives()
+    thetas : list
+        Theta (coverage distance) values to generate networks for
+    n_sensors : list
+        Generate networks with this many sensors
+    results : dict, optional
+        Previously generated results or metadata to add new networks to, by default {}
+
+    Returns
+    -------
+    dict
+        Optimised networks
+    """
     for name, weights in population_groups.items():
         if name not in results.keys():
             results[name] = {}
@@ -63,6 +104,10 @@ def make_single_obj_networks(lad20cd, population_groups, thetas, n_sensors, resu
 
 
 def main():
+    """
+    Generate single objective networks for a local authority and save them to the path
+    specified in config.yml.
+    """
     config = get_config()
     lad20cd = lad20nm_to_lad20cd(config["la"])
     save_path = get_single_obj_filepath(config)

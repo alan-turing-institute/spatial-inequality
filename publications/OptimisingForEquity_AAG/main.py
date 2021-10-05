@@ -10,6 +10,11 @@ from figs_two_objs import main as figs_two_objs
 
 
 def main():
+    """
+    Run all scripts to process the data, generate optimised networks and save figures
+    and a formatted report for a local authority, as defined by the parameters in
+    `config.yml`.
+    """
     sensors_urb_obs()
     networks_single_obj()
     networks_multi_objs()
