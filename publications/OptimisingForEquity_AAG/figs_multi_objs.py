@@ -1,4 +1,6 @@
+from pathlib import Path
 import matplotlib.pyplot as plt
+import numpy as np
 from spineq.optimise import calc_coverage
 from spineq.plotting import (
     get_fig_grid,
@@ -22,7 +24,34 @@ from utils import (
 )
 
 
-def fig_all_above_threshold(scores, objs, threshold, theta, n_sensors, save_dir):
+def fig_all_above_threshold(
+    scores: np.ndarray,
+    objs: list,
+    threshold: float,
+    theta: float,
+    n_sensors: int,
+    save_dir: Path,
+):
+    """Create a swarm plot of points for each candidate network, highlighting those with
+    coverage above a set threshold for all objectives. Figure name:
+    multiobj_theta{theta}_{n_sensors}sensors_above{threshold}cov.png
+
+    Parameters
+    ----------
+    scores : np.ndarray
+        Coverage values for each objective in each candidate network
+    objs : list
+        Names of objectives in the order they appear in scores
+    threshold : float
+        Highlight networks that have greater than this value of coverage for all
+        objectives
+    theta : float
+        Coverage distance to use
+    n_sensors : int
+        No. of sensors in the network
+    save_dir : Path
+        Directory to save figure
+    """
     fig, ax = plt.subplots(1, 1, figsize=(10, 5))
     networks_swarmplot(scores, objs, thresholds=threshold, ax=ax)
     save_fig(
@@ -33,8 +62,36 @@ def fig_all_above_threshold(scores, objs, threshold, theta, n_sensors, save_dir)
 
 
 def fig_work_above_threshold(
-    scores, objs, threshold, theta, n_sensors, work_name, save_dir
+    scores: np.ndarray,
+    objs: list,
+    threshold: float,
+    theta: float,
+    n_sensors: int,
+    work_name: str,
+    save_dir: Path,
 ):
+    """Create a swarm plot of points for each candidate network, highlighting those with
+    above a threshold of coverage of workplaces. Figure name:
+    multiobj_theta{theta}_{n_sensors}sensors_workabove{threshold}cov.png
+
+    Parameters
+    ----------
+    scores : np.ndarray
+        Coverage values for each objective in each candidate network
+    objs : list
+        Names of objectives in the order they appear in scores
+    threshold : float
+        Highlight networks that have greater than this value of coverage for all
+        objectives
+    theta : float
+        Coverage distance to use
+    n_sensors : int
+        No. of sensors in the network
+    work_name : str
+        Name of the workplace objective
+    save_dir : Path
+        Directory to save figure
+    """
     work_idx = objs.index(work_name)
     if (scores[:, work_idx] < threshold).all():
         print(f"No networks with workplace coverage > {threshold}, skipping figure")
@@ -50,18 +107,48 @@ def fig_work_above_threshold(
 
 
 def fig_max_child_work_above_threshold(
-    lad20cd,
-    scores,
-    objs,
-    threshold,
-    theta,
-    n_sensors,
-    solutions,
-    inputs,
-    work_name,
-    child_name,
-    save_dir,
+    lad20cd: str,
+    scores: np.ndarray,
+    objs: list,
+    threshold: float,
+    theta: float,
+    n_sensors: int,
+    solutions: np.ndarray,
+    inputs: dict,
+    work_name: str,
+    child_name: str,
+    save_dir: Path,
 ):
+    """From a set of candidate networks, plot the one that maximsies coverage of
+    children whlist also keeping the coverage of worklplaces above a minimum threshold.
+    Figure name:
+    multiobj_wplace{work_cov}_child{child_cov}_theta{theta}_{n_sensors}sensors.png
+
+    Parameters
+    ----------
+    lad20cd : str
+        Local authority code
+    scores : np.ndarray
+        Coverage values for each objective in each candidate network
+    objs : list
+        Names of objectives in the order they appear in scores
+    threshold : float
+        Only consider networks with at least this coverage of workplaces
+    theta : float
+        Coverage distance to use
+    n_sensors : int
+        No. of sensors in the network
+    solutions : np.ndarray
+        Sensor output area indices for each candidate network
+    inputs : dict
+        Optimisation inputs from networks_multi_objs.get_multi_obj_inputs
+    work_name : str
+        Name of the workplace objective
+    child_name : str
+        Name of the coverage of children objective
+    save_dir : Path
+        Directory to save the figure
+    """
     work_idx = objs.index(work_name)
     child_idx = objs.index(child_name)
     if (scores[:, work_idx] < threshold).all():
@@ -115,8 +202,36 @@ def fig_max_child_work_above_threshold(
 
 
 def fig_coverage_above_uo(
-    uo_coverage, scores, objs, theta, n_uo_oa, all_groups, save_dir
+    uo_coverage: dict,
+    scores: np.ndarray,
+    objs: list,
+    theta: float,
+    n_uo_oa: int,
+    all_groups: dict,
+    save_dir: Path,
 ):
+    """Create a swarm plot showing optimised networks that have higher coverage thab the
+    pre-existing Urban Observatory network across all objectives. Figure name:
+    multiobj_theta{theta}_{n_uo_oa}sensors_above_urbobs.png
+
+    Parameters
+    ----------
+    uo_coverage : dict
+        Coverage of each output area with the Urban Observatory network (e.g. from
+        get_uo_coverage_oa)
+    scores : np.ndarray
+        Coverage values for each objective in each candidate network
+    objs : list
+        Names of objectives in the order they appear in scores
+    theta : float
+        Coverage distance to use
+    n_uo_oa : int
+        Number of output area the Urban Observatory network has a sensor in
+    all_groups : dict
+        Short name (keys) and long title (values) for each objective
+    save_dir : Path
+        Directory to save figure
+    """
     fig, ax = plt.subplots(1, 1, figsize=(10, 5))
     threshold = {
         all_groups["workplace"]["title"]: uo_coverage["workplace"]["total_coverage"],
@@ -134,15 +249,36 @@ def fig_coverage_above_uo(
 
 
 def fig_max_min_coverage(
-    lad20cd,
-    scores,
-    objs,
-    theta,
-    n_sensors,
-    solutions,
-    inputs,
-    save_dir,
+    lad20cd: str,
+    scores: np.ndarray,
+    objs: list,
+    theta: float,
+    n_sensors: int,
+    solutions: np.ndarray,
+    inputs: dict,
+    save_dir: float,
 ):
+    """Plot the network that maximises the minimum coverage across all objectives.
+
+    Parameters
+    ----------
+    lad20cd : str
+        Local authority code
+    scores : np.ndarray
+        Coverage values for each objective in each candidate network
+    objs : list
+        Names of objectives in the order they appear in scores
+    theta : float
+        Coverage distance to use
+    n_sensors : int
+        No. of sensors in the network
+    solutions : np.ndarray
+        Sensor output area indices for each candidate network
+    inputs : dict
+        Optimisation inputs from networks_multi_objs.get_multi_obj_inputs
+    save_dir : float
+        Directory to save figure
+    """
     # find network that has the maximum minimum coverage across all objectives
     # (i.e. find network where all objectives have a coverage of at least t, for
     # highest possible t)
@@ -200,6 +336,9 @@ def fig_max_min_coverage(
 
 
 def main():
+    """Save figures showing the results of running the multi-objective optimisation
+    (with the NSGA2 algorithm)
+    """
     set_fig_style()
     config = get_config()
 
