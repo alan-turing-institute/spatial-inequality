@@ -59,7 +59,11 @@ def load_uo_sensors(config: Optional[dict]) -> gpd.GeoDataFrame:
 
 
 def get_uo_coverage_oa(
-    lad20cd: str, uo_sensor_dict: Optional[list], theta: float, all_groups: dict, oa_weights: dict
+    lad20cd: str,
+    uo_sensor_dict: Optional[list],
+    theta: float,
+    all_groups: dict,
+    oa_weights: dict,
 ) -> dict:
     """Calculate the coverage of each output area provide by the Urban Observatory
     sensors
@@ -132,7 +136,23 @@ def fig_uo_sensor_locations(lad20cd: str, uo_sensors: gpd.GeoDataFrame, save_dir
     save_fig(fig, f"urb_obs_sensors_nsensors_{len(uo_sensors)}.png", save_dir)
 
 
-def fig_uo_coverage_grid(lad20cd, uo_sensors, theta, save_dir):
+def fig_uo_coverage_grid(
+    lad20cd: str, uo_sensors: gpd.GeoDataFrame, theta: int, save_dir: Path
+):
+    """Calculate the coverage the Urban Observatory sensor network provides on a square
+    grid. Figure name: urb_obs_coverage_grid_theta_{theta}_nsensors_{n_sensors}.png
+
+    Parameters
+    ----------
+    lad20cd : str
+        Local authority code
+    uo_sensors : gpd.GeoDataFrame
+        Urban Observatory sensor locations
+    theta : int
+        Coverage distance to use
+    save_dir : Path
+        Directory to save figure
+    """
     fig, ax = get_fig_grid(nrows_ncols=(1, 1))
     ax = ax[0]
     cmap = "Greens"
@@ -147,8 +167,34 @@ def fig_uo_coverage_grid(lad20cd, uo_sensors, theta, save_dir):
 
 
 def fig_uo_coverage_grid_diff(
-    lad20cd, uo_sensors, theta, all_groups, networks, save_dir
+    lad20cd: str,
+    uo_sensors: gpd.GeoDataFrame,
+    theta: float,
+    all_groups: dict,
+    networks: dict,
+    save_dir: Path,
 ):
+    """Show the coverage difference, on a square grid, between the Urban Observatory
+    network and networks optimised for the coverage of single objectives (single
+    population sub-groups). Figure name:
+    urb_obs_coverage_difference_grid_theta_{theta}_nsensors_{n_sensors}.png
+
+    Parameters
+    ----------
+    lad20cd : str
+        Local authority code
+    uo_sensors : gpd.GeoDataFrame
+        Urban Observatory sensor locations
+    theta : float
+        Coverage distance to use
+    all_groups : dict
+        Short name (keys) and long title (values) for each objective
+    networks : dict
+        Previous optimisation results (e.g. from
+        networks_single_obj.make_single_obj_networks)
+    save_dir : Path
+        Directory to save figure
+    """
     uo_sensors_xy = np.array(
         [uo_sensors["geometry"].x.values, uo_sensors["geometry"].y.values]
     ).T
@@ -199,7 +245,24 @@ def fig_uo_coverage_grid_diff(
     save_fig(fig, f"urb_obs_coverage_difference_grid_{t_str}_{n_str}.png", save_dir)
 
 
-def fig_uo_coverage_oa(uo_coverage, theta, all_groups, save_dir):
+def fig_uo_coverage_oa(
+    uo_coverage: dict, theta: float, all_groups: dict, save_dir: Path
+):
+    """Plot the coverage of each output area provide by the Urban Observatory
+    sensors. Figure name: urb_obs_coverage_oa_theta_{theta}_nsensors_{n_sensors}.png
+
+    Parameters
+    ----------
+    uo_coverage : dict
+        Coverage of each output area with the Urban Observatory network (e.g. from
+        get_uo_coverage_oa)
+    theta : float
+        Coverage distance to use
+    all_groups : dict
+        Short name (keys) and long title (values) for each objective
+    save_dir : Path
+        Directory to save figure
+    """
     title = f"Urban Observatory: Coverage with $\\theta$ = {theta} m\n"
     for name, params in all_groups.items():
         title += f"{params['title']}: {uo_coverage[name]['total_coverage']:.2f}, "
@@ -223,12 +286,37 @@ def fig_uo_coverage_oa(uo_coverage, theta, all_groups, save_dir):
     t_str = f"theta_{theta}"
     n_str = f"nsensors_{uo_coverage['n_sensors']}"
     save_fig(fig, f"urb_obs_coverage_oa_{t_str}_{n_str}.png", save_dir)
-    return uo_coverage
 
 
 def fig_uo_coverage_oa_diff(
-    lad20cd, uo_coverage, theta, all_groups, networks, save_dir
+    lad20cd: str,
+    uo_coverage: dict,
+    theta: float,
+    all_groups: dict,
+    networks: dict,
+    save_dir: Path,
 ):
+    """Show the coverage difference of each outupt area between the Urban Observatory
+    network and networks optimised for the coverage of single objectives (single
+    population sub-groups). Figure name:
+    urb_obs_coverage_difference_oa_theta_{theta}_nsensors_{n_sensors}.png
+
+    Parameters
+    ----------
+    lad20cd : str
+        Local authority code
+    uo_sensors : gpd.GeoDataFrame
+        Urban Observatory sensor locations
+    theta : float
+        Coverage distance to use
+    all_groups : dict
+        Short name (keys) and long title (values) for each objective
+    networks : dict
+        Previous optimisation results (e.g. from
+        networks_single_obj.make_single_obj_networks)
+    save_dir : Path
+        Directory to save figure
+    """
     fig, grid = get_fig_grid()
     cmap = get_diff_cmap()
     n_uo_oa = uo_coverage["n_sensors"]
@@ -278,6 +366,9 @@ def fig_uo_coverage_oa_diff(
 
 
 def main():
+    """Save figures showing the pre-existing Urban Observatory network of sensors and
+    comparisons with optimised networks using our approach.
+    """
     set_fig_style()
 
     config = get_config()
