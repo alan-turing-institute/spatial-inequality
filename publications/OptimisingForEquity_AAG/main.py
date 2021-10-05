@@ -1,12 +1,12 @@
-from sensors_urb_obs import main as sensors_urb_obs
-from networks_single_obj import main as networks_single_obj
-from networks_multi_objs import main as networks_multi_objs
-from networks_two_objs import main as networks_two_objs
-from figs_demographics import main as figs_demographics
-from figs_single_obj import main as figs_single_obj
-from figs_urb_obs import main as figs_urb_obs
-from figs_multi_objs import main as figs_multi_objs
-from figs_two_objs import main as figs_two_objs
+import sensors_urb_obs
+import networks_single_obj
+import networks_multi_objs
+import networks_two_objs
+import figs_demographics
+import figs_single_obj
+import figs_urb_obs
+import figs_multi_objs
+import figs_two_objs
 
 
 def main():
@@ -15,15 +15,15 @@ def main():
     and a formatted report for a local authority, as defined by the parameters in
     `config.yml`.
     """
-    sensors_urb_obs()
-    networks_single_obj()
-    networks_multi_objs()
-    networks_two_objs()
-    figs_demographics()
-    figs_single_obj()
-    figs_urb_obs()
-    figs_multi_objs()
-    figs_two_objs()
+    sensors_urb_obs.main()
+    networks_single_obj.main()
+    networks_multi_objs.main()
+    networks_two_objs.main()
+    figs_demographics.main()
+    figs_single_obj.main()
+    figs_urb_obs.main()
+    figs_multi_objs.main()
+    figs_two_objs.main()
 
 
 if __name__ == "__main__":

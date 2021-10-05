@@ -1,3 +1,5 @@
+from pathlib import Path
+import geopandas as gpd
 from spineq.optimise import calc_oa_weights
 from spineq.plotting import (
     get_fig_grid,
@@ -17,7 +19,23 @@ from utils import (
 )
 
 
-def get_weights(lad20cd, population_groups):
+def get_weights(lad20cd: str, population_groups: dict) -> dict:
+    """Calculate optimisation weights for each objective for each output area
+    in a local authority.
+
+    Parameters
+    ----------
+    lad20cd : str
+        Local authority code to generate results for
+    population_groups : dict
+        Parameters for residential population objectives, as returned by
+        utils.get_objectives
+
+    Returns
+    -------
+    dict
+        Output area weights
+    """
     oa_weights = {
         name: calc_oa_weights(
             lad20cd=lad20cd,
@@ -33,7 +51,30 @@ def get_weights(lad20cd, population_groups):
     return oa_weights
 
 
-def calc_oa_density(lad20cd, all_groups, population_groups):
+def calc_oa_density(
+    lad20cd: str, all_groups: dict, population_groups: dict
+) -> gpd.GeoDataFrame:
+    """Calculate the density of people for each objective in each output area (OA),
+    expressed as the percentage of people in that OA divided by the aera of the OA
+
+    Parameters
+    ----------
+    lad20cd : str
+        Local authority code to generate results for
+    all_groups : dict
+        Short name (keys) and long title (values) for each objective.
+    population_groups : dict
+        Parameters for residential population objectives, as returned by
+        utils.get_objectives
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Data frame with popluation counts for each objective in each  outputa area, plus
+        columns {name}_perc, {name}_reld for the percentage and density of people in
+        each output area for each objective (where {name} is replaced with the name of
+        the objective)
+    """
     oa = get_oa_shapes(lad20cd)
     oa["area"] = oa["geometry"].area / 1e6  # km^2
 
@@ -55,14 +96,41 @@ def calc_oa_density(lad20cd, all_groups, population_groups):
     workplace.name = "workplace"
     oa = oa.join(workplace)
 
-    for group in all_groups.keys():
+    for group in all_groups:
         oa[f"{group}_perc"] = oa[group] / oa[group].sum()
         oa[f"{group}_reld"] = oa[f"{group}_perc"] / oa["area"]
 
     return oa
 
 
-def fig_importance(lad20cd, groups, oa_weights, theta, save_dir, vmax=0.06):
+def fig_importance(
+    lad20cd: str,
+    groups: dict,
+    oa_weights: dict,
+    theta: float,
+    save_dir: Path,
+    vmax: float = 0.06,
+):
+    """Save a figure showing the "importance" of each output area for each objective,
+    where importance is the overall coverage of the whole local authority provided
+    by a network with a single sensor placed in that output area. Name of figure:
+    demographics_importance.png
+
+    Parameters
+    ----------
+    lad20cd : str
+        Local authority code to generate results for
+    groups : dict
+        Name and title of each population group/objective
+    oa_weights : dict
+        Weight for each output area for each group/objective
+    theta : float
+        Coverage distance
+    save_dir : Path
+        Directory to save figure in
+    vmax : float, optional
+        Max value for colour scale, by default 0.06
+    """
     fig, grid = get_fig_grid()
 
     for i, g in enumerate(groups.items()):
@@ -85,7 +153,31 @@ def fig_importance(lad20cd, groups, oa_weights, theta, save_dir, vmax=0.06):
     save_fig(fig, "demographics_importance.png", save_dir)
 
 
-def fig_density(lad20cd, oa, all_groups, save_dir, vmax=6):
+def fig_density(
+    lad20cd: str,
+    oa: gpd.GeoDataFrame,
+    all_groups: dict,
+    save_dir: Path,
+    vmax: float = 6,
+):
+    """Save a figure showing the density of each demographic variable/objective for each
+    output area (OA), measured as the fraction of the population in that OA divided by
+    the area of the OA. Name of figure: demographics_density.png
+
+    Parameters
+    ----------
+    lad20cd : str
+        Local authority code to generate results for
+    oa : gpd.GeoDataFrame
+        Data frame with stats for each variable in each output area (e.g. from
+        calc_oa_density)
+    all_groups : dict
+        Short name (keys) and long title (values) for each objective
+    save_dir : Path
+        Directory to save figure in
+    vmax : float, optional
+        Max value for colour scale, by default 6
+    """
     fig, grid = get_fig_grid()
 
     for i, g in enumerate(all_groups.items()):
@@ -108,6 +200,9 @@ def fig_density(lad20cd, oa, all_groups, save_dir, vmax=6):
 
 
 def main():
+    """Save figures showing the distribution of differrent sub-populations around the
+    local authority.
+    """
     set_fig_style()
 
     config = get_config()

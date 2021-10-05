@@ -1,4 +1,5 @@
 from math import floor, ceil, sqrt
+from pathlib import Path
 import matplotlib.pyplot as plt
 from spineq.plotting import (
     get_fig_grid,
@@ -19,7 +20,28 @@ from utils import (
 )
 
 
-def fig_single_obj(thetas, n_sensors, results, all_groups, save_dir):
+def fig_single_obj(
+    thetas: list, n_sensors: list, results: dict, all_groups: dict, save_dir: Path
+):
+    """Save figures showing optimised networks with different parameters (number of
+    sensors and coverage distance, theta) for each objective. Names of saved figures:
+    "{plot_obj}_{thetas}_{n_sensors}.png", where `plot_obj` is the objective name from
+    all_groups.
+
+    Parameters
+    ----------
+    thetas : list
+        Theta (coverage distance) values to plot (must exist in results)
+    n_sensors : list
+        Network sizes (number of sensors) to plot (must exist in results)
+    results : dict
+        Previous optimisation results (e.g. from
+        networks_single_obj.make_single_obj_networks)
+    all_groups : dict
+        Short name (keys) and long title (values) for each objective to plot
+    save_dir : Path
+        Directory to save figures in.
+    """
     n_figs = len(thetas) * len(n_sensors)
     n_rows = floor(sqrt(n_figs))
     n_cols = ceil(n_figs / n_rows)
@@ -53,7 +75,26 @@ def fig_single_obj(thetas, n_sensors, results, all_groups, save_dir):
         save_fig(fig, f"{plot_obj}_{t_str}_{n_str}.png", save_dir)
 
 
-def fig_coverage_vs_sensors(results, theta, n_sensors, all_groups, save_dir):
+def fig_coverage_vs_sensors(
+    results: dict, theta: float, n_sensors: int, all_groups: dict, save_dir: Path
+):
+    """Save a plot showing how the coverage of each objective increases with the number
+    of sensors in the network.
+
+    Parameters
+    ----------
+    results : dict
+        Previous optimisation results (e.g. from
+        networks_single_obj.make_single_obj_networks)
+    theta : float
+        Theta (coverage distance) value to use for the plot (must exist in results)
+    n_sensors : int
+        Max number of sensors to plot up to (must exist in results)
+    all_groups : dict
+        Short name (keys) and long title (values) for each objective to plot
+    save_dir : Path
+        Directory to save figures in.
+    """
     fig, ax = plt.subplots(1, 1)
     for obj in all_groups.keys():
         cov_history = results[obj][f"theta{theta}"][f"{n_sensors}sensors"][
@@ -70,6 +111,10 @@ def fig_coverage_vs_sensors(results, theta, n_sensors, all_groups, save_dir):
 
 
 def main():
+    """
+    Save figures showing the results of single-objective networks generated with a
+    greedy algorithm.
+    """
     set_fig_style()
 
     config = get_config()

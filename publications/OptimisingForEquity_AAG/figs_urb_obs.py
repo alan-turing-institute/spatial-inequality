@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 from publications.OptimisingForEquity_AAG.utils import get_la_save_dir
 
 import contextily as ctx
@@ -34,7 +35,20 @@ from figs_demographics import get_weights
 from networks_single_obj import get_single_obj_filepath
 
 
-def load_uo_sensors(config):
+def load_uo_sensors(config: Optional[dict]) -> gpd.GeoDataFrame:
+    """Load previously saved Urban Observatory sensor locations.
+
+    Parameters
+    ----------
+    config : Optional[dict]
+        Config dict specifying file path to saved results, as loaded by
+        utils.get_config, or if None call utils.get_config directly
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Urban Observatory sensor locations
+    """
     if config is None:
         config = get_config()
     uo_dir = config["urb_obs"]["save_dir"]
@@ -44,7 +58,31 @@ def load_uo_sensors(config):
     return gpd.read_file(uo_path)
 
 
-def get_uo_coverage_oa(lad20cd, uo_sensor_dict, theta, all_groups, oa_weights):
+def get_uo_coverage_oa(
+    lad20cd: str, uo_sensor_dict: Optional[list], theta: float, all_groups: dict, oa_weights: dict
+) -> dict:
+    """Calculate the coverage of each output area provide by the Urban Observatory
+    sensors
+
+    Parameters
+    ----------
+    lad20cd : str
+        Local authority code
+    uo_sensor_dict : Optional[list]
+        List of dictionaries with the location of each Urban Observatoy sensor, or None
+        in which cases this is generated from the output of load_uo_sensors
+    theta : float
+        Coverage distance to use
+    all_groups : dict
+        Short name (keys) and long title (values) for each objective to plot
+    oa_weights : dict
+        Weight for each output area for each group/objective
+
+    Returns
+    -------
+    dict
+        Coverage of each output area with the Urban Observatory network
+    """
     if uo_sensor_dict is None:
         uo_sensors = load_uo_sensors(None)
         uo_sensor_dict = get_uo_sensor_dict(lad20cd, uo_sensors=uo_sensors)
@@ -60,13 +98,34 @@ def get_uo_coverage_oa(lad20cd, uo_sensor_dict, theta, all_groups, oa_weights):
     return uo_coverage
 
 
-def get_diff_cmap():
+def get_diff_cmap() -> matplotlib.colors.LinearSegmentedColormap:
+    """Creates a purple-white-orange colour map to use when visualising the difference
+    in coverage between two networks.
+
+    Returns
+    -------
+    matplotlib.colors.LinearSegmentedColormap
+        Purple-white-orange colour map
+    """
     return matplotlib.colors.LinearSegmentedColormap.from_list(
         "", ["purple", "white", "orange"]
     )
 
 
-def fig_uo_sensor_locations(lad20cd, uo_sensors, save_dir):
+def fig_uo_sensor_locations(lad20cd: str, uo_sensors: gpd.GeoDataFrame, save_dir: Path):
+    """Show the location of all sensors in the Urban Observatory network (points only).
+    Figure nane: urb_obs_sensors_nsensors_{N}.png (where {N} is the no. sensors in the
+    UO network)
+
+    Parameters
+    ----------
+    lad20cd : str
+        Local authority code
+    uo_sensors : gpd.GeoDataFrame
+        Urban Observatory sensor locations
+    save_dir : Path
+        Directory to save figure
+    """
     fig, ax = plt.subplots(1, 1, figsize=(15, 15))
     plot_sensors(lad20cd, uo_sensors, centroids=False, ax=ax)
     add_scalebar(ax)
