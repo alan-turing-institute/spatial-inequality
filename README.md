@@ -29,6 +29,10 @@ Repository for the [Spatial Inequality in the Smart City](https://www.turing.ac.
    conda activate spatial-inequality
    ```
  
+## Papers and Publications
+
+- [OptimisingForEquity_AAG](publications/OptimisingForEquity_AAG)
+
 
 ## API
 
