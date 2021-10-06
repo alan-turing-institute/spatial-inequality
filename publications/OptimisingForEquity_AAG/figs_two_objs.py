@@ -1,3 +1,4 @@
+from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from spineq.optimise import calc_coverage
@@ -22,7 +23,25 @@ from utils import (
 )
 
 
-def fig_obj1_vs_obj2(plot_objs, scores, all_groups, theta, n_sensors, save_dir):
+def fig_obj1_vs_obj2(plot_objs: list, scores: np.ndarray, all_groups: dict, theta: float, n_sensors: int, save_dir: Path):
+    """Save a scatter plot showing the relationship between the coverage of one
+    objective and another. Figure name: 2obj_theta{theta}_{n_sensors}sensors.png
+
+    Parameters
+    ----------
+    plot_objs : list
+        Names of the two objectives to plot
+    scores : np.ndarray
+        Coverage values for each objective in each candidate network
+    all_groups : dict
+        Short name (keys) and long title (values) for each objective
+    theta : float
+        Coverage distance to use
+    n_sensors : int
+        Number of sensors in the candidate networks
+    save_dir : Path
+        Directory to save the figure
+    """
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
     ax.plot(scores[:, 1], scores[:, 0], "o")
     ax.set_xlabel(all_groups[plot_objs[1]]["title"], fontsize=14)
@@ -32,16 +51,41 @@ def fig_obj1_vs_obj2(plot_objs, scores, all_groups, theta, n_sensors, save_dir):
 
 
 def fig_two_objs_spectrum(
-    lad20cd,
-    plot_objs,
-    scores,
-    solutions,
-    inputs,
-    all_groups,
-    theta,
-    n_sensors,
-    save_dir,
+    lad20cd: str,
+    plot_objs: list,
+    scores: np.ndarray,
+    solutions: np.ndarray,
+    inputs: dict,
+    all_groups: dict,
+    theta: float,
+    n_sensors: int,
+    save_dir: Path,
 ):
+    """Save a figure showing a range of networks varying from maximal coverage of one
+    objective to maximal coverage of another, showing the trade-offs between the two.
+    Figure name: 2obj_spectrum_theta{theta}_{n_sensors}sensors.png
+
+    Parameters
+    ----------
+    lad20cd : str
+        Local authority code
+    plot_objs : list
+        Names of the two objectives to plot
+    scores : np.ndarray
+        Coverage values for each objective in each candidate network
+    solutions : np.ndarray
+        Output area indices for each sensor in each candidate network
+    inputs : dict
+        Optimisation inputs from networks_two_objs.get_two_obj_inputs
+    all_groups : dict
+        Short name (keys) and long title (values) for each objective
+    theta : float
+        Coverage distance to use
+    n_sensors : int
+        Number of sensors in the candidate networks
+    save_dir : Path
+        Directory to save the figure
+    """
     population_size = len(scores)
     rank_idx = scores[:, 0].argsort()
     ranks_to_plot = np.linspace(0, population_size - 1, 4).astype(int)
@@ -92,6 +136,10 @@ def fig_two_objs_spectrum(
 
 
 def main():
+    """
+    Save figures showing the results of running the mulit-objective optimisation (NSGA2)
+    with two objectives.
+    """
     set_fig_style()
     config = get_config()
     figs_dir = get_figures_save_dir(config)

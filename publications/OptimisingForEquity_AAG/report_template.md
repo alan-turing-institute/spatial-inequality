@@ -129,6 +129,6 @@ How increasing the coverage of one objective impacts the coverage of the second 
 
 ### Spectrum of Networks
 
-Range of 4 networks from maximising the coverage of objective 1 (to the detriment of objective 2), to maximising the coverage of objective 2 (to the detriment of objective 1), with compromises between them in-between. 
+Range of 4 networks from maximising the coverage of {{obj_1}} (perhaps to the detriment of {{obj_2}}), to maximising the coverage of {{obj_2}} (perhaps to the detriment of {{obj_1}}), with compromises between them in-between. 
 
 <img src="{{fig_spectrum}}" width="{{fig_width}}"/>

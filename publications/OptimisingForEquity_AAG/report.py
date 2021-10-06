@@ -1,4 +1,5 @@
 from glob import glob
+from typing import Union, Optional
 from pathlib import Path
 from jinja2 import Template
 from markdown import markdown
@@ -6,7 +7,22 @@ from spineq.data_fetcher import lad20nm_to_lad20cd
 from utils import get_config, get_figures_save_dir, get_objectives
 
 
-def find_fig_path(match_name, fig_dir):
+def find_fig_path(match_name: str, fig_dir: Union[str, Path]) -> Optional[Path]:
+    """Find the path to the first file matching the query `match_name` in the directory
+    `fig_dir`.
+
+    Parameters
+    ----------
+    match_name : str
+        Filename to match (passed to glob.glob)
+    fig_dir : Union[str, Path]
+        Directory to search for the file in
+
+    Returns
+    -------
+    Optional[Path]
+        Path to the found file, or None if there are no matches
+    """
     matches = glob(str(Path(fig_dir, match_name)))
     if not matches:
         return None
@@ -15,6 +31,11 @@ def find_fig_path(match_name, fig_dir):
 
 
 def main():
+    """
+    Creates a formatted report including all the generated figures for a local auhtority
+    and decriptions of what each figure shows (using the template reoprt_template.md).
+    Both a Markdown (report.md) and HTML (report.html) version of the report are saved.
+    """
     with open("report_template.md") as f:
         template = Template(f.read())
 

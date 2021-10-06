@@ -1,10 +1,13 @@
 # Local authority to generate results for.
 # Case sensitive name that must match an ONS lad20nm value
 la: Newcastle upon Tyne
+
 # Parent directory that all results and figures saved to
 save_dir: results
 
+# Definition of objectives to incluude in the optimisation
 objectives:
+  # Residential populations by age range (min from 0 and max up to 90)
   population_groups:
     pop_total:
       min: 0
@@ -21,41 +24,55 @@ objectives:
       max: 90
       weight: 1
       title: Residents Over 65
+  # Workplace populations
   workplace:
     weight: 1
     title: Workers
 
+# Optimisation parameters
 optimisation:
+  # Coverage distances to use (default value used in figures that don't specify theta values,
+  # networks generated for all theta values in the generate block)
   theta:
     default: 500
     generate: [100, 500]
+  # Number of sensors in each network (default value used in figures that don't specify n_sensors,
+  # networks generated for all n_sensors values in the generate block)
   n_sensors:
     default: 55
     generate: [10, 55]
+  # Name of directory to save generated networks in
   networks_dir: networks
+  # Parameters for single -objective optimisation
   single_objective:
-    filename: networks_singleobj.pkl
+    filename: networks_singleobj.pkl  # filename for saved results
+  # Parameters for multi-objective optimisation
   multi_objectives:
-    gen: 1000
-    population_size: 200
-    seed: 123
-    filename: networks_multiobj.pkl
+    gen: 1000  # number of iterations (generations) to run the optimisation for
+    population_size: 200  # number of candidate networks in each generation
+    seed: 123  # random seed to use
+    filename: networks_multiobj.pkl  # filename for saved results
+  # Parameters for two-objective optimisation
   two_objectives:
-    gen: 1000
-    population_size: 200
-    seed: 234
-    objectives: ["pop_elderly", "workplace"]
-    filename: networks_2obj.pkl
+    gen: 1000  # number of iterations (generations) to run the optimisation for
+    population_size: 200  # number of candidate networks in each generation
+    seed: 234  # random seed to use
+    objectives: ["pop_elderly", "workplace"]  # name of two objectives to use (must exist in objectives block above)
+    filename: networks_2obj.pkl  # filename for saved results
 
+# Parameters for Urban Observatory network commparisons
 urb_obs:
-  save_dir: urb_obs
-  filename: uo_sensors.shp
+  save_dir: urb_obs  # directory to save sensor file
+  filename: uo_sensors.shp  # filename of sensors file
 
+# Figure parameters
 figures:
-  save_dir: figures
+  save_dir: figures  # directory to save figures
+  # multi-objective optimisation figures
   multi_objectives:
-    all_coverage_threshold: 0.45
-    work_coverage_threshold: 0.65
+    all_coverage_threshold: 0.45  # generate a plot highlighiting networks where all objectives have at least this coverage
+    work_coverage_threshold: 0.65  # generate a plot highlighiting networks wih workplace coverage above this value
 
+# Formatted report parameters
 report:
-  fig_width: 1000
+  fig_width: 1000  # width for figures in the report
