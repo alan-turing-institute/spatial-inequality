@@ -4,13 +4,18 @@ Figures and scripts for our pre-print: [10.21203/rs.3.rs-902765/v1](https://doi.
 
 ## Pre-Generated Figures and Data
 
-Pre-generated networks and figures can be found in the `publications/OptimisingForEquity/results` directory in our upload on Zenodo: TODO - link to Zenodo
+Pre-generated networks and figures can be found in the `publications/OptimisingForEquity/results` directory in our upload on Zenodo:
+https://doi.org/10.5281/zenodo.5552877
+
 
 ## Instructions
 
 To generate the figures:
 
-1. TODO - checkout/download the relevant commit/tag
+1. Checkout/download the correct version of the code by doing one of the following:
+   - Download the source code from Zenodo: https://doi.org/10.5281/zenodo.5552877
+   - Download from GitHub: https://github.com/alan-turing-institute/spatial-inequality/releases/tag/v2.0
+   - From a local clone of the repo, checkout tag `v2.0` or commit `d42f61c`.
 
 2. Follow the setup instructions to create and activate the conda environment in [the repo readme file](../../README.md])
 
