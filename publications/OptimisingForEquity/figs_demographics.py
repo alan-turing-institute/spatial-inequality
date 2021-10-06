@@ -195,7 +195,7 @@ def fig_density(
         if i == 1:
             add_scalebar(grid[i])
 
-    add_colorbar(grid[-1], vmax=vmax, label="Density [% / $\mathrm{km}^2$]")
+    add_colorbar(grid[-1], vmax=vmax, label=r"Density [% / $\mathrm{km}^2$]")
     save_fig(fig, "demographics_density.png", save_dir)
 
 
