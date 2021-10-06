@@ -2,6 +2,10 @@
 
 Repository for the [Spatial Inequality in the Smart City](https://www.turing.ac.uk/research/research-projects/spatial-inequality-and-smart-city) project.
 
+## Papers and Publications
+
+- If you're looking for the scripts used to generate the figures in the paper "Optimising for equity: Sensor coverage, networks and the responsive city", please go to the [OptimisingForEquity](publications/OptimisingForEquity) directory.
+
 ## Pre-requisites
 
 1. [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
@@ -29,11 +33,6 @@ Repository for the [Spatial Inequality in the Smart City](https://www.turing.ac.
    conda activate spatial-inequality
    ```
  
-## Papers and Publications
-
-- [OptimisingForEquity_AAG](publications/OptimisingForEquity_AAG)
-
-
 ## API
 
 ### Start the API

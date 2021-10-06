@@ -1,10 +1,10 @@
 # Optimising for equity: Sensor coverage, networks and the responsive city
 
-To be submitted to Annals of the American Association of Geographers.
+Figures and scripts for our pre-print: [10.21203/rs.3.rs-902765/v1](https://doi.org/10.21203/rs.3.rs-902765/v1)
 
 ## Pre-Generated Figures and Data
 
-TODO
+Pre-generated networks and figures can be found in the `publications/OptimisingForEquity/results` directory in our upload on Zenodo: TODO - link to Zenodo
 
 ## Instructions
 
@@ -14,7 +14,7 @@ To generate the figures:
 
 2. Follow the setup instructions to create and activate the conda environment in [the repo readme file](../../README.md])
 
-3. Change to the directory this file is in (`cd publications/OptimisingForEquity_AAG`).
+3. Change to the directory this file is in (`cd publications/OptimisingForEquity`).
 
 4. The file `config.yml` defines the properties of the networks and figures that will be generated. You can leave them as the defaults used for the paper or edit the file to try running with different values.
 
