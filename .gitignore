@@ -2,7 +2,11 @@
 data/raw/
 data/backup/
 data/img/
+# don't store processed data in the repo except for Newcastle
+data/processed/
+!data/processed/E08000021
 notebooks/paper_figures/
+publications/OptimisingForEquity/results
 
 # Mac config files
 .DS_Store
