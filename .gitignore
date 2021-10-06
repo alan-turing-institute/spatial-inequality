@@ -6,6 +6,7 @@ data/img/
 data/processed/
 !data/processed/E08000021
 notebooks/paper_figures/
+publications/OptimisingForEquity/results
 
 # Mac config files
 .DS_Store

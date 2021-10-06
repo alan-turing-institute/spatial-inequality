@@ -23,7 +23,14 @@ from utils import (
 )
 
 
-def fig_obj1_vs_obj2(plot_objs: list, scores: np.ndarray, all_groups: dict, theta: float, n_sensors: int, save_dir: Path):
+def fig_obj1_vs_obj2(
+    plot_objs: list,
+    scores: np.ndarray,
+    all_groups: dict,
+    theta: float,
+    n_sensors: int,
+    save_dir: Path,
+):
     """Save a scatter plot showing the relationship between the coverage of one
     objective and another. Figure name: 2obj_theta{theta}_{n_sensors}sensors.png
 
