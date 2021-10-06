@@ -203,6 +203,7 @@ def main():
     """Save figures showing the distribution of differrent sub-populations around the
     local authority.
     """
+    print("Saving demographic figures...")
     set_fig_style()
 
     config = get_config()

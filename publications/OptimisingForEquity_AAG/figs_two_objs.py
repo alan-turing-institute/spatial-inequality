@@ -140,6 +140,7 @@ def main():
     Save figures showing the results of running the mulit-objective optimisation (NSGA2)
     with two objectives.
     """
+    print("Saving two-objective network figures...")
     set_fig_style()
     config = get_config()
     figs_dir = get_figures_save_dir(config)

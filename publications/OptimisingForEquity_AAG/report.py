@@ -36,6 +36,7 @@ def main():
     and decriptions of what each figure shows (using the template reoprt_template.md).
     Both a Markdown (report.md) and HTML (report.html) version of the report are saved.
     """
+    print("Generating formatted reports...")
     with open("report_template.md") as f:
         template = Template(f.read())
 
@@ -139,6 +140,7 @@ def main():
     html = markdown(filled_template)
     with open(Path(report_dir, "report.html"), "w") as f:
         f.write(html)
+    print("Reports saved to", report_dir)
 
 
 if __name__ == "__main__":

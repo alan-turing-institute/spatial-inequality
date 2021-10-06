@@ -56,6 +56,7 @@ def main():
     Save Urban Observatory sensor locations to the path specified by
     "save_dir" and "filename" in the "urb_obs" section of config.yml.
     """
+    print("Getting Urban Observatory data...")
     config = get_config()
     save_dir = config["save_dir"]
     lad20cd = lad20nm_to_lad20cd(config["la"])

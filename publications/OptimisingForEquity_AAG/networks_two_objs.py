@@ -119,6 +119,7 @@ def main():
     Generate two-objective networks for a local authority and save them to the path
     specified in config.yml.
     """
+    print("Generating two-objective networks...")
     config = get_config()
     lad20cd = lad20nm_to_lad20cd(config["la"])
     save_path = get_two_objs_filepath(config)

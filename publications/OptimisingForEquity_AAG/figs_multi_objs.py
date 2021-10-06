@@ -339,6 +339,7 @@ def main():
     """Save figures showing the results of running the multi-objective optimisation
     (with the NSGA2 algorithm)
     """
+    print("Saving multi-objective network figures...")
     set_fig_style()
     config = get_config()
 

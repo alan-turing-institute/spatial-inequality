@@ -16,8 +16,7 @@ To generate the figures:
 
 3. Change to the directory this file is in (`cd publications/OptimisingForEquity_AAG`).
 
-4. The file `config.yml` defines the properties of the networks and figures that will be generated. You can leave them as
-   the defaults used for the paper or edit the file to try running with different values.
+4. The file `config.yml` defines the properties of the networks and figures that will be generated. You can leave them as the defaults used for the paper or edit the file to try running with different values.
 
 5. Run `python main.py`. This may take a long time (hours) to finish, depending on the values specified in `config.yml`.
 

@@ -115,6 +115,7 @@ def main():
     Save figures showing the results of single-objective networks generated with a
     greedy algorithm.
     """
+    print("Saving single objective network figures...")
     set_fig_style()
 
     config = get_config()

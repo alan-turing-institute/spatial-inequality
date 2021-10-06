@@ -369,6 +369,7 @@ def main():
     """Save figures showing the pre-existing Urban Observatory network of sensors and
     comparisons with optimised networks using our approach.
     """
+    print("Saving Urban Observatory figures...")
     set_fig_style()
 
     config = get_config()
