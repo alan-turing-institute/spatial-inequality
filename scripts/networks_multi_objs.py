@@ -25,8 +25,8 @@ def get_multi_obj_inputs(
     lad20cd : str
         Local authority code to generate results for
     objectives : list
-        Names of the two objectives to include. Must be length two and names must match
-        an entry in `population_groups` or `workplace_name`
+        Names of the two objectives to include. Must have at least two elements and
+        names must match an entry in `population_groups` or `workplace_name`
     population_groups : dict
         Parameters for residential population objectives
     workplace_name: str, optional
@@ -37,6 +37,11 @@ def get_multi_obj_inputs(
         Output area centroids and weights for each output area for each objective, as
         calculated by spineq.optimise.get_optimisation_inputs
     """
+    if len(objectives) < 2:
+        raise ValueError(
+            "At least two objectives must be defined "
+            f"len(objectives) = {len(objectives)}))"
+        )
     workplace_weight = 1 if workplace_name in objectives else 0
     return get_optimisation_inputs(
         lad20cd=lad20cd,
