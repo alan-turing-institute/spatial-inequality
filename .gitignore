@@ -1,9 +1,6 @@
 # Data files
-data/raw/
-data/backup/
-data/img/
-# don't store processed data in the repo except for Newcastle
-data/processed/
+# don't store data apart from processed data for Newcastle
+data
 !data/processed/E08000021
 notebooks/paper_figures/
 publications/OptimisingForEquity/results

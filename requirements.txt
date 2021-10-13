@@ -34,6 +34,7 @@ rq==1.8.0
 rtree==0.9.7
 Shapely==1.7.1
 six==1.15.0
+tqdm==4.62.3
 urllib3==1.26.5
 websocket-client==0.58.0
 Werkzeug==1.0.1
