@@ -444,10 +444,7 @@ def networks_swarmplot(
 
     elif isinstance(thresholds, dict):
         for obj, t in thresholds.items():
-            if selected is None:
-                selected = df[obj] > t
-            else:
-                selected = selected & (df[obj] > t)
+            selected = df[obj] > t if selected is None else selected & (df[obj] > t)
 
     df = df[objectives].stack()
     df.name = "coverage"

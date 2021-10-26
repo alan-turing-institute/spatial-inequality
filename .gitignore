@@ -1,8 +1,9 @@
 # Data files
-data/raw/
-data/backup/
-data/img/
+# don't store data apart from processed data for Newcastle
+data
+!data/processed/E08000021
 notebooks/paper_figures/
+publications/OptimisingForEquity/results
 
 # Mac config files
 .DS_Store
