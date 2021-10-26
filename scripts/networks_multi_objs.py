@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import numpy as np
 import os
 from pathlib import Path
 import pickle
@@ -7,8 +8,8 @@ from tqdm import tqdm
 import pygmo as pg
 
 from spineq.data_fetcher import lad20nm_to_lad20cd
-from spineq.optimise import get_optimisation_inputs
-from spineq.genetic import build_problem, run_problem
+from spineq.optimise import get_optimisation_inputs, calc_coverage
+from spineq.genetic import build_problem, extract_all, run_problem
 
 
 def get_multi_obj_inputs(
@@ -54,6 +55,48 @@ def get_multi_obj_inputs(
     )
 
 
+def get_pop_oa_coverage(
+    sensor_ids: np.ndarray, opt_inputs: dict, lad20cd: str, theta: float
+) -> np.ndarray:
+    """[summary]
+
+    Parameters
+    ----------
+    sensor_ids : np.ndarray
+        Sensor output area IDs for each sensor in each network (the IDs can be used to
+        retrieve an output area code from opt_inputs['oa11cd']). Shape
+        (n_networks, n_sensors).
+    opt_inputs : dict
+        Optimisation inputs as calculated by spineq.optimiise.get_optimisation_inputs
+    lad20cd : str
+        Local authtority code
+    theta : float
+        Coverage decay distance used for generating the networks and coverage values
+
+    Returns
+    -------
+    np.ndarray
+        Coverage of each output area in each network, shape (n_networks, n_output_areas)
+    """
+    n_networks = sensor_ids.shape[0]
+    n_oa = len(opt_inputs["oa11cd"])
+    oa_coverage = np.zeros((n_networks, n_oa))
+    for idx_network in range(n_networks):
+        sensor_dict = [
+            {
+                "oa11cd": opt_inputs["oa11cd"][idx_sensor],
+                "x": opt_inputs["oa_x"][idx_sensor],
+                "y": opt_inputs["oa_y"][idx_sensor],
+            }
+            for idx_sensor in sensor_ids[idx_network, :].astype(int)
+        ]
+        net_coverage = calc_coverage(lad20cd, sensor_dict, oa_weight=1, theta=theta)
+        oa_coverage[idx_network, :] = [
+            oa["coverage"] for oa in net_coverage["oa_coverage"]
+        ]
+    return oa_coverage
+
+
 def make_multi_obj_networks(
     lad20cd: str,
     population_groups: dict,
@@ -64,6 +107,7 @@ def make_multi_obj_networks(
     population_size: int,
     save_path: Path,
     workplace_name: str = "workplace",
+    include_oa_coverage: bool = True,
 ):
     """Generate networks optimised for multiple objectives (all age groups defined in
     `population_groups` and place of work), for a range of theta values
@@ -102,7 +146,7 @@ def make_multi_obj_networks(
         for obj in objectives
     ]
 
-    for inp in tqdm(inputs, desc="objectives"):
+    for inp_idx, inp in enumerate(tqdm(inputs, desc="objectives")):
         for t in tqdm(thetas, desc="theta"):
             for ns in tqdm(n_sensors, desc="n_sensors"):
                 prob = build_problem(inp, n_sensors=ns, theta=t)
@@ -112,22 +156,54 @@ def make_multi_obj_networks(
                     population_size=population_size,
                     verbosity=0,
                 )
-                net_path = Path(save_path, f"theta_{t}_nsensors_{ns}.pkl")
+                net_name = f"theta_{t}_nsensors_{ns}_objs_{inp_idx}"
+                net_path = Path(save_path, net_name + ".pkl")
                 with open(net_path, "wb") as f:
-                    pickle.dump({"objectives": objectives, "population": pop}, f)
+                    pickle.dump(
+                        {
+                            "lad20cd": lad20cd,
+                            "objectives": list(inp["oa_weight"].keys()),
+                            "theta": t,
+                            "n_sensors": ns,
+                            "population": pop,
+                        },
+                        f,
+                    )
+                scores, solutions = extract_all(pop)
+                scores = -scores
+                if include_oa_coverage:
+                    oa_coverage = get_pop_oa_coverage(solutions, inp, lad20cd, t)
+                else:
+                    oa_coverage = np.array([])
+                net_path = Path(save_path, net_name + ".json")
+                with open(net_path, "w") as f:
+                    json.dump(
+                        {
+                            "lad20cd": lad20cd,
+                            "objectives": list(inp["oa_weight"].keys()),
+                            "theta": t,
+                            "n_sensors": ns,
+                            "oa11cd": inp["oa11cd"].tolist(),
+                            "sensors": solutions.astype(int).tolist(),
+                            "obj_coverage": scores.tolist(),
+                            "oa_coverage": oa_coverage.tolist(),
+                        },
+                        f,
+                    )
 
 
 def main():
     """
     Generate multi-objective networks for a local authority for a range of theta values,
-    numbers of sensors, and objectives.
+    numbers of sensors, and objectives. Save them in pkl and json format, as well as
+    meta data.
     """
     print("Generating multi-objective networks...")
-    la = "Newcastle upon Tyne"
-    thetas = [500]
-    n_sensors = [55]
-    gen = 1000
-    population_size = 200
+    la = "Gateshead"
+    thetas = [500]  # [100, 250, 500]
+    n_sensors = [10]  # [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    gen = 2  # 1000
+    population_size = 8  # 200
     seed = 123
     population_groups = {
         "pop_total": {
@@ -152,10 +228,8 @@ def main():
     workplace_name = "workplace"
     objectives = [
         ["workplace", "pop_elderly", "pop_children", "pop_total"],
-        ["workplace", "pop_elderly", "pop_children"],
-        ["workplace", "pop_elderly"],
-        ["workplace"],
     ]
+    include_oa_coverage = True
 
     lad20cd = lad20nm_to_lad20cd(la)
     pg.set_global_rng_seed(seed=seed)
@@ -173,6 +247,7 @@ def main():
                 "population_size": population_size,
                 "seed": seed,
                 "population_groups": population_groups,
+                "workplace_name": workplace_name,
                 "objectives": objectives,
             },
             f,
@@ -189,6 +264,7 @@ def main():
         population_size,
         save_path,
         workplace_name=workplace_name,
+        include_oa_coverage=include_oa_coverage,
     )
 
 
