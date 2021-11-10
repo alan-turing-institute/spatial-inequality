@@ -4,7 +4,7 @@ Repository for the [Spatial Inequality in the Smart City](https://www.turing.ac.
 
 ## Papers and Publications
 
-- If you're looking for the scripts used to generate the figures in the paper "Optimising for equity: Sensor coverage, networks and the responsive city", please go to the [OptimisingForEquity](publications/OptimisingForEquity) directory.
+If you're looking for the scripts used to generate the figures in the paper "Optimising for equity: Sensor coverage, networks and the responsive city", please go to the [OptimisingForEquity](publications/OptimisingForEquity) directory.
 
 ## Pre-requisites
 
