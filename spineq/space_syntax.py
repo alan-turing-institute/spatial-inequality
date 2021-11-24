@@ -76,7 +76,12 @@ def oa_segment_summary(
             segments, oa.loc[oa_name, "geometry"], with_crosses=with_crosses
         )
         oa_summary.append(oa_segments[stat_column].agg(agg_fn))
-    return pd.Series(oa_summary, index=oa.index)
+
+    if callable(agg_fn):
+        name = stat_column + agg_fn.__name__
+    else:
+        name = stat_column + agg_fn
+    return pd.Series(oa_summary, index=oa.index, name=name)
 
 
 def space_syntax_traffic_proxy(
@@ -103,6 +108,7 @@ def space_syntax_traffic_proxy(
     """
     segments = gpd.read_file(ss_segments_path)
     max_ac_nach = oa_segment_summary(segments, lad20cd, "AC__NACH", "max")
+    max_ac_nach.name = "traffic_proxy"
     # deal with possible log(0) and log(NaN) errors
     max_ac_nach.fillna(1e-6, inplace=True)
     max_ac_nach.replace(0, 1e-6, inplace=True)
