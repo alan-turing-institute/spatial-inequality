@@ -12,9 +12,7 @@ import pandas as pd
 import geopandas as gpd
 import fiona
 
-DATA_DIR = Path(os.path.dirname(__file__), "../data")
-RAW_DIR = Path(DATA_DIR, "raw")
-PROCESSED_DIR = Path(DATA_DIR, "processed")
+from spineq import RAW_DIR, PROCESSED_DIR
 
 
 def load_gdf(path, epsg=27700):
@@ -99,7 +97,7 @@ def download_oa_shape(lad11cd="E08000021", lad20cd=None, overwrite=False):
 def download_oa_mappings(overwrite=False):
     save_path = Path(RAW_DIR, "oa_mappings.csv")
     if os.path.exists(save_path) and not overwrite:
-        return pd.read_csv(save_path,  dtype=str)
+        return pd.read_csv(save_path, dtype=str)
 
     # 2011
     # https://geoportal.statistics.gov.uk/datasets/ons::output-area-to-lower-layer-super-output-area-to-middle-layer-super-output-area-to-local-authority-district-december-2011-lookup-in-england-and-wales/about
@@ -423,6 +421,7 @@ def extract_la_data(lad20cd="E08000021", overwrite=False):
     ):
         warnings.warn("Lengths of processed data don't match, optimisation will fail!")
 
+    # urban observatory sensors
     process_uo_sensors(lad20cd=lad20cd, overwrite=overwrite)
 
 
