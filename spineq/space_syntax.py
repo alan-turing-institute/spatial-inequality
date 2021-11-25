@@ -1,10 +1,11 @@
 from pathlib import Path
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 from shapely.geometry.polygon import Polygon
+from tqdm import tqdm
 
 from spineq import PROCESSED_DIR, RAW_DIR
 from spineq.data_fetcher import get_la_shape, get_oa_shapes
@@ -71,7 +72,7 @@ def oa_segment_summary(
     segments = within_or_crosses(segments, la.geometry, with_crosses=with_crosses)
 
     oa_summary = []
-    for oa_name in oa.index:
+    for oa_name in tqdm(oa.index):
         oa_segments = within_or_crosses(
             segments, oa.loc[oa_name, "geometry"], with_crosses=with_crosses
         )
@@ -84,11 +85,39 @@ def oa_segment_summary(
     return pd.Series(oa_summary, index=oa.index, name=name)
 
 
+def template_nach_to_traffic_fn(
+    ac_nach: Union[np.ndarray, pd.Series],
+    power: float = 3.77147764,
+    intercept: float = np.exp(8.620081815759415),
+) -> Union[np.ndarray, pd.Series]:
+    """Convert angular choice values to a traffic proxy with equation:
+    traffic_proxy = (AC_NACH)^power + intercept
+    Defaults from linear regression model fit on Newcastle 2019 DFT counts:
+    log(DfT) ~ power * log(AC_NACH)) + log(intercept)
+
+    Parameters
+    ----------
+    ac_nach : Union[np.ndarray, pd.Series]
+        Normalised angular choice values
+    power : float, optional
+        power parameter in traffic_proxy = (AC_NACH)^power + intercept
+    intercept : float, optional
+        intercept parameter in traffic_proxy = (AC_NACH)^power + intercept
+
+    Returns
+    -------
+    Union[np.ndarray, pd.Series]:
+        Angular choice converted to traffic proxy
+    """
+    return (ac_nach ** power) * intercept
+
+
 def space_syntax_traffic_proxy(
     lad20cd: str = "E08000021",
     ss_segments_path: Union[str, Path] = Path(
         RAW_DIR, "space_syntax/TyneandWear_geojson.geojson"
     ),
+    nach_to_traffic_fn: Optional[Callable] = template_nach_to_traffic_fn,
 ) -> pd.Series:
     """Compute log(maximum normalised angular choice) in each output area of a local
     authority, which we use as a traffic proxy
@@ -100,23 +129,26 @@ def space_syntax_traffic_proxy(
     ss_segments_path : Union[str, Path], optional
         Path to space syntax data including the column 'AC__NACH', by default
         Path( RAW_DIR, "space_syntax/TyneandWear_geojson.geojson" )
+    nach_to_traffic_fn : Callable, optional
+        Function to convert AC_NACH values to proxy traffic count. Or return AC_NACH
+        directly if None. Takes a series/array of ac_nach values as its only input.
 
     Returns
     -------
     pd.Series
-        log(Max AC_NACH) for each output area
+        traffic proxy for each output area computed from AC_NACH
     """
     segments = gpd.read_file(ss_segments_path)
     max_ac_nach = oa_segment_summary(segments, lad20cd, "AC__NACH", "max")
     max_ac_nach.name = "traffic_proxy"
-    # deal with possible log(0) and log(NaN) errors
-    max_ac_nach.fillna(1e-6, inplace=True)
-    max_ac_nach.replace(0, 1e-6, inplace=True)
-
-    return np.log(max_ac_nach)
+    max_ac_nach.fillna(0, inplace=True)
+    if nach_to_traffic_fn is None:
+        return max_ac_nach
+    return nach_to_traffic_fn(max_ac_nach)
 
 
 if __name__ == "__main__":
     lad20cd = "E08000021"
-    max_ac_nach = space_syntax_traffic_proxy(lad20cd=lad20cd)
-    max_ac_nach.to_csv(Path(PROCESSED_DIR, lad20cd, "traffic_proxy.csv"))
+    traffic = space_syntax_traffic_proxy(lad20cd=lad20cd)
+    traffic.to_csv(Path(PROCESSED_DIR, lad20cd, "traffic_proxy.csv"))
+    print(traffic.describe())
