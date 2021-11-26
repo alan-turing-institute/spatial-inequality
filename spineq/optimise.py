@@ -21,6 +21,7 @@ def optimise(
     theta=500,
     population_weight=1,
     workplace_weight=0,
+    traffic_weight=0,
     pop_age_groups={
         "pop_total": {"min": 0, "max": 90, "weight": 1},
         "pop_children": {"min": 0, "max": 16, "weight": 0},
@@ -44,8 +45,8 @@ def optimise(
         n_sensors {int} -- number of sensors to place (default: {20})
         theta {float} -- coverage decay rate (default: {500})
 
-        population_weight, workplace_weight, pop_age_groups -- As defined in
-        calc_oa_weights (parameters directly passed to that function.)
+        population_weight, workplace_weight, traffic_weight, pop_age_groups -- As
+        defined in calc_oa_weights (parameters directly passed to that function.)
         (all passed to cala_oa_weights)
 
         rq_job {boolean} -- If True attempt to get the RQ job running this
@@ -94,6 +95,7 @@ def optimise(
         lad20cd=lad20cd,
         population_weight=population_weight,
         workplace_weight=workplace_weight,
+        traffic_weight=traffic_weight,
         pop_age_groups=pop_age_groups,
         combine=True,
     )
@@ -131,6 +133,7 @@ def optimise(
         pop_age_groups=pop_age_groups,
         population_weight=population_weight,
         workplace_weight=workplace_weight,
+        traffic_weight=traffic_weight,
     )
 
     if job:
@@ -161,10 +164,49 @@ def optimise(
     return result
 
 
+def get_population_objectives(
+    population_ages, pop_age_groups, norm=True, combine=False
+):
+    oa_population_group_weights = {}
+    for name, group in pop_age_groups.items():
+        # skip calculation for zeroed objectives
+        if group["weight"] == 0:
+            continue
+
+        # get sum of population in group age range
+        group_population = population_ages.loc[
+            :,
+            (population_ages.columns >= group["min"])
+            & (population_ages.columns <= group["max"]),
+        ].sum(axis=1)
+
+        if norm:
+            # normalise total population
+            group_population = group_population / group_population.sum()
+
+        group_population = group_population * group["weight"]
+        oa_population_group_weights[name] = group_population
+
+    if not oa_population_group_weights:
+        raise ValueError("No weights defined for population groups")
+
+    oa_population_group_weights = pd.DataFrame(oa_population_group_weights)
+    if combine:
+        oa_population_group_weights = oa_population_group_weights.sum(axis=1)
+        oa_population_group_weights.name = "population"
+        if norm:
+            oa_population_group_weights = (
+                oa_population_group_weights / oa_population_group_weights.sum()
+            )
+
+    return oa_population_group_weights
+
+
 def calc_oa_weights(
     lad20cd="E08000021",
     population_weight=1,
     workplace_weight=0,
+    traffic_weight=0,
     pop_age_groups={
         "pop_total": {"min": 0, "max": 90, "weight": 1},
         "pop_children": {"min": 0, "max": 16, "weight": 0},
@@ -184,6 +226,8 @@ def calc_oa_weights(
         workplace_weight {float} -- Weighting for workplace population
         (default: {0})
 
+        traffic_weight {float} -- Weighting for traffic (default: {0})
+
         pop_age_groups {dict} -- Residential population age groups to create
         objectives for and their corresponding weights. Dict with objective
         name as key. Each entry should be another dict with keys min (min age
@@ -199,95 +243,51 @@ def calc_oa_weights(
         pd.DataFrame or pd.Series -- Weight for each OA (indexed by oa11cd) for
         each objective. Series if only one objective defined or combine is True.
     """
+    if population_weight == 0 and workplace_weight == 0 and traffic_weight == 0:
+        raise ValueError("Must specify at least one non-zero weight.")
 
     data = get_oa_stats(lad20cd=lad20cd)
     population_ages = data["population_ages"]
     workplace = data["workplace"]
+    traffic = data["traffic"]
 
-    if len(population_ages) != len(workplace):
-        raise ValueError(
-            "Lengths of inputs don't match: population_ages={}, workplace={}".format(
-                len(population_ages), len(workplace)
-            )
-        )
+    oa_weights = pd.DataFrame()
 
     # weightings for residential population by age group
-    if population_weight > 0:
-        oa_population_group_weights = {}
-        for name, group in pop_age_groups.items():
-            # skip calculation for zeroed objectives
-            if group["weight"] == 0:
-                continue
-
-            # get sum of population in group age range
-            group_population = population_ages.loc[
-                :,
-                (population_ages.columns >= group["min"])
-                & (population_ages.columns <= group["max"]),
-            ].sum(axis=1)
-
-            # normalise total population
-            group_population = group_population / group_population.sum()
-
-            # if objectives will be combined, scale by group weight
-            if combine:
-                group_population = group_population * group["weight"]
-
-            oa_population_group_weights[name] = group_population
-
-        if len(oa_population_group_weights) > 0:
-            use_population = True  # some population groups with non-zero weights
-
-            oa_population_group_weights = pd.DataFrame(oa_population_group_weights)
-            if combine:
-                oa_population_group_weights = oa_population_group_weights.sum(axis=1)
-                oa_population_group_weights = population_weight * (
-                    oa_population_group_weights / oa_population_group_weights.sum()
-                )
-        else:
-            use_population = False  #  all population groups had zero weight
-    else:
-        use_population = False
+    if population_weight != 0:
+        oa_population_group_weights = get_population_objectives(
+            population_ages,
+            pop_age_groups,
+            norm=True,
+            combine=combine,
+        )
+        oa_weights = pd.concat([oa_weights, oa_population_group_weights], axis=1)
 
     # weightings for number of workers in OA (normalised to sum to 1)
-    if workplace_weight > 0:
-        use_workplace = True
-        workplace = workplace / workplace.sum()
-        if combine:
-            workplace = workplace_weight * workplace
+    if workplace_weight != 0:
+        workplace = workplace_weight * (workplace / workplace.sum())
         workplace.name = "workplace"
-    else:
-        use_workplace = False
+        oa_weights = pd.concat([oa_weights, workplace], axis=1)
 
-    if not use_population and not use_workplace:
-        raise ValueError("Must specify at least one non-zero weight.")
+    # weightings for traffic
+    if traffic_weight != 0:
+        traffic = traffic_weight * (traffic / traffic.sum())
+        traffic.name = "traffic"
+        oa_weights = pd.concat([oa_weights, traffic], axis=1)
 
     if combine:
-        if use_workplace and use_population:
-            oa_all_weights = pd.DataFrame(
-                {"workplace": workplace, "population": oa_population_group_weights}
-            )
-            oa_all_weights = oa_all_weights.sum(axis=1)
-            return oa_all_weights / oa_all_weights.sum()
-        elif use_workplace:
-            return workplace
-        elif use_population:
-            return oa_population_group_weights
-    else:
-        if use_workplace and use_population:
-            return oa_population_group_weights.join(workplace)
-        elif use_workplace:
-            return workplace
-        elif use_population and len(oa_population_group_weights.columns) > 1:
-            return oa_population_group_weights
-        else:
-            return oa_population_group_weights[oa_population_group_weights.columns[0]]
+        return oa_weights.sum(axis=1)
+    if len(oa_weights.columns) == 1:
+        return oa_weights[oa_weights.columns[0]]
+
+    return oa_weights
 
 
 def get_optimisation_inputs(
     lad20cd="E08000021",
     population_weight=1,
     workplace_weight=0,
+    traffic_weight=0,
     pop_age_groups={
         "pop_total": {"min": 0, "max": 90, "weight": 1},
         "pop_children": {"min": 0, "max": 16, "weight": 0},
@@ -310,6 +310,7 @@ def get_optimisation_inputs(
         lad20cd=lad20cd,
         population_weight=population_weight,
         workplace_weight=workplace_weight,
+        traffic_weight=traffic_weight,
         pop_age_groups=pop_age_groups,
         combine=combine,
     )
@@ -359,6 +360,7 @@ def make_result_dict(
     pop_age_groups=None,
     population_weight=None,
     workplace_weight=None,
+    traffic_weight=None,
 ):
     """Package up optimisation parameters and results as a dictionary, which
     is used by the API and some other functions.
@@ -378,6 +380,7 @@ def make_result_dict(
         pop_age_groups {dict} -- population age groups (see calc_oa_weights)
         population_weight {float} -- Weighting for residential population
         workplace_weight {float} -- Weighting for workplace population
+        traffic_weigght {float} -- Weighting for traffic in OA
 
     Returns:
         dict -- Optimisation results and parameters. Keys: n_sensors, theta,
@@ -400,7 +403,7 @@ def make_result_dict(
             {"oa11cd": oa11cd[i], "weight": oa_weight[i]} for i in range(n_poi)
         ]
 
-    result = {
+    return {
         "lad20cd": lad20cd,
         "n_sensors": n_sensors,
         "theta": theta,
@@ -413,9 +416,8 @@ def make_result_dict(
         "pop_age_groups": pop_age_groups,
         "population_weight": population_weight,
         "workplace_weight": workplace_weight,
+        "traffic_weight": traffic_weight,
     }
-
-    return result
 
 
 def calc_coverage(lad20cd, sensors, oa_weight, theta=500):

@@ -91,7 +91,7 @@ def template_nach_to_traffic_fn(
     intercept: float = np.exp(8.620081815759415),
 ) -> Union[np.ndarray, pd.Series]:
     """Convert angular choice values to a traffic proxy with equation:
-    traffic_proxy = (AC_NACH)^power + intercept
+    traffic = (AC_NACH)^power + intercept
     Defaults from linear regression model fit on Newcastle 2019 DFT counts:
     log(DfT) ~ power * log(AC_NACH)) + log(intercept)
 
@@ -100,9 +100,9 @@ def template_nach_to_traffic_fn(
     ac_nach : Union[np.ndarray, pd.Series]
         Normalised angular choice values
     power : float, optional
-        power parameter in traffic_proxy = (AC_NACH)^power + intercept
+        power parameter in traffic = (AC_NACH)^power + intercept
     intercept : float, optional
-        intercept parameter in traffic_proxy = (AC_NACH)^power + intercept
+        intercept parameter in traffic = (AC_NACH)^power + intercept
 
     Returns
     -------
@@ -140,7 +140,7 @@ def space_syntax_traffic_proxy(
     """
     segments = gpd.read_file(ss_segments_path)
     max_ac_nach = oa_segment_summary(segments, lad20cd, "AC__NACH", "max")
-    max_ac_nach.name = "traffic_proxy"
+    max_ac_nach.name = "traffic"
     max_ac_nach.fillna(0, inplace=True)
     if nach_to_traffic_fn is None:
         return max_ac_nach
@@ -150,5 +150,5 @@ def space_syntax_traffic_proxy(
 if __name__ == "__main__":
     lad20cd = "E08000021"
     traffic = space_syntax_traffic_proxy(lad20cd=lad20cd)
-    traffic.to_csv(Path(PROCESSED_DIR, lad20cd, "traffic_proxy.csv"))
+    traffic.to_csv(Path(PROCESSED_DIR, lad20cd, "traffic.csv"))
     print(traffic.describe())
