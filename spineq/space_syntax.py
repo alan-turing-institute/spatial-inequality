@@ -6,7 +6,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 from shapely.geometry.polygon import Polygon
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, PoissonRegressor
 from tqdm import tqdm
 
 from spineq import PROCESSED_DIR, RAW_DIR
@@ -137,9 +137,8 @@ def match_dft_ss(
 def fit_traffic_model(
     traffic_counts: Union[np.ndarray, pd.Series], nach: Union[np.ndarray, pd.Series]
 ) -> tuple[float, float]:
-    """Linear fit of traffic counts from space syntax (normalised angular choice). Fits
-    the model traffic_counts = scale * (ac_nach)^power by using a linear regression on
-    log(traffic_counts) ~ power * log(nach) + log(scale)
+    """Fit traffic counts to space syntax (normalised angular choice). Fits
+    the model traffic_counts = exp(alpha + beta * nach ) using Poisson regression.
 
     Parameters
     ----------
@@ -152,18 +151,22 @@ def fit_traffic_model(
 
     Returns
     -------
-    tuple[float, float]
-        Power and scale parameters in traffic_counts = scale * (ac_nach)^power
+    tuple(float, float)
+        alpha (intercept) and beta (coefficient) parameters in
+        traffic_counts = exp(alpha + beta * nach)
     """
     mask = (nach > 0) & (traffic_counts > 0)
-    X = np.log(nach[mask]).values.reshape(-1, 1)
-    y = np.log(traffic_counts[mask])
+    X = nach[mask].values.reshape(-1, 1)
+    y = traffic_counts[mask]
 
-    mdl = LinearRegression()
+    mdl = PoissonRegressor()
     mdl.fit(X, y)
-    print("Model R^2", mdl.score(X, y))
+    alpha = mdl.intercept_
+    beta = mdl.coef_[0]
+    print(f"alpha = {alpha}, beta = {beta}")
+    print("Model D^2", mdl.score(X, y))
 
-    return mdl.coef_[0], np.exp(mdl.intercept_)
+    return alpha, beta
 
 
 def oa_segment_summary(
@@ -214,30 +217,29 @@ def oa_segment_summary(
 
 
 def template_nach_to_traffic_fn(
-    ac_nach: Union[np.ndarray, pd.Series],
-    power: float = 3.77147764,
-    scale: float = np.exp(8.620081815759415),
+    nach: Union[np.ndarray, pd.Series],
+    alpha: float = 3.77147764,
+    beta: float = np.exp(8.620081815759415),
 ) -> Union[np.ndarray, pd.Series]:
     """Convert angular choice values to a traffic proxy with equation:
-    traffic = (AC_NACH)^power * scale
-    Defaults from linear regression model fit on Newcastle 2019 DFT counts:
-    log(DfT) ~ power * log(AC_NACH)) + log(scale)
+    traffic = exp(alpha + beta * nach)
+    Defaults from model fit on Newcastle 2019 DFT counts.
 
     Parameters
     ----------
-    ac_nach : Union[np.ndarray, pd.Series]
+    nach : Union[np.ndarray, pd.Series]
         Normalised angular choice values
-    power : float, optional
-        power parameter in traffic = (AC_NACH)^power * scale
-    intercept : float, optional
-        intercept parameter in traffic = (AC_NACH)^power * scale
+    alpha : float, optional
+        alpha parameter in traffic = exp(alpha + beta * nach)
+    beta : float, optional
+        beta parameter in traffic = exp(alpha + beta * nach)
 
     Returns
     -------
     Union[np.ndarray, pd.Series]:
         Angular choice converted to traffic proxy
     """
-    return (ac_nach ** power) * scale
+    return np.exp(alpha + beta * nach)
 
 
 def space_syntax_traffic_proxy(
@@ -281,11 +283,11 @@ def space_syntax_traffic_proxy(
 
     if dft is not None:
         dft_ss = match_dft_ss(dft, segments)
-        power, scale = fit_traffic_model(
+        alpha, beta = fit_traffic_model(
             dft_ss["all_motor_vehicles"], dft_ss["AC__NACH"]
         )
         nach_to_traffic_fn = partial(
-            template_nach_to_traffic_fn, power=power, scale=scale
+            template_nach_to_traffic_fn, alpha=alpha, beta=beta
         )
 
     max_ac_nach = oa_segment_summary(segments, lad20cd, "AC__NACH", "max")
@@ -299,7 +301,7 @@ def space_syntax_traffic_proxy(
 
 
 if __name__ == "__main__":
-    lad20cd = "E08000037"  # "E08000021"
+    lad20cd = "E08000037"  # "E08000021"  "E08000037"
     traffic = space_syntax_traffic_proxy(lad20cd=lad20cd)
     traffic.to_csv(Path(PROCESSED_DIR, lad20cd, "traffic.csv"))
     print(traffic.describe())

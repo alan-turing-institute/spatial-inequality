@@ -49,16 +49,16 @@ def get_multi_obj_inputs(
         )
     workplace_weight = 1 if workplace_name in objectives else 0
     traffic_weight = 1 if traffic_name in objectives else 0
+    pop_age_groups = {
+        o: population_groups[o] for o in objectives if o in population_groups
+    }
+    population_weight = 1 if pop_age_groups else 0
     return get_optimisation_inputs(
         lad20cd=lad20cd,
-        population_weight=1,
+        population_weight=population_weight,
         workplace_weight=workplace_weight,
         traffic_weight=traffic_weight,
-        pop_age_groups={
-            obj: population_groups[obj]
-            for obj in objectives
-            if obj in population_groups
-        },
+        pop_age_groups=population_groups,
         combine=False,
     )
 
@@ -211,16 +211,16 @@ def main():
     meta data.
     """
     print("Generating multi-objective networks...")
-    la = "Newcastle upon Tyne"
-    thetas = [100, 250, 500]
-    n_sensors = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    la = "Newcastle upon Tyne"  # "Newcastle upon Tyne" "Gateshead"
+    thetas = [500]  # [100, 250, 500]
+    n_sensors = [50]  # [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     gen = 1000
     population_size = 200
     seed = 123
     population_groups = {
         "pop_workingage": {
-            "min": 0,
-            "max": 90,
+            "min": 16,
+            "max": 65,
             "weight": 1,
             "title": "Residents 16-65",
         },
@@ -240,7 +240,11 @@ def main():
     workplace_name = "workplace"
     traffic_name = "traffic"
     objectives = [
-        ["traffic", "workplace", "pop_retirement", "pop_children", "pop_workingage"],
+        #["traffic", "workplace", "pop_retirement", "pop_children", "pop_workingage"],
+        ["traffic", "workplace"],
+        ["traffic", "pop_retirement"],
+        ["traffic", "pop_children"],
+        ["traffic", "pop_workingage"],
     ]
     include_oa_coverage = True
 
