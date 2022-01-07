@@ -51,7 +51,7 @@ def build_problem(
     n_sensors=20,
     theta=500,
 ):
-    prob = pg.problem(
+    return pg.problem(
         OptimiseCoveragePyGMO(
             optimisation_inputs["oa_x"],
             optimisation_inputs["oa_y"],
@@ -60,7 +60,6 @@ def build_problem(
             theta,
         )
     )
-    return prob
 
 
 def run_problem(prob, uda=pg.sga(gen=100), population_size=100, verbosity=1):

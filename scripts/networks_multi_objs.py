@@ -17,6 +17,7 @@ def get_multi_obj_inputs(
     objectives: list,
     population_groups: dict,
     workplace_name: str = "workplace",
+    traffic_name: str = "traffic",
 ) -> dict:
     """Get the inputs needed for the multi-objective optimisation - the weights and
     location of each output area for each of the specified objectives.
@@ -32,6 +33,9 @@ def get_multi_obj_inputs(
         Parameters for residential population objectives
     workplace_name: str, optional
         Name of the place of work objective, by default "workplace"
+    traffic_name: str, optional
+        Name of the traffic objective, by default "traffic"
+
     Returns
     -------
     dict
@@ -44,13 +48,17 @@ def get_multi_obj_inputs(
             f"len(objectives) = {len(objectives)}))"
         )
     workplace_weight = 1 if workplace_name in objectives else 0
+    traffic_weight = 1 if traffic_name in objectives else 0
+    pop_age_groups = {
+        o: population_groups[o] for o in objectives if o in population_groups
+    }
+    population_weight = 1 if pop_age_groups else 0
     return get_optimisation_inputs(
         lad20cd=lad20cd,
-        population_weight=1,
+        population_weight=population_weight,
         workplace_weight=workplace_weight,
-        pop_age_groups={
-            obj: population_groups[obj] for obj in objectives if obj != workplace_name
-        },
+        traffic_weight=traffic_weight,
+        pop_age_groups=population_groups,
         combine=False,
     )
 
@@ -107,6 +115,7 @@ def make_multi_obj_networks(
     population_size: int,
     save_path: Path,
     workplace_name: str = "workplace",
+    traffic_name: str = "traffic",
     include_oa_coverage: bool = True,
 ):
     """Generate networks optimised for multiple objectives (all age groups defined in
@@ -135,6 +144,8 @@ def make_multi_obj_networks(
         Where to save networks
     workplace_name: str, optional
         Name of the place of work objective, by default "workplace"
+    traffic_name: str, optional
+        Name of the traffic objective, by default "traffic"
     """
     inputs = [
         get_multi_obj_inputs(
@@ -142,6 +153,7 @@ def make_multi_obj_networks(
             obj,
             population_groups,
             workplace_name,
+            traffic_name,
         )
         for obj in objectives
     ]
@@ -199,18 +211,18 @@ def main():
     meta data.
     """
     print("Generating multi-objective networks...")
-    la = "Gateshead"
+    la = "Newcastle upon Tyne"  # "Newcastle upon Tyne" "Gateshead"
     thetas = [500]  # [100, 250, 500]
-    n_sensors = [10]  # [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-    gen = 2  # 1000
-    population_size = 8  # 200
+    n_sensors = [50]  # [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    gen = 1000
+    population_size = 200
     seed = 123
     population_groups = {
-        "pop_total": {
-            "min": 0,
-            "max": 90,
+        "pop_workingage": {
+            "min": 16,
+            "max": 65,
             "weight": 1,
-            "title": "Total Residents",
+            "title": "Residents 16-65",
         },
         "pop_children": {
             "min": 0,
@@ -218,7 +230,7 @@ def main():
             "weight": 1,
             "title": "Residents Under 16",
         },
-        "pop_elderly": {
+        "pop_retirement": {
             "min": 66,
             "max": 90,
             "weight": 1,
@@ -226,8 +238,13 @@ def main():
         },
     }
     workplace_name = "workplace"
+    traffic_name = "traffic"
     objectives = [
-        ["workplace", "pop_elderly", "pop_children", "pop_total"],
+        #["traffic", "workplace", "pop_retirement", "pop_children", "pop_workingage"],
+        ["traffic", "workplace"],
+        ["traffic", "pop_retirement"],
+        ["traffic", "pop_children"],
+        ["traffic", "pop_workingage"],
     ]
     include_oa_coverage = True
 
@@ -235,6 +252,7 @@ def main():
     pg.set_global_rng_seed(seed=seed)
     save_path = Path(f"data/networks/{datetime.now().strftime('%Y-%m-%d_%H%M%S')}")
     os.makedirs(save_path)
+    print("Saving to:", save_path)
 
     with open(Path(save_path, "meta.json"), "w") as f:
         json.dump(
@@ -248,6 +266,7 @@ def main():
                 "seed": seed,
                 "population_groups": population_groups,
                 "workplace_name": workplace_name,
+                "traffic_name": traffic_name,
                 "objectives": objectives,
             },
             f,
@@ -264,6 +283,7 @@ def main():
         population_size,
         save_path,
         workplace_name=workplace_name,
+        traffic_name=traffic_name,
         include_oa_coverage=include_oa_coverage,
     )
 

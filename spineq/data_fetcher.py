@@ -12,9 +12,7 @@ import pandas as pd
 import geopandas as gpd
 import fiona
 
-DATA_DIR = Path(os.path.dirname(__file__), "../data")
-RAW_DIR = Path(DATA_DIR, "raw")
-PROCESSED_DIR = Path(DATA_DIR, "processed")
+from spineq import RAW_DIR, PROCESSED_DIR
 
 
 def load_gdf(path, epsg=27700):
@@ -99,7 +97,7 @@ def download_oa_shape(lad11cd="E08000021", lad20cd=None, overwrite=False):
 def download_oa_mappings(overwrite=False):
     save_path = Path(RAW_DIR, "oa_mappings.csv")
     if os.path.exists(save_path) and not overwrite:
-        return pd.read_csv(save_path,  dtype=str)
+        return pd.read_csv(save_path, dtype=str)
 
     # 2011
     # https://geoportal.statistics.gov.uk/datasets/ons::output-area-to-lower-layer-super-output-area-to-middle-layer-super-output-area-to-local-authority-district-december-2011-lookup-in-england-and-wales/about
@@ -423,6 +421,7 @@ def extract_la_data(lad20cd="E08000021", overwrite=False):
     ):
         warnings.warn("Lengths of processed data don't match, optimisation will fail!")
 
+    # urban observatory sensors
     process_uo_sensors(lad20cd=lad20cd, overwrite=overwrite)
 
 
@@ -458,17 +457,28 @@ def get_oa_stats(lad20cd="E08000021"):
     Returns:
         dict -- Dictionary of dataframe with keys population_ages and workplace.
     """
-    population_ages = pd.read_csv(
-        Path(PROCESSED_DIR, lad20cd, "population_ages.csv"), index_col="oa11cd"
-    )
-    population_ages.columns = population_ages.columns.astype(int)
+    files = {
+        "population_ages": "population_ages.csv",
+        "workplace": "workplace.csv",
+        "traffic": "traffic.csv",
+    }
+    stats = {}
+    for key, file_name in files.items():
+        full_path = Path(PROCESSED_DIR, lad20cd, file_name)
+        try:
+            stats[key] = pd.read_csv(full_path, index_col="oa11cd")
+        except FileNotFoundError:
+            print(f"No {key} data found at {full_path}")
+            warnings.warn(f"No {key} data found at {full_path}")
 
-    workplace = pd.read_csv(
-        Path(PROCESSED_DIR, lad20cd, "workplace.csv"), index_col="oa11cd"
-    )
-    workplace = workplace["workers"]
+    lengths = {name: len(values) for name, values in stats.items()}
+    if len(set(lengths.values())) != 1:
+        raise ValueError(f"Length of data values don't match: {lengths}")
 
-    return {"population_ages": population_ages, "workplace": workplace}
+    if "population_ages" in stats:
+        stats["population_ages"].columns = stats["population_ages"].columns.astype(int)
+
+    return stats
 
 
 def get_oa_centroids(lad20cd="E08000021"):

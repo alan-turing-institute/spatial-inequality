@@ -32,6 +32,7 @@ redis==3.5.3
 requests==2.25.1
 rq==1.8.0
 rtree==0.9.7
+scikit-learn==0.24.2
 Shapely==1.7.1
 six==1.15.0
 tqdm==4.62.3
