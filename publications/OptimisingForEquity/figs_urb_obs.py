@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Optional
-from publications.OptimisingForEquity_AAG.utils import get_la_save_dir
+from utils import get_la_save_dir
 
 import contextily as ctx
 import geopandas as gpd
@@ -93,8 +93,12 @@ def get_uo_coverage_oa(
 
     uo_coverage = {}
     for name, _ in all_groups.items():
+        if name == "workplace" and "workplace" not in oa_weights.keys():
+            oaw = oa_weights["workers"]
+        else:
+            oaw = oa_weights[name]
         uo_coverage[name] = calc_coverage(
-            lad20cd, uo_sensor_dict, oa_weight=oa_weights[name], theta=theta
+            lad20cd, uo_sensor_dict, oa_weight=oaw, theta=theta
         )
         uo_coverage[name]["sensors"] = uo_sensor_dict
         uo_coverage[name]["lad20cd"] = lad20cd

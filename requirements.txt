@@ -32,7 +32,7 @@ redis==3.5.3
 requests==2.25.1
 rq==1.8.0
 rtree==0.9.7
-Shapely==1.7.1
+Shapely==1.8.0
 six==1.15.0
 tqdm==4.62.3
 urllib3==1.26.5

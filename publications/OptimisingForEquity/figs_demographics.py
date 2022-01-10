@@ -92,10 +92,9 @@ def calc_oa_density(
         group_pop.name = name
         oa = oa.join(group_pop)
 
-    workplace = stats["workplace"]
+    workplace = stats["workplace"]["workers"]
     workplace.name = "workplace"
     oa = oa.join(workplace)
-
     for group in all_groups:
         oa[f"{group}_perc"] = oa[group] / oa[group].sum()
         oa[f"{group}_reld"] = oa[f"{group}_perc"] / oa["area"]
@@ -132,7 +131,7 @@ def fig_importance(
         Max value for colour scale, by default 0.06
     """
     fig, grid = get_fig_grid()
-
+    cmap = "YlOrRd"
     for i, g in enumerate(groups.items()):
         name = g[0]
         title = g[1]["title"]
@@ -145,11 +144,12 @@ def fig_importance(
             show=False,
             legend=False,
             title=title,
+            cmap=cmap,
         )
         if i == 1:
             add_scalebar(grid[i])
 
-    add_colorbar(grid[-1], vmax=vmax, label="Importance")
+    add_colorbar(grid[-1], vmax=vmax, label="Importance", cmap=cmap)
     save_fig(fig, "demographics_importance.png", save_dir)
 
 

@@ -62,11 +62,9 @@ def fig_single_obj(
                     sensor_edgecolor="yellow",
                     sensor_linewidth=1.5,
                 )
-                if i == 1:
-                    add_scalebar(grid[i])
-
                 i += 1
 
+        add_scalebar(grid[1])
         add_colorbar(grid[-1], label="Coverage", cmap="Greens")
 
         fig.suptitle(all_groups[plot_obj]["title"], y=0.87, fontsize=20)
@@ -104,7 +102,7 @@ def fig_coverage_vs_sensors(
             range(1, len(cov_history) + 1), cov_history, label=all_groups[obj]["title"]
         )
 
-    ax.set_xlabel("No. Sensors")
+    ax.set_xlabel("Number of Sensors")
     ax.set_ylabel("Coverage")
     ax.legend()
     save_fig(fig, "coverage_vs_nsensors.png", save_dir)
