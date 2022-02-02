@@ -7,9 +7,8 @@ from glob import glob
 from pathlib import Path
 
 import numpy as np
-from tqdm import tqdm
-
 from networks_multi_objs import get_multi_obj_inputs, get_pop_oa_coverage
+from tqdm import tqdm
 
 data_dir = "data/networks/2021-10-19_105503"
 

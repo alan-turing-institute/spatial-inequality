@@ -1,26 +1,18 @@
 from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
-from spineq.optimise import calc_coverage
-from spineq.plotting import (
-    get_fig_grid,
-    add_colorbar,
-    save_fig,
-    add_scalebar,
-    plot_optimisation_result,
-)
-from spineq.data_fetcher import lad20nm_to_lad20cd
-from spineq.genetic import extract_all
 from networks_multi_objs import get_multi_obj_inputs
 from networks_two_objs import get_two_objs_filepath
-from utils import (
-    get_config,
-    set_fig_style,
-    load_pickle,
-    get_objectives,
-    get_default_optimisation_params,
-    get_figures_save_dir,
-)
+from utils import (get_config, get_default_optimisation_params,
+                   get_figures_save_dir, get_objectives, load_pickle,
+                   set_fig_style)
+
+from spineq.data_fetcher import lad20nm_to_lad20cd
+from spineq.genetic import extract_all
+from spineq.optimise import calc_coverage
+from spineq.plotting import (add_colorbar, add_scalebar, get_fig_grid,
+                             plot_optimisation_result, save_fig)
 
 
 def fig_obj1_vs_obj2(

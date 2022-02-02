@@ -1,7 +1,9 @@
 import os
-from pathlib import Path
 import pickle
-from typing import Union, Any, Tuple, List
+import shutil
+import sys
+from pathlib import Path
+from typing import Any, List, Tuple, Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -14,6 +16,27 @@ def get_config() -> dict:
     """Loads the configuration file specifying optimisation and figure parameters"""
     with open("config.yml") as f:
         return yaml.safe_load(f)
+
+
+def make_results_dir():
+    config = get_config()
+    save_dir = config["save_dir"]
+    lad20cd = lad20nm_to_lad20cd(config["la"])
+    save_path = Path(save_dir, lad20cd)
+    try:
+        os.makedirs(save_path, exist_ok=False)
+    except FileExistsError:
+        overwrite = input(f"{save_path} already exists. Ok to overwrite [y/n]? ")
+        if overwrite == "y":
+            os.makedirs(save_path, exist_ok=True)
+        else:
+            print(
+                "Change the 'save_dir' in the config file or rename the previous "
+                "results to continue."
+            )
+            sys.exit(1)
+
+    shutil.copyfile("config.yml", Path(save_path, "config.yml"))
 
 
 def set_fig_style():

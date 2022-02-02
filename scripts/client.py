@@ -3,6 +3,7 @@ Demonstration of how to interact with the API via WebSockets
 """
 
 import time
+
 import socketio
 
 JOB_ID = None

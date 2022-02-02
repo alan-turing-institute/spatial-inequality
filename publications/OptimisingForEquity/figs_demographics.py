@@ -1,22 +1,13 @@
 from pathlib import Path
+
 import geopandas as gpd
+from utils import (get_config, get_default_optimisation_params,
+                   get_figures_save_dir, get_objectives, set_fig_style)
+
+from spineq.data_fetcher import get_oa_shapes, get_oa_stats, lad20nm_to_lad20cd
 from spineq.optimise import calc_oa_weights
-from spineq.plotting import (
-    get_fig_grid,
-    plot_oa_importance,
-    add_colorbar,
-    save_fig,
-    add_scalebar,
-    plot_oa_weights,
-)
-from spineq.data_fetcher import lad20nm_to_lad20cd, get_oa_shapes, get_oa_stats
-from utils import (
-    set_fig_style,
-    get_objectives,
-    get_config,
-    get_default_optimisation_params,
-    get_figures_save_dir,
-)
+from spineq.plotting import (add_colorbar, add_scalebar, get_fig_grid,
+                             plot_oa_importance, plot_oa_weights, save_fig)
 
 
 def get_weights(lad20cd: str, population_groups: dict) -> dict:
@@ -95,7 +86,6 @@ def calc_oa_density(
     workplace = stats["workplace"]
     workplace.name = "workplace"
     oa = oa.join(workplace)
-
     for group in all_groups:
         oa[f"{group}_perc"] = oa[group] / oa[group].sum()
         oa[f"{group}_reld"] = oa[f"{group}_perc"] / oa["area"]
@@ -132,7 +122,7 @@ def fig_importance(
         Max value for colour scale, by default 0.06
     """
     fig, grid = get_fig_grid()
-
+    cmap = "YlOrRd"
     for i, g in enumerate(groups.items()):
         name = g[0]
         title = g[1]["title"]
@@ -145,11 +135,12 @@ def fig_importance(
             show=False,
             legend=False,
             title=title,
+            cmap=cmap,
         )
         if i == 1:
             add_scalebar(grid[i])
 
-    add_colorbar(grid[-1], vmax=vmax, label="Importance")
+    add_colorbar(grid[-1], vmax=vmax, label="Importance", cmap=cmap)
     save_fig(fig, "demographics_importance.png", save_dir)
 
 

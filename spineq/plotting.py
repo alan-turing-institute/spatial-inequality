@@ -1,20 +1,20 @@
 """Functions for visualising the data, optimisation weights and
 optimisation results.
 """
-import numpy as np
-import pandas as pd
 from pathlib import Path
 from typing import Union
 
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable, ImageGrid
 import contextily as ctx
 import matplotlib as mpl
-from matplotlib_scalebar.scalebar import ScaleBar
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
+from matplotlib_scalebar.scalebar import ScaleBar
+from mpl_toolkits.axes_grid1 import ImageGrid, make_axes_locatable
 
+from spineq.data_fetcher import get_oa_centroids, get_oa_shapes
 from spineq.utils import coverage_matrix
-from spineq.data_fetcher import get_oa_shapes, get_oa_centroids
 
 
 def get_color_axis(ax):

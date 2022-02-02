@@ -1,10 +1,12 @@
 from glob import glob
-from typing import Union, Optional
 from pathlib import Path
+from typing import Optional, Union
+
 from jinja2 import Template
 from markdown import markdown
-from spineq.data_fetcher import lad20nm_to_lad20cd
 from utils import get_config, get_figures_save_dir, get_objectives
+
+from spineq.data_fetcher import lad20nm_to_lad20cd
 
 
 def find_fig_path(match_name: str, fig_dir: Union[str, Path]) -> Optional[Path]:

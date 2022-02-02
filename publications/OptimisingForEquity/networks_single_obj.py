@@ -1,13 +1,11 @@
-from pathlib import Path
 import pickle
+from pathlib import Path
+
+from utils import (get_all_optimisation_params, get_config,
+                   get_networks_save_dir, get_objectives)
+
 from spineq.data_fetcher import lad20nm_to_lad20cd
 from spineq.optimise import optimise
-from utils import (
-    get_config,
-    get_objectives,
-    get_all_optimisation_params,
-    get_networks_save_dir,
-)
 
 
 def get_single_obj_filepath(config: dict) -> Path:
