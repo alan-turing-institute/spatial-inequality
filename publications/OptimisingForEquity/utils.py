@@ -1,5 +1,6 @@
 import os
 import pickle
+import shutil
 import sys
 from pathlib import Path
 from typing import Any, List, Tuple, Union
@@ -34,6 +35,8 @@ def make_results_dir():
                 "results to continue."
             )
             sys.exit(1)
+
+    shutil.copyfile("config.yml", Path(save_path, "config.yml"))
 
 
 def set_fig_style():
