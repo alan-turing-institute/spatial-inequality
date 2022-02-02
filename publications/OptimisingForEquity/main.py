@@ -8,6 +8,7 @@ import networks_single_obj
 import networks_two_objs
 import report
 import sensors_urb_obs
+from utils import make_results_dir
 
 
 def main():
@@ -16,6 +17,7 @@ def main():
     and a formatted report for a local authority, as defined by the parameters in
     `config.yml`.
     """
+    make_results_dir()
     sensors_urb_obs.main()
     networks_single_obj.main()
     networks_multi_objs.main()

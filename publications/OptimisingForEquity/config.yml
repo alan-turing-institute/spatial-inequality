@@ -35,12 +35,12 @@ optimisation:
   # networks generated for all theta values in the generate block)
   theta:
     default: 500
-    generate: [500]
+    generate: [100, 500]
   # Number of sensors in each network (default value used in figures that don't specify n_sensors,
   # networks generated for all n_sensors values in the generate block)
   n_sensors:
     default: 55
-    generate: [55]
+    generate: [10, 55]
   # Name of directory to save generated networks in
   networks_dir: networks
   # Parameters for single -objective optimisation
@@ -48,13 +48,13 @@ optimisation:
     filename: networks_singleobj.pkl  # filename for saved results
   # Parameters for multi-objective optimisation
   multi_objectives:
-    gen: 32000  # number of iterations (generations) to run the optimisation for
+    gen: 16000  # number of iterations (generations) to run the optimisation for
     population_size: 200  # number of candidate networks in each generation
     seed: 123  # random seed to use
     filename: networks_multiobj.pkl  # filename for saved results
   # Parameters for two-objective optimisation
   two_objectives:
-    gen: 32000  # number of iterations (generations) to run the optimisation for
+    gen: 16000  # number of iterations (generations) to run the optimisation for
     population_size: 200  # number of candidate networks in each generation
     seed: 234  # random seed to use
     objectives: ["pop_elderly", "workplace"]  # name of two objectives to use (must exist in objectives block above)
