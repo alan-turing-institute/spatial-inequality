@@ -1,23 +1,14 @@
-from math import floor, ceil, sqrt
+from math import ceil, floor, sqrt
 from pathlib import Path
+
 import matplotlib.pyplot as plt
-from spineq.plotting import (
-    get_fig_grid,
-    add_colorbar,
-    save_fig,
-    add_scalebar,
-    plot_optimisation_result,
-)
 from networks_single_obj import get_single_obj_filepath
-from utils import (
-    get_config,
-    set_fig_style,
-    load_pickle,
-    get_objectives,
-    get_default_optimisation_params,
-    get_all_optimisation_params,
-    get_figures_save_dir,
-)
+from utils import (get_all_optimisation_params, get_config,
+                   get_default_optimisation_params, get_figures_save_dir,
+                   get_objectives, load_pickle, set_fig_style)
+
+from spineq.plotting import (add_colorbar, add_scalebar, get_fig_grid,
+                             plot_optimisation_result, save_fig)
 
 
 def fig_single_obj(

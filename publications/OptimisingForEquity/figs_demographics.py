@@ -1,22 +1,13 @@
 from pathlib import Path
+
 import geopandas as gpd
+from utils import (get_config, get_default_optimisation_params,
+                   get_figures_save_dir, get_objectives, set_fig_style)
+
+from spineq.data_fetcher import get_oa_shapes, get_oa_stats, lad20nm_to_lad20cd
 from spineq.optimise import calc_oa_weights
-from spineq.plotting import (
-    get_fig_grid,
-    plot_oa_importance,
-    add_colorbar,
-    save_fig,
-    add_scalebar,
-    plot_oa_weights,
-)
-from spineq.data_fetcher import lad20nm_to_lad20cd, get_oa_shapes, get_oa_stats
-from utils import (
-    set_fig_style,
-    get_objectives,
-    get_config,
-    get_default_optimisation_params,
-    get_figures_save_dir,
-)
+from spineq.plotting import (add_colorbar, add_scalebar, get_fig_grid,
+                             plot_oa_importance, plot_oa_weights, save_fig)
 
 
 def get_weights(lad20cd: str, population_groups: dict) -> dict:

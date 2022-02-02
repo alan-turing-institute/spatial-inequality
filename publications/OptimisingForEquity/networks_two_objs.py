@@ -1,15 +1,13 @@
-from pathlib import Path
 import pickle
+from pathlib import Path
+
 import pygmo as pg
-from utils import (
-    get_config,
-    get_objectives,
-    get_all_optimisation_params,
-    get_networks_save_dir,
-)
+from utils import (get_all_optimisation_params, get_config,
+                   get_networks_save_dir, get_objectives)
+
 from spineq.data_fetcher import lad20nm_to_lad20cd
-from spineq.optimise import get_optimisation_inputs
 from spineq.genetic import build_problem, run_problem
+from spineq.optimise import get_optimisation_inputs
 
 
 def get_two_objs_filepath(config: dict) -> Path:

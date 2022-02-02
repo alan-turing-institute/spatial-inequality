@@ -1,5 +1,6 @@
-from spineq.optimise import optimise
 import pandas as pd
+
+from spineq.optimise import optimise
 
 theta = 500
 n_sensors = 60

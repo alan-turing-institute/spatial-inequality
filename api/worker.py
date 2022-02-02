@@ -2,11 +2,10 @@
 server and processes them.
 """
 import os
-from config import REDIS_HOST, REDIS_PORT, REDIS_QUEUE
 
 import redis
-from rq import Worker, Queue, Connection
-
+from config import REDIS_HOST, REDIS_PORT, REDIS_QUEUE
+from rq import Connection, Queue, Worker
 
 redis_url = "redis://{}:{}".format(REDIS_HOST, REDIS_PORT)
 conn = redis.from_url(redis_url)

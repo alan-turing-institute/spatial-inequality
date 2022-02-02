@@ -6,15 +6,13 @@ Created on Mon Jan 10 14:58 2020
 
 @author: ndh114
 """
-from os import path, remove
-
 import logging
 import random
 import unittest
+from os import path, remove
 
 import geopandas as gpd
-
-from classes import Config, OaGrid, EvenGrid, ExtractGrid, RandomGrid
+from classes import Config, EvenGrid, ExtractGrid, OaGrid, RandomGrid
 
 
 class TestPointSet(unittest.TestCase):

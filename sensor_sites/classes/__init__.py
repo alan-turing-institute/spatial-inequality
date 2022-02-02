@@ -9,8 +9,8 @@ Created on Thu Jun  6 15:17:03 2019
 """
 
 from .config import Config
-from .pointset import PointSet
 from .evengrid import EvenGrid
-from .randomgrid import RandomGrid
 from .extractgrid import ExtractGrid
 from .oagrid import OaGrid
+from .pointset import PointSet
+from .randomgrid import RandomGrid

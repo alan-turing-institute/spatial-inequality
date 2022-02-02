@@ -1,15 +1,16 @@
-from datetime import datetime
 import json
-import numpy as np
 import os
-from pathlib import Path
 import pickle
-from tqdm import tqdm
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
 import pygmo as pg
+from tqdm import tqdm
 
 from spineq.data_fetcher import lad20nm_to_lad20cd
-from spineq.optimise import get_optimisation_inputs, calc_coverage
 from spineq.genetic import build_problem, extract_all, run_problem
+from spineq.optimise import calc_coverage, get_optimisation_inputs
 
 
 def get_multi_obj_inputs(

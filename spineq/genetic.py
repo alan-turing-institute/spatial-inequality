@@ -1,7 +1,7 @@
 import numpy as np
 import pygmo as pg
 
-from spineq.utils import coverage_matrix, coverage_from_sensors
+from spineq.utils import coverage_from_sensors, coverage_matrix
 
 
 class OptimiseCoveragePyGMO:

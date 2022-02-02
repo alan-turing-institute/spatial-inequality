@@ -1,18 +1,18 @@
 """Main optimisation functions.
 """
-from .data_fetcher import get_oa_centroids, get_oa_stats
-from .utils import coverage_matrix, make_job_dict
-from spineq.greedy import greedy_opt
+import datetime
+import json
+import os
 
 import numpy as np
 import pandas as pd
-
 import rq
 from flask_socketio import SocketIO
 
-import os
-import datetime
-import json
+from spineq.greedy import greedy_opt
+
+from .data_fetcher import get_oa_centroids, get_oa_stats
+from .utils import coverage_matrix, make_job_dict
 
 
 def optimise(

@@ -1,7 +1,7 @@
 """Utility functions used by other files.
 """
-import numpy as np
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 from shapely.geometry import Polygon
 

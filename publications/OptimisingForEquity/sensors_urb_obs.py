@@ -1,9 +1,11 @@
 import os
 from pathlib import Path
-import yaml
+
 import geopandas as gpd
-from spineq.data_fetcher import get_uo_sensors, lad20nm_to_lad20cd
+import yaml
 from utils import get_config
+
+from spineq.data_fetcher import get_uo_sensors, lad20nm_to_lad20cd
 
 
 def save_uo_sensors(lad20cd: str, save_path: Path) -> gpd.GeoDataFrame:

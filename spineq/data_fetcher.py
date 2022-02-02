@@ -1,16 +1,16 @@
+import argparse
+import json
 import os
-from io import BytesIO
-import zipfile
 import time
 import warnings
-import json
+import zipfile
+from io import BytesIO
 from pathlib import Path
-import argparse
-import requests
 
-import pandas as pd
-import geopandas as gpd
 import fiona
+import geopandas as gpd
+import pandas as pd
+import requests
 
 DATA_DIR = Path(os.path.dirname(__file__), "../data")
 RAW_DIR = Path(DATA_DIR, "raw")

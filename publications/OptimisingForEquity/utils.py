@@ -1,7 +1,7 @@
 import os
-from pathlib import Path
 import pickle
-from typing import Union, Any, Tuple, List
+from pathlib import Path
+from typing import Any, List, Tuple, Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
