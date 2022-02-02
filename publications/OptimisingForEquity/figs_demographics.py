@@ -83,7 +83,7 @@ def calc_oa_density(
         group_pop.name = name
         oa = oa.join(group_pop)
 
-    workplace = stats["workplace"]["workers"]
+    workplace = stats["workplace"]
     workplace.name = "workplace"
     oa = oa.join(workplace)
     for group in all_groups:
