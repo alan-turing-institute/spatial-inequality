@@ -48,7 +48,9 @@ Command to force a rebuild if something hasn't udpated correctly:
 docker-compose up --build --force-recreate
 ```
 
-### SocketIO
+### Submitting Optimisation Jobs with SocketIO
+
+Generate a pseudo-optimised network of sensors with a greedy algorithm. See `scripts/client.py` for an example.
 
 * Submit an optimisation job:
   - Client emits event `submitJob` with data `{"n_sensors": 10, "theta": 500}`
@@ -76,23 +78,34 @@ docker-compose up --build --force-recreate
   - Client emits event `deleteQueue`
   - Server emits event `message` with deletion result.
 
+### Coverage Endpoint
+
+The `/coverage` endpoint computes coverage for a user-defined network (set of sensors placed at output area centroids), and takes a JSON with the following format:
+```json
+{
+   "sensors": ["E00042671","E00042803"],
+   "theta": 500,
+   "lad20cd": "E08000021"
+}
+```
+where `theta` and `lad20cd` are optional and take the values above by default, but sensors must be defined and takes a list of `oa11cd` codes that have sensors in them.
+
+It should return a JSON with this structure:
+```json
+{
+   "oa_coverage":[
+      {"coverage":0.6431659719289781,"oa11cd":"E00042665"}, 
+      ...,
+    ],
+   "total_coverage": {
+      "pop_children":0.0396946631327479,
+      "pop_elderly":0.024591629984248815,
+      "pop_total":0.059299090984356984,
+      "workplace":0.0947448314996531
+   }
+}
+```
+
 ### Dependencies
 
-The dockerised version uses only `pip` and the packages in `requirements.txt`.
-This doesn't include any plotting libraries.
-
-A [conda](https://docs.conda.io/en/latest/) environment file `environment.yml`
-is provided which installs all the pip requirements as well as additional
-libraries for plotting, notebooks etc.
-To create a virtual environment  with all dependencies installed clone this repo and from the parent `spatial-inequality` directory run:
-```bash
-> conda env create
-```
-Then, to use the environment run:
-```bash
-> conda activate spatial-inequality
-```
-To stop using the environment and return to default system python run:
-```bash
-> conda deactivate
-```
+The dockerised version of the code used for the API uses only `pip` and the packages in `requirements.txt`. This doesn't include some plotting and optimisation libraries included in the `conda` environment.
