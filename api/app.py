@@ -2,14 +2,17 @@
 optimisation backend.
 """
 import rq
-from config import FLASK_HOST, FLASK_PORT, REDIS_HOST, REDIS_PORT
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from rq.job import Job
-from worker import conn, queue
+import pandas as pd
 
+from spineq.optimise import calc_coverage, get_optimisation_inputs
 from spineq.utils import make_age_range, make_job_dict
+
+from config import FLASK_HOST, FLASK_PORT, REDIS_HOST, REDIS_PORT
+from worker import conn, queue
 
 redis_url = "redis://{}:{}".format(REDIS_HOST, REDIS_PORT)
 
@@ -25,7 +28,10 @@ def home():
                 Get job status and results: /job/&lt;job_id&gt;<br>
                 View jobs available on the queue: /queue<br>
                 Delete all jobs from the queue: /queue/deleteall<br>
-                Remove one job from the queue: /queue/delete/&lt;job_id&gt;
+                Remove one job from the queue: /queue/delete/&lt;job_id&gt;<br>
+                Get user-defined coverage: /coverage
+                 (takes JSON with keys "sensors" (a list of oa11cd), and optionally
+                 "theta", and "lad20cd")
     """
 
 
@@ -133,6 +139,45 @@ def route_delete_job(job_id):
         dict -- json with result of whether job was successfully deleted.
     """
     return delete_job(job_id)
+
+
+@app.route("/coverage", methods=["POST"])
+def route_coverage():
+    """Compute coverage stats given a list of output areas with sensors.
+
+    Query parameters JSON:
+        - sensors: List of OA (oa11cd) with sensors
+        - theta: decay rate for coverage measure (default: 500)
+        - lad20cd: Local authority codde (default: E08000021)
+
+    Returns:
+        dict -- json of OA and overall coverage stats
+    """
+    args = request.get_json()
+    if "sensors" not in args:
+        return "No sensors defined", 400
+    theta = float(args.get("theta", 500))
+    lad20cd = args.get("lad20cd", "E08000021")
+    inputs = get_optimisation_inputs(
+        lad20cd=lad20cd,
+        population_weight=1,
+        workplace_weight=1,
+        pop_age_groups={
+            "pop_total": {"min": 0, "max": 90, "weight": 1},
+            "pop_children": {"min": 0, "max": 15, "weight": 1},
+            "pop_elderly": {"min": 66, "max": 90, "weight": 1},
+        },
+        combine=False,
+    )
+    oa_weight = pd.DataFrame(inputs["oa_weight"], index=inputs["oa11cd"])
+    return jsonify(
+        calc_coverage(
+            lad20cd,
+            args.get("sensors"),
+            oa_weight=oa_weight,
+            theta=theta,
+        )
+    )
 
 
 @socketio.on("connect")

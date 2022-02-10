@@ -3,12 +3,23 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 from networks_single_obj import get_single_obj_filepath
-from utils import (get_all_optimisation_params, get_config,
-                   get_default_optimisation_params, get_figures_save_dir,
-                   get_objectives, load_pickle, set_fig_style)
+from utils import (
+    get_all_optimisation_params,
+    get_config,
+    get_default_optimisation_params,
+    get_figures_save_dir,
+    get_objectives,
+    load_pickle,
+    set_fig_style,
+)
 
-from spineq.plotting import (add_colorbar, add_scalebar, get_fig_grid,
-                             plot_optimisation_result, save_fig)
+from spineq.plotting import (
+    add_colorbar,
+    add_scalebar,
+    get_fig_grid,
+    plot_optimisation_result,
+    save_fig,
+)
 
 
 def fig_single_obj(

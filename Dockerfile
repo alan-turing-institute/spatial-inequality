@@ -12,7 +12,10 @@ ENV PORT 5000
 EXPOSE $PORT
 
 # Copy files
-COPY . /app
+COPY api /app/api
+COPY data/processed /app/data/processed
+COPY spineq /app/spineq
+COPY .env requirements.txt setup.py /app/
 
 # Install python requirements
 RUN cd /app && pip install -r requirements.txt

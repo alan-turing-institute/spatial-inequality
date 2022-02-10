@@ -2,8 +2,12 @@ import pickle
 from pathlib import Path
 
 import pygmo as pg
-from utils import (get_all_optimisation_params, get_config,
-                   get_networks_save_dir, get_objectives)
+from utils import (
+    get_all_optimisation_params,
+    get_config,
+    get_networks_save_dir,
+    get_objectives,
+)
 
 from spineq.data_fetcher import lad20nm_to_lad20cd
 from spineq.genetic import build_problem, run_problem

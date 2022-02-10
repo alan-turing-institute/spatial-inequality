@@ -9,15 +9,27 @@ import numpy as np
 import pandas as pd
 from figs_demographics import get_weights
 from networks_single_obj import get_single_obj_filepath
-from utils import (get_config, get_default_optimisation_params,
-                   get_figures_save_dir, get_la_save_dir, get_objectives,
-                   load_pickle, set_fig_style)
+from utils import (
+    get_config,
+    get_default_optimisation_params,
+    get_figures_save_dir,
+    get_la_save_dir,
+    get_objectives,
+    load_pickle,
+    set_fig_style,
+)
 
 from spineq.data_fetcher import get_oa_shapes, lad20nm_to_lad20cd
 from spineq.optimise import calc_coverage
-from spineq.plotting import (add_colorbar, add_scalebar, get_fig_grid,
-                             plot_coverage_grid, plot_optimisation_result,
-                             plot_sensors, save_fig)
+from spineq.plotting import (
+    add_colorbar,
+    add_scalebar,
+    get_fig_grid,
+    plot_coverage_grid,
+    plot_optimisation_result,
+    plot_sensors,
+    save_fig,
+)
 from spineq.urb_obs import get_uo_sensor_dict, plot_uo_coverage_grid
 from spineq.utils import coverage_grid
 
