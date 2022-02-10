@@ -12,7 +12,7 @@ from flask_socketio import SocketIO
 from spineq.greedy import greedy_opt
 
 from .data_fetcher import get_oa_centroids, get_oa_stats
-from .utils import coverage_matrix, make_job_dict
+from .utils import coverage_matrix, make_job_dict, total_coverage
 
 
 def optimise(
@@ -434,33 +434,35 @@ def calc_coverage(lad20cd, sensors, oa_weight, theta=500):
         dict -- Coverage stats with keys "total_coverage" and "oa_coverage".
     """
     centroids = get_oa_centroids(lad20cd)
-    centroids["weight"] = oa_weight
 
-    centroids["has_sensor"] = 0
-    for sensor in sensors:
-        centroids.loc[sensor["oa11cd"], "has_sensor"] = 1
-
-    oa11cd = centroids.index.values
     oa_x = centroids["x"].values
     oa_y = centroids["y"].values
-    oa_weight = centroids["weight"].values
-    sensors = centroids["has_sensor"].values
-
-    n_poi = len(oa_x)
-
     coverage = coverage_matrix(oa_x, oa_y, theta=theta)
 
     # only keep coverages due to sites where a sensor is present
+    centroids["has_sensor"] = 0
+    for sensor in sensors:
+        centroids.loc[sensor["oa11cd"], "has_sensor"] = 1
+    sensors = centroids["has_sensor"].values
     mask_cov = np.multiply(coverage, sensors[np.newaxis, :])
 
     # coverage at each site = coverage due to nearest sensor
     oa_coverage = np.max(mask_cov, axis=1)
 
-    # Avg coverage = weighted sum across all points of interest
-    total_coverage = (oa_weight * oa_coverage).sum() / oa_weight.sum()
+    # overall coverage
+    if oa_weight is None:
+        oa_weight = 1  # equal weights for each OA
+    centroids["weight"] = oa_weight
+    oa_weight = centroids["weight"].values
 
+    # Avg coverage = weighted sum across all points of interest
+    overall_coverage = total_coverage(oa_coverage, oa_weight)
+
+    oa11cd = centroids.index.values
+    n_poi = len(oa_x)
     oa_coverage = [
-        {"oa11cd": oa11cd[i], "coverage": oa_coverage[i]} for i in range(n_poi)
+        {"oa11cd": oa, "coverage": cov}
+        for oa, cov in zip(centroids.index.values, oa_coverage)
     ]
 
-    return {"total_coverage": total_coverage, "oa_coverage": oa_coverage}
+    return {"total_coverage": overall_coverage, "oa_coverage": oa_coverage}
