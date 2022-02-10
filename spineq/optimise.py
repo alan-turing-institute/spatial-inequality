@@ -9,10 +9,9 @@ import pandas as pd
 import rq
 from flask_socketio import SocketIO
 
+from spineq.data_fetcher import get_oa_centroids, get_oa_stats
 from spineq.greedy import greedy_opt
-
-from .data_fetcher import get_oa_centroids, get_oa_stats
-from .utils import coverage_matrix, make_job_dict, total_coverage
+from spineq.utils import coverage_matrix, make_job_dict, total_coverage
 
 
 def optimise(
@@ -69,7 +68,6 @@ def optimise(
     Returns:
         dict -- optimisation result.
     """
-
     if rq_job or socket:
         print("Setting up jobs and sockets...")
     if rq_job:
@@ -400,7 +398,7 @@ def make_result_dict(
             {"oa11cd": oa11cd[i], "weight": oa_weight[i]} for i in range(n_poi)
         ]
 
-    result = {
+    return {
         "lad20cd": lad20cd,
         "n_sensors": n_sensors,
         "theta": theta,
@@ -415,15 +413,12 @@ def make_result_dict(
         "workplace_weight": workplace_weight,
     }
 
-    return result
 
-
-def calc_coverage(lad20cd, sensors, oa_weight, theta=500):
+def calc_coverage(lad20cd, sensors, oa_weight=None, theta=500):
     """Calculate the coverage of a network for arbitrary OA weightings.
 
     Arguments:
-        sensors {list} -- List of sensors in the network, each sensors is a
-        dict which must include the key "oa11cd".
+        sensors {list} -- List of OA (oa11cd) with a sensor.
         oa_weight {pd.Series} -- Weight for each OA, pandas series with index
         oa11cd and weights as values. If None weight all OA equally.
 
@@ -441,28 +436,33 @@ def calc_coverage(lad20cd, sensors, oa_weight, theta=500):
 
     # only keep coverages due to sites where a sensor is present
     centroids["has_sensor"] = 0
-    for sensor in sensors:
-        centroids.loc[sensor["oa11cd"], "has_sensor"] = 1
+    for oa in sensors:
+        centroids.loc[oa, "has_sensor"] = 1
     sensors = centroids["has_sensor"].values
     mask_cov = np.multiply(coverage, sensors[np.newaxis, :])
 
     # coverage at each site = coverage due to nearest sensor
     oa_coverage = np.max(mask_cov, axis=1)
 
-    # overall coverage
+    # Avg coverage = weighted sum across all points of interest
     if oa_weight is None:
         oa_weight = 1  # equal weights for each OA
-    centroids["weight"] = oa_weight
-    oa_weight = centroids["weight"].values
+    elif isinstance(oa_weight, pd.DataFrame) and len(oa_weight.columns) == 1:
+        oa_weight = oa_weight[oa_weight.columns[0]]
 
-    # Avg coverage = weighted sum across all points of interest
-    overall_coverage = total_coverage(oa_coverage, oa_weight)
+    if isinstance(oa_weight, pd.DataFrame):
+        overall_coverage = {}
+        for obj in oa_weight.columns:
+            centroids["weight"] = oa_weight[obj]
+            overall_coverage[obj] = total_coverage(
+                oa_coverage, centroids["weight"].values
+            )
+    else:
+        centroids["weight"] = oa_weight
+        overall_coverage = total_coverage(oa_coverage, centroids["weight"].values)
 
-    oa11cd = centroids.index.values
-    n_poi = len(oa_x)
     oa_coverage = [
         {"oa11cd": oa, "coverage": cov}
         for oa, cov in zip(centroids.index.values, oa_coverage)
     ]
-
     return {"total_coverage": overall_coverage, "oa_coverage": oa_coverage}
