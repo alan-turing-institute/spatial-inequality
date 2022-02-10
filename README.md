@@ -48,14 +48,6 @@ Command to force a rebuild if something hasn't udpated correctly:
 docker-compose up --build --force-recreate
 ```
 
-If all else fails delete everything first (this deletes all docker images on your system!):
-```bash
-docker-compose rm -f
-docker stop $(docker ps -a -q)
-docker rm -f $(docker ps -a -q)
-docker rmi -f $(docker images -a -q)
-```
-
 ### SocketIO
 
 * Submit an optimisation job:
