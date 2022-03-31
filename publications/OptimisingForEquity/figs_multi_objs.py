@@ -7,7 +7,7 @@ from networks_multi_objs import get_multi_obj_inputs, get_multi_objs_filepath
 from utils import (
     get_config,
     get_default_optimisation_params,
-    get_figures_save_dir,
+    get_figures_params,
     get_objectives,
     load_pickle,
     set_fig_style,
@@ -33,6 +33,7 @@ def fig_all_above_threshold(
     theta: float,
     n_sensors: int,
     save_dir: Path,
+    extension: str,
 ):
     """Create a swarm plot of points for each candidate network, highlighting those with
     coverage above a set threshold for all objectives. Figure name:
@@ -53,13 +54,16 @@ def fig_all_above_threshold(
         No. of sensors in the network
     save_dir : Path
         Directory to save figure
+    extension : str
+        Figure file format
     """
     fig, ax = plt.subplots(1, 1, figsize=(10, 5))
     networks_swarmplot(scores, objs, thresholds=threshold, ax=ax)
     save_fig(
         fig,
-        f"multiobj_theta{theta}_{n_sensors}sensors_above{round(threshold * 100)}cov.png",
+        f"multiobj_theta{theta}_{n_sensors}sensors_above{round(threshold * 100)}cov",
         save_dir,
+        extension,
     )
 
 
@@ -71,6 +75,7 @@ def fig_work_above_threshold(
     n_sensors: int,
     work_name: str,
     save_dir: Path,
+    extension: str,
 ):
     """Create a swarm plot of points for each candidate network, highlighting those with
     above a threshold of coverage of workplaces. Figure name:
@@ -93,6 +98,8 @@ def fig_work_above_threshold(
         Name of the workplace objective
     save_dir : Path
         Directory to save figure
+    extension : str
+        Figure file format
     """
     work_idx = objs.index(work_name)
     if (scores[:, work_idx] < threshold).all():
@@ -103,8 +110,9 @@ def fig_work_above_threshold(
     networks_swarmplot(scores, objs, thresholds={work_name: threshold}, ax=ax)
     save_fig(
         fig,
-        f"multiobj_theta{theta}_{n_sensors}sensors_workabove{round(threshold * 100)}cov.png",
+        f"multiobj_theta{theta}_{n_sensors}sensors_workabove{round(threshold * 100)}cov",
         save_dir,
+        extension,
     )
 
 
@@ -120,6 +128,7 @@ def fig_max_child_work_above_threshold(
     work_name: str,
     child_name: str,
     save_dir: Path,
+    extension: str,
 ):
     """From a set of candidate networks, plot the one that maximsies coverage of
     children whlist also keeping the coverage of worklplaces above a minimum threshold.
@@ -150,6 +159,8 @@ def fig_max_child_work_above_threshold(
         Name of the coverage of children objective
     save_dir : Path
         Directory to save the figure
+    extension : str
+        Figure file format
     """
     work_idx = objs.index(work_name)
     child_idx = objs.index(child_name)
@@ -198,8 +209,9 @@ def fig_max_child_work_above_threshold(
     add_colorbar(ax[0], cmap="Greens", label="Coverage")
     save_fig(
         fig,
-        f"multiobj_wplace{round(cov[3], 2)}_child{round(cov[1], 2)}_theta{theta}_{n_sensors}sensors.png",
+        f"multiobj_wplace{round(cov[3], 2)}_child{round(cov[1], 2)}_theta{theta}_{n_sensors}sensors",
         save_dir,
+        extension,
     )
 
 
@@ -211,6 +223,7 @@ def fig_coverage_above_uo(
     n_uo_oa: int,
     all_groups: dict,
     save_dir: Path,
+    extension: str,
 ):
     """Create a swarm plot showing optimised networks that have higher coverage thab the
     pre-existing Urban Observatory network across all objectives. Figure name:
@@ -233,6 +246,8 @@ def fig_coverage_above_uo(
         Short name (keys) and long title (values) for each objective
     save_dir : Path
         Directory to save figure
+    extension : str
+        Figure file format
     """
     fig, ax = plt.subplots(1, 1, figsize=(10, 5))
     threshold = {
@@ -247,7 +262,7 @@ def fig_coverage_above_uo(
     }
     ax = networks_swarmplot(scores, objs, thresholds=threshold, ax=ax)
     ax.set_ylim([0, 1])
-    save_fig(fig, f"multiobj_theta{theta}_{n_uo_oa}sensors_above_urbobs.png", save_dir)
+    save_fig(fig, f"multiobj_theta{theta}_{n_uo_oa}sensors_above_urbobs", save_dir, extension)
 
 
 def fig_max_min_coverage(
@@ -259,6 +274,7 @@ def fig_max_min_coverage(
     solutions: np.ndarray,
     inputs: dict,
     save_dir: float,
+    extension: str,
 ):
     """Plot the network that maximises the minimum coverage across all objectives.
 
@@ -280,6 +296,8 @@ def fig_max_min_coverage(
         Optimisation inputs from networks_multi_objs.get_multi_obj_inputs
     save_dir : float
         Directory to save figure
+    extension : str
+        Figure file format
     """
     # find network that has the maximum minimum coverage across all objectives
     # (i.e. find network where all objectives have a coverage of at least t, for
@@ -332,8 +350,9 @@ def fig_max_min_coverage(
     add_colorbar(ax[0], cmap="Greens", label="Coverage")
     save_fig(
         fig,
-        f"multiobj_compromise_theta{theta}_{n_sensors}sensors_cov{round(t, 3)}.png",
+        f"multiobj_compromise_theta{theta}_{n_sensors}sensors_cov{round(t, 3)}",
         save_dir,
+        extension
     )
 
 
@@ -349,10 +368,10 @@ def main():
     networks_path = get_multi_objs_filepath(config)
     networks = load_pickle(networks_path)
 
-    figs_dir = get_figures_save_dir(config)
+    figs_dir, extension = get_figures_params(config)
 
     theta, n_sensors = get_default_optimisation_params(config)
-    n = networks[f"theta{theta}"][f"{n_sensors}sensors"]
+    n = networks[f"theta{theta}"][f"{n_sensors}sensors"]["pop"]
     scores, solutions = extract_all(n)
     scores = -scores
 
@@ -360,12 +379,12 @@ def main():
     objs = [g["title"] for g in all_groups.values()]
 
     threshold = config["figures"]["multi_objectives"]["all_coverage_threshold"]
-    fig_all_above_threshold(scores, objs, threshold, theta, n_sensors, figs_dir)
+    fig_all_above_threshold(scores, objs, threshold, theta, n_sensors, figs_dir, extension)
 
     threshold = config["figures"]["multi_objectives"]["work_coverage_threshold"]
     work_name = config["objectives"]["workplace"]["title"]
     fig_work_above_threshold(
-        scores, objs, threshold, theta, n_sensors, work_name, figs_dir
+        scores, objs, threshold, theta, n_sensors, work_name, figs_dir, extension
     )
 
     child_name = config["objectives"]["population_groups"]["pop_children"]["title"]
@@ -382,6 +401,7 @@ def main():
         work_name,
         child_name,
         figs_dir,
+        extension
     )
 
     uo_sensors = load_uo_sensors(config)
@@ -390,11 +410,11 @@ def main():
     )
     n_uo_oa = uo_sensors["oa11cd"].nunique()
     fig_coverage_above_uo(
-        uo_coverage, scores, objs, theta, n_uo_oa, all_groups, figs_dir
+        uo_coverage, scores, objs, theta, n_uo_oa, all_groups, figs_dir, extension
     )
 
     fig_max_min_coverage(
-        lad20cd, scores, objs, theta, n_sensors, solutions, inputs, figs_dir
+        lad20cd, scores, objs, theta, n_sensors, solutions, inputs, figs_dir, extension
     )
 
 

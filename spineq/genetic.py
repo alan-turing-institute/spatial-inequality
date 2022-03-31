@@ -73,7 +73,7 @@ def run_problem(prob, uda=pg.sga(gen=100), population_size=100, verbosity=1):
 
     # solve problem
     pop = algo.evolve(pop)
-    return pop
+    return pop, algo
 
 
 def extract_all(pop):

@@ -5,9 +5,10 @@ import numpy as np
 from networks_multi_objs import get_multi_obj_inputs
 from networks_two_objs import get_two_objs_filepath
 from utils import (
+    add_subplot_label,
     get_config,
     get_default_optimisation_params,
-    get_figures_save_dir,
+    get_figures_params,
     get_objectives,
     load_pickle,
     set_fig_style,
@@ -32,6 +33,7 @@ def fig_obj1_vs_obj2(
     theta: float,
     n_sensors: int,
     save_dir: Path,
+    extension: str,
 ):
     """Save a scatter plot showing the relationship between the coverage of one
     objective and another. Figure name: 2obj_theta{theta}_{n_sensors}sensors.png
@@ -50,13 +52,15 @@ def fig_obj1_vs_obj2(
         Number of sensors in the candidate networks
     save_dir : Path
         Directory to save the figure
+    extension : str
+        Figure file format
     """
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
     ax.plot(scores[:, 1], scores[:, 0], "o")
     ax.set_xlabel(all_groups[plot_objs[1]]["title"], fontsize=14)
     ax.set_ylabel(all_groups[plot_objs[0]]["title"], fontsize=14)
     ax.axis("equal")
-    save_fig(fig, f"2obj_theta{theta}_{n_sensors}sensors.png", save_dir)
+    save_fig(fig, f"2obj_theta{theta}_{n_sensors}sensors", save_dir, extension)
 
 
 def fig_two_objs_spectrum(
@@ -69,6 +73,7 @@ def fig_two_objs_spectrum(
     theta: float,
     n_sensors: int,
     save_dir: Path,
+    extension: str,
 ):
     """Save a figure showing a range of networks varying from maximal coverage of one
     objective to maximal coverage of another, showing the trade-offs between the two.
@@ -94,6 +99,8 @@ def fig_two_objs_spectrum(
         Number of sensors in the candidate networks
     save_dir : Path
         Directory to save the figure
+    extension : str
+        Figure file format
     """
     population_size = len(scores)
     rank_idx = scores[:, 0].argsort()
@@ -111,9 +118,10 @@ def fig_two_objs_spectrum(
             }
             for idx in sensor_idx
         ]
+        sensors = [inputs["oa11cd"][idx] for idx in sensor_idx]
         coverage = calc_coverage(
             lad20cd,
-            sensor_dict,
+            sensors,
             oa_weight=inputs["oa_weight"][plot_objs[0]],
             theta=theta,
         )
@@ -132,16 +140,16 @@ def fig_two_objs_spectrum(
             ax=ax[i],
             show=False,
             legend=False,
-            sensor_size=50,
+            sensor_size=20,
             sensor_color="green",
             sensor_edgecolor="yellow",
-            sensor_linewidth=1.5,
+            sensor_linewidth=1,
         )
+        add_subplot_label(fig, ax[i], i)
 
     add_scalebar(ax[1])
     add_colorbar(ax[-1], cmap="Greens", label="Coverage")
-    fig.suptitle(f"n = {n_sensors}, $\\theta$ = {theta} m", y=0.87, fontsize=20)
-    save_fig(fig, f"2obj_spectrum_theta{theta}_{n_sensors}sensors.png", save_dir)
+    save_fig(fig, f"2obj_spectrum_theta{theta}_{n_sensors}sensors", save_dir, extension)
 
 
 def main():
@@ -152,7 +160,7 @@ def main():
     print("Saving two-objective network figures...")
     set_fig_style()
     config = get_config()
-    figs_dir = get_figures_save_dir(config)
+    figs_dir, extension = get_figures_params(config)
 
     networks_path = get_two_objs_filepath(config)
     networks = load_pickle(networks_path)
@@ -166,7 +174,7 @@ def main():
     lad20cd = lad20nm_to_lad20cd(config["la"])
     inputs = get_multi_obj_inputs(lad20cd, population_groups)
 
-    fig_obj1_vs_obj2(plot_objs, scores, all_groups, theta, n_sensors, figs_dir)
+    fig_obj1_vs_obj2(plot_objs, scores, all_groups, theta, n_sensors, figs_dir, extension)
     fig_two_objs_spectrum(
         lad20cd,
         plot_objs,
@@ -177,6 +185,7 @@ def main():
         theta,
         n_sensors,
         figs_dir,
+        extension
     )
 
 

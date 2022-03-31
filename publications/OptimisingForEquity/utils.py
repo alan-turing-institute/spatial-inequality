@@ -7,6 +7,7 @@ from typing import Any, List, Tuple, Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.transforms as mtransforms
 import yaml
 
 from spineq.data_fetcher import lad20nm_to_lad20cd
@@ -48,6 +49,37 @@ def set_fig_style():
     mpl.rcParams["axes.facecolor"] = "white"
     mpl.rcParams["axes.grid"] = False
     mpl.rcParams["savefig.facecolor"] = "white"
+    mpl.rcParams["font.size"] = 6.5
+
+
+def add_subplot_label(fig, ax, i, labels=("A)", "B)", "C)", "D)"), xt=-6/72, yt=24/72):
+    """Add subplot number/letter
+
+    Parameters
+    ----------
+    fig :
+        Matplotlib figure
+    ax :
+        Matplotlib axes
+    i : _type_
+        Subplot index (used to extract value from labels)
+    labels : list, optional
+        Label to assign each subplot index, by default ("A)", "B)", "C)", "D)")
+    xt : float, optional
+        x transform (position of label)
+    yt : float, optional
+        y transform (position of label)
+    """
+    trans = mtransforms.ScaledTranslation(xt, yt, fig.dpi_scale_trans)
+    ax.text(
+        0.0,
+        1.0,
+        labels[i],
+        transform=ax.transAxes + trans,
+        horizontalalignment="left",
+        verticalalignment="top",
+        fontsize=mpl.rcParams["axes.titlesize"]
+    )
 
 
 def load_pickle(path: Union[Path, str]) -> Any:
@@ -162,8 +194,9 @@ def get_networks_save_dir(config: dict) -> Path:
     return networks_dir
 
 
-def get_figures_save_dir(config: dict) -> Path:
-    """Get the path to the directory to save figures in.
+def get_figures_params(config: dict) -> Path:
+    """Get the path to the directory to save figures in (and make it if it doesn't
+    exist), plus the file extension/figure format to save figures in.
 
     Parameters
     ----------
@@ -178,4 +211,4 @@ def get_figures_save_dir(config: dict) -> Path:
     la_path = get_la_save_dir(config)
     figures_dir = Path(la_path, config["figures"]["save_dir"])
     os.makedirs(figures_dir, exist_ok=True)
-    return figures_dir
+    return figures_dir, config["figures"]["extension"]
