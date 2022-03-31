@@ -52,7 +52,9 @@ def set_fig_style():
     mpl.rcParams["font.size"] = 6.5
 
 
-def add_subplot_label(fig, ax, i, labels=("A)", "B)", "C)", "D)"), xt=-6/72, yt=24/72):
+def add_subplot_label(
+    fig, ax, i, labels=("A)", "B)", "C)", "D)"), xt=-6 / 72, yt=24 / 72
+):
     """Add subplot number/letter
 
     Parameters
@@ -78,7 +80,7 @@ def add_subplot_label(fig, ax, i, labels=("A)", "B)", "C)", "D)"), xt=-6/72, yt=
         transform=ax.transAxes + trans,
         horizontalalignment="left",
         verticalalignment="top",
-        fontsize=mpl.rcParams["axes.titlesize"]
+        fontsize=mpl.rcParams["axes.titlesize"],
     )
 
 

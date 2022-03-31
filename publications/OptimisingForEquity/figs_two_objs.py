@@ -174,7 +174,9 @@ def main():
     lad20cd = lad20nm_to_lad20cd(config["la"])
     inputs = get_multi_obj_inputs(lad20cd, population_groups)
 
-    fig_obj1_vs_obj2(plot_objs, scores, all_groups, theta, n_sensors, figs_dir, extension)
+    fig_obj1_vs_obj2(
+        plot_objs, scores, all_groups, theta, n_sensors, figs_dir, extension
+    )
     fig_two_objs_spectrum(
         lad20cd,
         plot_objs,
@@ -185,7 +187,7 @@ def main():
         theta,
         n_sensors,
         figs_dir,
-        extension
+        extension,
     )
 
 

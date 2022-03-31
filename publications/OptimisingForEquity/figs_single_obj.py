@@ -24,7 +24,12 @@ from spineq.plotting import (
 
 
 def fig_single_obj(
-    thetas: list, n_sensors: list, results: dict, all_groups: dict, save_dir: Path, extension: str
+    thetas: list,
+    n_sensors: list,
+    results: dict,
+    all_groups: dict,
+    save_dir: Path,
+    extension: str,
 ):
     """Save figures showing optimised networks with different parameters (number of
     sensors and coverage distance, theta) for each objective. Names of saved figures:
@@ -67,7 +72,7 @@ def fig_single_obj(
                     sensor_edgecolor="yellow",
                     sensor_linewidth=1,
                 )
-                add_subplot_label(fig, grid[i], i, xt=0, yt=22/72)
+                add_subplot_label(fig, grid[i], i, xt=0, yt=22 / 72)
                 i += 1
 
         add_scalebar(grid[1])
@@ -80,7 +85,12 @@ def fig_single_obj(
 
 
 def fig_coverage_vs_sensors(
-    results: dict, theta: float, n_sensors: int, all_groups: dict, save_dir: Path, extension: str
+    results: dict,
+    theta: float,
+    n_sensors: int,
+    all_groups: dict,
+    save_dir: Path,
+    extension: str,
 ):
     """Save a plot showing how the coverage of each objective increases with the number
     of sensors in the network.
@@ -108,7 +118,12 @@ def fig_coverage_vs_sensors(
             "coverage_history"
         ]
         ax.plot(
-            range(1, len(cov_history) + 1), cov_history, label=all_groups[obj]["title"], marker=m, markevery=10, linewidth=1.5
+            range(1, len(cov_history) + 1),
+            cov_history,
+            label=all_groups[obj]["title"],
+            marker=m,
+            markevery=10,
+            linewidth=1.5,
         )
 
     ax.set_xlabel("Number of Sensors")

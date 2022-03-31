@@ -12,7 +12,6 @@ import pandas as pd
 import seaborn as sns
 from matplotlib_scalebar.scalebar import ScaleBar
 from mpl_toolkits.axes_grid1 import ImageGrid, make_axes_locatable
-from sklearn.feature_selection import SelectFromModel
 
 from spineq.data_fetcher import get_oa_centroids, get_oa_shapes
 from spineq.utils import coverage_matrix
@@ -361,7 +360,15 @@ def plot_oa_importance(
         plt.show()
 
 
-def plot_sensors(lad20cd, sensors, shapes=True, centroids=True, title="", ax=None, basemap=ctx.providers.Stamen.TonerBackground):
+def plot_sensors(
+    lad20cd,
+    sensors,
+    shapes=True,
+    centroids=True,
+    title="",
+    ax=None,
+    basemap=ctx.providers.Stamen.TonerBackground,
+):
     if ax is None:
         _, ax = plt.subplots(1, 1, figsize=(7, 7))
 
@@ -417,7 +424,9 @@ def add_scalebar(ax):
 
 
 def save_fig(fig, filename, save_dir, extension=".png", dpi=600, bbox_inches="tight"):
-    fig.savefig(Path(save_dir, f"{filename}{extension}"), dpi=dpi, bbox_inches=bbox_inches)
+    fig.savefig(
+        Path(save_dir, f"{filename}{extension}"), dpi=dpi, bbox_inches=bbox_inches
+    )
 
 
 def networks_swarmplot(
@@ -513,7 +522,7 @@ def networks_swarmplot(
             data=df.reset_index(),
             size=4,
             ax=ax,
-            palette=sns.color_palette(colors)
+            palette=sns.color_palette(colors),
         )
 
     ax.set_xlabel("")
@@ -523,7 +532,7 @@ def networks_swarmplot(
         for i, obj in enumerate(objectives):
             if obj in thresholds.keys():
                 ax.hlines(thresholds[obj], i - 0.35, i + 0.35, color="k", linewidth=0.5)
-                
+
     if legend:
         ax.legend()
 

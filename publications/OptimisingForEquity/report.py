@@ -63,7 +63,9 @@ def main():
     work_name = all_groups["workplace"]["title"]
     fig_workers = find_fig_path(f"workplace_theta*_nsensors*{extension}", fig_dir)
 
-    fig_urb_obs_sensors = find_fig_path(f"urb_obs_sensors_nsensors_*{extension}", fig_dir)
+    fig_urb_obs_sensors = find_fig_path(
+        f"urb_obs_sensors_nsensors_*{extension}", fig_dir
+    )
     fig_urb_obs_coverage_grid = find_fig_path(
         f"urb_obs_coverage_grid_theta_*_nsensors_*{extension}", fig_dir
     )

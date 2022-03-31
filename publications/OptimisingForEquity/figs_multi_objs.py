@@ -262,7 +262,9 @@ def fig_coverage_above_uo(
     }
     ax = networks_swarmplot(scores, objs, thresholds=threshold, ax=ax)
     ax.set_ylim([0, 1])
-    save_fig(fig, f"multiobj_theta{theta}_{n_uo_oa}sensors_above_urbobs", save_dir, extension)
+    save_fig(
+        fig, f"multiobj_theta{theta}_{n_uo_oa}sensors_above_urbobs", save_dir, extension
+    )
 
 
 def fig_max_min_coverage(
@@ -352,7 +354,7 @@ def fig_max_min_coverage(
         fig,
         f"multiobj_compromise_theta{theta}_{n_sensors}sensors_cov{round(t, 3)}",
         save_dir,
-        extension
+        extension,
     )
 
 
@@ -379,7 +381,9 @@ def main():
     objs = [g["title"] for g in all_groups.values()]
 
     threshold = config["figures"]["multi_objectives"]["all_coverage_threshold"]
-    fig_all_above_threshold(scores, objs, threshold, theta, n_sensors, figs_dir, extension)
+    fig_all_above_threshold(
+        scores, objs, threshold, theta, n_sensors, figs_dir, extension
+    )
 
     threshold = config["figures"]["multi_objectives"]["work_coverage_threshold"]
     work_name = config["objectives"]["workplace"]["title"]
@@ -401,7 +405,7 @@ def main():
         work_name,
         child_name,
         figs_dir,
-        extension
+        extension,
     )
 
     uo_sensors = load_uo_sensors(config)

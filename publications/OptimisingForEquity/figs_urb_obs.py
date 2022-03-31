@@ -120,7 +120,9 @@ def get_diff_cmap() -> matplotlib.colors.LinearSegmentedColormap:
     )
 
 
-def fig_uo_sensor_locations(lad20cd: str, uo_sensors: gpd.GeoDataFrame, save_dir: Path, extension: str):
+def fig_uo_sensor_locations(
+    lad20cd: str, uo_sensors: gpd.GeoDataFrame, save_dir: Path, extension: str
+):
     """Show the location of all sensors in the Urban Observatory network (points only).
     Figure nane: urb_obs_sensors_nsensors_{N}.png (where {N} is the no. sensors in the
     UO network)
@@ -143,7 +145,11 @@ def fig_uo_sensor_locations(lad20cd: str, uo_sensors: gpd.GeoDataFrame, save_dir
 
 
 def fig_uo_coverage_grid(
-    lad20cd: str, uo_sensors: gpd.GeoDataFrame, theta: int, save_dir: Path, extension: str
+    lad20cd: str,
+    uo_sensors: gpd.GeoDataFrame,
+    theta: int,
+    save_dir: Path,
+    extension: str,
 ):
     """Calculate the coverage the Urban Observatory sensor network provides on a square
     grid. Figure name: urb_obs_coverage_grid_theta_{theta}_nsensors_{n_sensors}.png
@@ -253,7 +259,9 @@ def fig_uo_coverage_grid_diff(
     )
     t_str = f"theta_{theta}"
     n_str = f"nsensors_{n_uo_oa}"
-    save_fig(fig, f"urb_obs_coverage_difference_grid_{t_str}_{n_str}", save_dir, extension)
+    save_fig(
+        fig, f"urb_obs_coverage_difference_grid_{t_str}_{n_str}", save_dir, extension
+    )
 
 
 def fig_uo_coverage_oa(
@@ -367,7 +375,7 @@ def fig_uo_coverage_oa_diff(
 
         grid[i].set_axis_off()
         grid[i].set_title(params["title"])
-        add_subplot_label(fig, grid[i], i, xt=0, yt=22/72)
+        add_subplot_label(fig, grid[i], i, xt=0, yt=22 / 72)
 
     add_scalebar(grid[1])
     add_colorbar(grid[-1], cmap=cmap, label="Coverage Difference", vmin=vmin, vmax=vmax)
@@ -379,7 +387,9 @@ def fig_uo_coverage_oa_diff(
 
     t_str = f"theta_{theta}"
     n_str = f"nsensors_{n_uo_oa}"
-    save_fig(fig, f"urb_obs_coverage_difference_oa_{t_str}_{n_str}", save_dir, extension)
+    save_fig(
+        fig, f"urb_obs_coverage_difference_oa_{t_str}_{n_str}", save_dir, extension
+    )
 
 
 def main():
@@ -412,7 +422,9 @@ def main():
         lad20cd, uo_sensors, theta, all_groups, networks, figs_dir, extension
     )
     fig_uo_coverage_oa(uo_coverage, theta, all_groups, figs_dir, extension)
-    fig_uo_coverage_oa_diff(lad20cd, uo_coverage, theta, all_groups, networks, figs_dir, extension)
+    fig_uo_coverage_oa_diff(
+        lad20cd, uo_coverage, theta, all_groups, networks, figs_dir, extension
+    )
 
 
 if __name__ == "__main__":
