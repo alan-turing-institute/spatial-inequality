@@ -59,6 +59,10 @@ optimisation:
     seed: 234  # random seed to use
     objectives: ["pop_elderly", "workplace"]  # name of two objectives to use (must exist in objectives block above)
     filename: networks_2obj.pkl  # filename for saved results
+  # Parameters for generating random networks
+  random:
+    n: 10000  # number of random networks to generate
+    filename: "random.pkl"
 
 # Parameters for Urban Observatory network commparisons
 urb_obs:
