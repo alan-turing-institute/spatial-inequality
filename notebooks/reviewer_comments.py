@@ -45,7 +45,6 @@ scores["rank_u16"] = scores["Residents Under 16"].rank()
 scores["rank_t"] = scores["Total Residents"].rank()
 
 
-
 rank_cols = ["rank_workers", "rank_o65", "rank_u16", "rank_t"]
 rank_labels = {
     "rank_workers": "Workplace rank",
@@ -77,7 +76,7 @@ for rc in rank_cols:
     cb.set_ticks([0, 49, 99, 149, 199])
     cb.set_ticklabels([200, 150, 100, 50, 1])
     cb.set_label(rank_labels[rc], fontsize=8)
-    #ax.axhline(0.45, color="k", linestyle="--", linewidth=3)
+    # ax.axhline(0.45, color="k", linestyle="--", linewidth=3)
 
     save_fig(fig, f"parallel_{rc}", "paper_figures", ".tiff")
 
@@ -88,10 +87,7 @@ scores["above45"] = scores["above45"].replace(
 )
 plt.figure(figsize=(6, 3))
 parallel_coordinates(
-    scores[obj_order + ["above45"]],
-    "above45",
-    color=["pink", "blue"],
-    linewidth=1
+    scores[obj_order + ["above45"]], "above45", color=["pink", "blue"], linewidth=1
 )
 
 
@@ -124,12 +120,12 @@ cb = fig.colorbar(
     location="bottom",
     anchor=(0.5, -0.1),
     use_gridspec=False,
-    shrink=0.9
+    shrink=0.9,
 )
 cb.set_ticks([0, 49, 99, 149, 199])
 cb.set_ticklabels([200, 150, 100, 50, 1])
 cb.ax.set_ylabel("Workers rank", fontsize=14, rotation=0, labelpad=100, loc="bottom")
-    
+
 scores["above45"] = (scores[objs] > 0.45).all(axis=1)
 scores["above45"] = scores["above45"].replace(
     {True: "All $>0.45$", False: "At least one $\leq0.45$"}
@@ -141,7 +137,7 @@ parallel_coordinates(
     "above45",
     color=["pink", "blue"],
     linewidth=1,
-    ax=ax[1]
+    ax=ax[1],
 )
 
 ax[1].axhline(0.45, color="k", linestyle="--", linewidth=3, label="0.45 Threshold")
@@ -158,8 +154,8 @@ scores["display"] = "_"
 
 plt.figure(figsize=(6, 3))
 parallel_coordinates(
-    scores[obj_order + ["display"]], #display
-    "display", #display
+    scores[obj_order + ["display"]],  # display
+    "display",  # display
     color=["lightgrey", "blue", "red", "green", "orange"],
     linewidth=0.5,
 )
@@ -183,8 +179,8 @@ scores["display"] = "_"
 
 plt.figure(figsize=(6, 3))
 parallel_coordinates(
-    scores[obj_order + ["above45"]], #display
-    "above45", #display
+    scores[obj_order + ["above45"]],  # display
+    "above45",  # display
     color=["pink", "blue", "red", "green", "orange"],
     linewidth=1,
 )
@@ -221,7 +217,9 @@ plt.ylabel("Coverage")
 plt.legend(loc="upper left")
 
 
-uo_sensors = gpd.read_file("/Users/jroberts/GitHub/spatial-inequality/publications/OptimisingForEquity/results/E08000021_updated_10k/urb_obs")
+uo_sensors = gpd.read_file(
+    "/Users/jroberts/GitHub/spatial-inequality/publications/OptimisingForEquity/results/E08000021_updated_10k/urb_obs"
+)
 
 sensor_oa = uo_sensors["oa11cd"].unique()
 oa_centroids = get_oa_centroids()
@@ -295,15 +293,17 @@ rnd_oa = np.random.choice(oa_centroids.index, size=(n_networks, n_sensors))
 
 from tqdm import trange
 
-rnd_scores = np.array([
+rnd_scores = np.array(
     [
-        calc_coverage("E08000021", rnd_oa[i, :], oa_weight=w, theta=500)[
-            "total_coverage"
+        [
+            calc_coverage("E08000021", rnd_oa[i, :], oa_weight=w, theta=500)[
+                "total_coverage"
+            ]
+            for w in oa_weight["oa_weight"].values()
         ]
-        for w in oa_weight["oa_weight"].values()
+        for i in trange(rnd_oa.shape[0])
     ]
-    for i in trange(rnd_oa.shape[0])
-])
+)
 
 rnd_scores = pd.DataFrame(rnd_scores, columns=objs)
 rnd_scores["type"] = "Random"
@@ -311,7 +311,7 @@ scores["type"] = "NSGA-II"
 
 all_scores = pd.concat([scores[objs + ["type"]], rnd_scores[objs + ["type"]]])
 ndf, dl, dc, ndr = fast_non_dominated_sorting(rnd_scores[objs].values)
-rnd_hyper = hypervolume(-rnd_scores[objs].values).compute([0,0,0,0])
+rnd_hyper = hypervolume(-rnd_scores[objs].values).compute([0, 0, 0, 0])
 
 # greedy
 
@@ -340,12 +340,21 @@ with open(
 fig, ax = plt.subplots(1, 2, figsize=(7, 3))
 
 ax[1].plot(tmp["generations"], tmp["hypervolume"], label="NSGA-II")
-ax[1].axhline(rnd_hyper, color="k", linestyle="--", label="10k random networks", linewidth=1)
-#ax[0].legend()
+ax[1].axhline(
+    rnd_hyper, color="k", linestyle="--", label="10k random networks", linewidth=1
+)
+# ax[0].legend()
 
 markers = ["o", "^", "s", "x"]
 for o, f, m in zip(objs, range(np.array(tmp["fitness"]).shape[1]), markers):
-    ax[0].plot(tmp["generations"], -np.array(tmp["fitness"])[:, f], label=o, marker=m, markevery=20, linewidth=1.5)
+    ax[0].plot(
+        tmp["generations"],
+        -np.array(tmp["fitness"])[:, f],
+        label=o,
+        marker=m,
+        markevery=20,
+        linewidth=1.5,
+    )
 for i, v in enumerate(greedy_scores[objs].max().values):
     if i == 0:
         label = "Max single-objective (greedy)"
@@ -365,7 +374,7 @@ labels = ["A)", "B)"]
 for i, a in enumerate(ax):
     a.set_xlabel("Generations")
     a.set_xlim([0, 20000])
-    trans = mtransforms.ScaledTranslation(-30/72, 16/72, fig.dpi_scale_trans)
+    trans = mtransforms.ScaledTranslation(-30 / 72, 16 / 72, fig.dpi_scale_trans)
     a.text(
         0.0,
         1.0,
@@ -373,6 +382,6 @@ for i, a in enumerate(ax):
         transform=a.transAxes + trans,
         horizontalalignment="left",
         verticalalignment="top",
-        fontsize=mpl.rcParams["axes.titlesize"]
+        fontsize=mpl.rcParams["axes.titlesize"],
     )
 save_fig(fig, "converge", "paper_figures", ".tiff")

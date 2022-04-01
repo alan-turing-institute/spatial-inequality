@@ -20,10 +20,13 @@ from spineq.plotting import (
     add_colorbar,
     add_scalebar,
     get_fig_grid,
+    networks_parallel_coords_plot,
     networks_swarmplot,
     plot_optimisation_result,
     save_fig,
 )
+
+obj_order = ["Residents Over 65", "Residents Under 16", "Total Residents", "Workers"]
 
 
 def fig_all_above_threshold(
@@ -57,11 +60,31 @@ def fig_all_above_threshold(
     extension : str
         Figure file format
     """
-    fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+    fig, ax = plt.subplots(1, 1, figsize=(6, 3))
     networks_swarmplot(scores, objs, thresholds=threshold, ax=ax)
     save_fig(
         fig,
         f"multiobj_theta{theta}_{n_sensors}sensors_above{round(threshold * 100)}cov",
+        save_dir,
+        extension,
+    )
+
+    fig, ax = plt.subplots(1, 1, figsize=(6, 3))
+    networks_parallel_coords_plot(
+        scores,
+        objs,
+        thresholds=threshold,
+        obj_order=obj_order,
+        colors=["pink", "blue"],
+        ax=ax,
+    )
+    name = (
+        f"multiobj_parallel_theta{theta}_{n_sensors}sensors"
+        f"_above{round(threshold * 100)}cov"
+    )
+    save_fig(
+        fig,
+        name,
         save_dir,
         extension,
     )
@@ -105,12 +128,37 @@ def fig_work_above_threshold(
     if (scores[:, work_idx] < threshold).all():
         print(f"No networks with workplace coverage > {threshold}, skipping figure")
         return
+    thresholds = {work_name: threshold}
 
-    fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-    networks_swarmplot(scores, objs, thresholds={work_name: threshold}, ax=ax)
+    fig, ax = plt.subplots(1, 1, figsize=(6, 3))
+    networks_swarmplot(scores, objs, thresholds=thresholds, ax=ax)
     save_fig(
         fig,
         f"multiobj_theta{theta}_{n_sensors}sensors_workabove{round(threshold * 100)}cov",
+        save_dir,
+        extension,
+    )
+
+    fig, ax = plt.subplots(1, 1, figsize=(6, 3))
+    networks_parallel_coords_plot(
+        scores,
+        objs,
+        thresholds=thresholds,
+        obj_order=obj_order,
+        colors=["blue", "pink"],
+        threshold_labels={
+            True: f"{work_name} $>{threshold}$",
+            False: f"{work_name} $\\leq{threshold}$",
+        },
+        ax=ax,
+    )
+    name = (
+        f"multiobj_parallel_theta{theta}_{n_sensors}sensors"
+        f"_workabove{round(threshold * 100)}cov"
+    )
+    save_fig(
+        fig,
+        name,
         save_dir,
         extension,
     )
@@ -185,7 +233,9 @@ def fig_max_child_work_above_threshold(
     # (weights don't matter for calculating coverage of each OA, only for calculating
     # overrall coverage)
     w = list(inputs["oa_weight"].values())[0]
-    coverage = calc_coverage(lad20cd, sensor_dict, oa_weight=w, theta=theta)
+    coverage = calc_coverage(
+        lad20cd, [s["oa11cd"] for s in sensor_dict], oa_weight=w, theta=theta
+    )
     coverage["sensors"] = sensor_dict
     coverage["lad20cd"] = lad20cd
 
@@ -249,8 +299,8 @@ def fig_coverage_above_uo(
     extension : str
         Figure file format
     """
-    fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-    threshold = {
+    fig, ax = plt.subplots(1, 1, figsize=(6, 3))
+    thresholds = {
         all_groups["workplace"]["title"]: uo_coverage["workplace"]["total_coverage"],
         all_groups["pop_total"]["title"]: uo_coverage["pop_total"]["total_coverage"],
         all_groups["pop_children"]["title"]: uo_coverage["pop_children"][
@@ -260,10 +310,28 @@ def fig_coverage_above_uo(
             "total_coverage"
         ],
     }
-    ax = networks_swarmplot(scores, objs, thresholds=threshold, ax=ax)
+    ax = networks_swarmplot(scores, objs, thresholds=thresholds, ax=ax)
     ax.set_ylim([0, 1])
     save_fig(
         fig, f"multiobj_theta{theta}_{n_uo_oa}sensors_above_urbobs", save_dir, extension
+    )
+
+    fig, ax = plt.subplots(1, 1, figsize=(6, 3))
+    networks_parallel_coords_plot(
+        scores,
+        objs,
+        thresholds=thresholds,
+        obj_order=obj_order,
+        line_label="Urban Observatory",
+        threshold_labels={True: "All above UO", False: "At least one below UO"},
+        colors=["blue", "pink"],
+        ax=ax,
+    )
+    save_fig(
+        fig,
+        f"multiobj_parallel_theta{theta}_{n_uo_oa}sensors_above_urbobs",
+        save_dir,
+        extension,
     )
 
 
@@ -324,7 +392,10 @@ def fig_max_min_coverage(
     ]
 
     coverage = calc_coverage(
-        lad20cd, sensor_dict, oa_weight=inputs["oa_weight"]["pop_total"], theta=theta
+        lad20cd,
+        [s["oa11cd"] for s in sensor_dict],
+        oa_weight=inputs["oa_weight"]["pop_total"],
+        theta=theta,
     )
     coverage["sensors"] = sensor_dict
     coverage["lad20cd"] = lad20cd
@@ -358,6 +429,50 @@ def fig_max_min_coverage(
     )
 
 
+def fig_parallel_color_scale(
+    scores: np.ndarray,
+    objs: list,
+    theta: float,
+    n_sensors: int,
+    save_dir: Path,
+    extension: str,
+):
+    """Create parallel coordinates plots with lines coloured in order of each objective.
+    Figure name:
+    multiobj_parallel_{obj}_theta{theta}_{n_sensors}sensors.png
+
+    Parameters
+    ----------
+    scores : np.ndarray
+        Coverage values for each objective in each candidate network
+    objs : list
+        Names of objectives in the order they appear in scores
+    theta : float
+        Coverage distance to use
+    n_sensors : int
+        No. of sensors in the network
+    save_dir : Path
+        Directory to save figure
+    extension : str
+        Figure file format
+    """
+    for o in objs:
+        fig, ax = plt.subplots(1, 1, figsize=(6, 3))
+        networks_parallel_coords_plot(
+            scores,
+            objs,
+            color_by=o,
+            obj_order=obj_order,
+            ax=ax,
+        )
+        save_fig(
+            fig,
+            f"multiobj_parallel_{o}_theta{theta}_{n_sensors}sensors",
+            save_dir,
+            extension,
+        )
+
+
 def main():
     """Save figures showing the results of running the multi-objective optimisation
     (with the NSGA2 algorithm)
@@ -373,7 +488,7 @@ def main():
     figs_dir, extension = get_figures_params(config)
 
     theta, n_sensors = get_default_optimisation_params(config)
-    n = networks[f"theta{theta}"][f"{n_sensors}sensors"]["pop"]
+    n = networks[f"theta{theta}"][f"{n_sensors}sensors"]  # ["pop"]
     scores, solutions = extract_all(n)
     scores = -scores
 
@@ -420,6 +535,8 @@ def main():
     fig_max_min_coverage(
         lad20cd, scores, objs, theta, n_sensors, solutions, inputs, figs_dir, extension
     )
+
+    fig_parallel_color_scale(scores, objs, theta, n_sensors, figs_dir, extension)
 
 
 if __name__ == "__main__":

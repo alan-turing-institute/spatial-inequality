@@ -68,7 +68,7 @@ urb_obs:
 # Figure parameters
 figures:
   save_dir: figures  # directory to save figures
-  extension: .tiff  # file extension (and format to save figure in)
+  extension: .png  # file extension (and format to save figure in)
   # multi-objective optimisation figures
   multi_objectives:
     all_coverage_threshold: 0.45  # generate a plot highlighiting networks where all objectives have at least this coverage

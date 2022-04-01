@@ -2,7 +2,7 @@
 optimisation results.
 """
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 import contextily as ctx
 import matplotlib as mpl
@@ -22,8 +22,7 @@ def get_color_axis(ax):
     See: https://www.science-emergence.com/Articles/How-to-match-the-colorbar-size-with-the-figure-size-in-matpltolib-/
     """
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.1)
-    return cax
+    return divider.append_axes("right", size="5%", pad=0.1)
 
 
 def plot_optimisation_result(
@@ -491,7 +490,7 @@ def networks_swarmplot(
         selected = pd.Series(selected)
 
     df = df[objectives].stack()
-    df.name = "coverage"
+    df.name = "Coverage"
     df.index.set_names(["idx", "objective"], inplace=True)
     df = pd.DataFrame(df)
 
@@ -506,11 +505,11 @@ def networks_swarmplot(
     if selected is not None:
         sns.swarmplot(
             x="objective",
-            y="coverage",
+            y="Coverage",
             hue="selected",
             palette=sns.color_palette(colors),
             data=df.reset_index(),
-            size=4,
+            size=2,
             ax=ax,
         )
         ax.get_legend().remove()
@@ -518,7 +517,7 @@ def networks_swarmplot(
     else:
         sns.swarmplot(
             x="objective",
-            y="coverage",
+            y="Coverage",
             data=df.reset_index(),
             size=4,
             ax=ax,
@@ -542,10 +541,17 @@ def networks_swarmplot(
 def networks_parallel_coords_plot(
     scores: np.ndarray,
     objectives: list,
-    thresholds: Union[float, dict, int, None] = None,
-    names: Union[str, dict, None] = None,
-    colors: list = ("pink", "blue"),
-    ax: Union[plt.Axes, None] = None,
+    obj_order: Optional[str] = None,
+    color_by: Optional[str] = None,
+    thresholds: Union[float, dict, None] = None,
+    highlight: Optional[list] = None,
+    highlight_fmt: Optional[list] = None,
+    ax: Optional[plt.Axes] = None,
+    ylabel: str = "Coverage",
+    cmap: str = None,
+    colors: list = None,
+    line_label: Optional[str] = None,
+    threshold_labels: Optional[dict] = None,
 ) -> plt.Axes:
     """Create a parallel coordinates plot showing the coverage values for each
     individual objective for all networks in a population of multi-objective
@@ -557,61 +563,134 @@ def networks_parallel_coords_plot(
         Coverage scores for each objective in each network
         (shape: n_networks, n_objectives)
     objectives : list
-        Name of each objective
-    thresholds : Union[float, dict, int, None], optional
-        Optionally apply a selection threshold to each objective. Either a float which
-        applies the same threshold to all objectives, a dict of objective: threshold
-        pairs, or an int representing the index of a single network to highlight. By
-        default None
-    colors : list, optional
-        Colours to use to show networks that don't an do exceed the set thresholds,
-        by default ["pink", "blue"]
-    ax : plt.Axes, optional
+        Name of each objective (in the order used in scores)
+    obj_order : Optional[str], optional
+        Subset and order to plot the objectives in, by default None
+    color_by : Optional[str], optional
+        Objective to use as a colour scale, by default None
+    thresholds : Union[float, dict, None], optional
+        Colour based on a selection threshold applied to each objective. Either a float
+        which applies the same threshold to all objectives, or a dict of
+        objective: threshold pairs. By default None
+    highlight : Optional[list], optional
+        _description_, by default None
+    highlight_fmt : Optional[list], optional
+        _description_, by default None
+    ax : Optional[plt.Axes], optional
         Matplotlib axis to plot to, by default None
+    ylabel : str, optional
+        Label for the y-axis, by default "Coverage"
+    cmap : str, optional
+       colormap to use, by default None
+    colors : list, optional
+        List of colors to use, by default None
+    line_label : Optional[str], optional
+        If defining separate thresholds for each objective, the label describing what
+        those thresholds represent as a whole, by default None
+    threshold_labels : Optional[dict], optional
+        Name for each threshold, by default None
 
     Returns
     -------
     plt.Axes
         Matplotlib axis with parallel coordinates plot.
     """
+
     df = pd.DataFrame(scores, columns=objectives)
 
-    selected = None
-    if isinstance(thresholds, float):
-        selected = df[objectives[0]] > thresholds
-        for obj in objectives[1:]:
-            selected = selected & (df[obj] > thresholds)
+    if obj_order is None:
+        obj_order = objectives
 
-    elif isinstance(thresholds, int):
-        selected = np.zeros(len(df)).astype(bool)
-        selected[thresholds] = True
-        selected = pd.Series(selected)
+    color_col = "color"
+    if color_by is not None:
+        df[color_col] = df[color_by].rank()
+        df = df.sort_values(by=color_col)
+
+    elif isinstance(thresholds, float):
+        if threshold_labels is None:
+            threshold_labels = {
+                True: f"All $>{thresholds}$",
+                False: f"At least one $\\leq{thresholds}$",
+            }
+        df[color_col] = (
+            (df[obj_order] > thresholds).all(axis=1).replace(threshold_labels)
+        )
 
     elif isinstance(thresholds, dict):
         for obj, t in thresholds.items():
-            selected = df[obj] > t if selected is None else selected & (df[obj] > t)
+            df[color_col] = (
+                df[obj] > t
+                if color_col not in df.columns
+                else df[color_col] & (df[obj] > t)
+            )
+        if threshold_labels is not None:
+            df[color_col] = df[color_col].replace(threshold_labels)
 
-    if selected is None:
-        df["selected"] = True
     else:
-        df["selected"] = selected
+        df[color_col] = "_"
 
     if ax is None:
-        _, ax = plt.subplots(1, 1, figsize=(10, 5))
+        fig, ax = plt.subplots(1, 1, figsize=(6, 3))
+    else:
+        fig = ax.get_figure()
+
+    if cmap is None and colors is None:
+        if color_by is not None or (color_by is None and thresholds is None):
+            cmap = "plasma"
+        else:
+            cmap = "Set1"
 
     pd.plotting.parallel_coordinates(
-        scores,
-        "selected",
-        color=["pink", "blue"],
+        df[obj_order + [color_col]],
+        color_col,
+        colormap=cmap,
+        color=colors,
         linewidth=1,
         ax=ax,
     )
 
-    ax.set_xlabel("")
-    if isinstance(thresholds, float):
-        ax.axhline(thresholds, color="k", linewidth=0.5)
+    ax.set_ylabel(ylabel)
+    ax.set_xlim([-0.1, len(objectives) - 0.9])
+
+    if color_by is not None:
+        ax.legend().remove()
+        cb = fig.colorbar(
+            mpl.cm.ScalarMappable(
+                norm=mpl.colors.Normalize(vmin=0, vmax=len(df) - 1), cmap=cmap
+            )
+        )
+        ticks = list(reversed(cb.ax.get_yticks()))
+        ticks[-1] = 1
+        cb.set_ticks(ticks)
+        cb.set_label(f"{color_by} rank", fontsize=8)
+
+    elif isinstance(thresholds, float):
+        ax.axhline(thresholds, color="k", linestyle="--", linewidth=3)
     elif isinstance(thresholds, dict):
-        # TODO: Ensure objective order of thresholds is same as plot order
-        ax.plot(thresholds.values(), "k--")
+        if len(thresholds) == len(obj_order):
+            ax.plot(
+                range(len(obj_order)),
+                [thresholds[obj] for obj in obj_order],
+                "ko-",
+                label=line_label,
+                linewidth=1.5,
+            )
+            ax.legend()
+        else:
+            for i, obj in enumerate(obj_order):
+                if obj in thresholds.keys():
+                    ax.hlines(thresholds[obj], i - 0.1, i + 0.1, color="k", linewidth=2)
+
+    if highlight is not None:
+        if isinstance(highlight, int):
+            highlight = [highlight]
+
+        for i, highlight_idx in enumerate(highlight):
+            fmt = {"linewidth": 2, "zorder": 3, "markersize": 6}
+            if highlight_fmt is not None:
+                fmt = {**fmt, **highlight_fmt[i]}
+
+            df[obj_order].iloc[highlight_idx].plot(**fmt)
+            ax.legend()
 
     return ax
