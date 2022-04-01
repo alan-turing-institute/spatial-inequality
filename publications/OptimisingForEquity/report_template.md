@@ -86,14 +86,22 @@ Many networks generated to show a range of possible compromise solutions between
 
 The swarm plots below show the coverage of each network for each of the objectives (so a network has a point in each of the swarms). Points (networks) highlighted blue meet all the criteria in the section title above the plot, networks coloured pink fail to meet at least one of the criteria for at least one of the objectives.
 
+### Coloured by Workers Coverage
+
+<img src="{{fig_parallel_color_workers}}" width="{{fig_width}}"/>
+
 ### All Objectives Above {{all_threshold}}
 
 <img src="{{fig_all_above_threshold}}" width="{{fig_width}}"/>
+
+<img src="{{fig_parallel_all_above_threshold}}" width="{{fig_width}}"/>
 
 
 ### Coverage of {{work_name}} Above {{work_threshold}}
 
 <img src="{{fig_work_above_threshold}}" width="{{fig_width}}"/>
+
+<img src="{{fig_parallel_work_above_threshold}}" width="{{fig_width}}"/>
 
 
 ### Max Coverage of {{children_name}} with {{work_name}} Coverage Above {{work_threshold}}
@@ -107,6 +115,7 @@ Horizontal lines indicate the coverage of the Urban Observatory network for each
 
 <img src="{{fig_coverage_above_uo}}" width="{{fig_width}}"/>
 
+<img src="{{fig_parallel_coverage_above_uo}}" width="{{fig_width}}"/>
 
 ### Maximise Minimum Objective Coverage
 

@@ -78,9 +78,17 @@ def main():
     fig_urb_obs_coverage_diff_oa = find_fig_path(
         f"urb_obs_coverage_difference_grid_theta_*_nsensors_*{extension}", fig_dir
     )
+    fig_parallel_color_workers = find_fig_path(
+        f"multiobj_parallel_Workers_theta*_*sensors{extension}",
+        fig_dir,
+    )
     all_threshold = config["figures"]["multi_objectives"]["all_coverage_threshold"]
     fig_all_above_threshold = find_fig_path(
         f"multiobj_theta*_*sensors_above{round(all_threshold * 100)}cov{extension}",
+        fig_dir,
+    )
+    fig_parallel_all_above_threshold = find_fig_path(
+        f"multiobj_parallel_theta*_*sensors_above{round(all_threshold * 100)}cov{extension}",
         fig_dir,
     )
     work_threshold = config["figures"]["multi_objectives"]["work_coverage_threshold"]
@@ -88,11 +96,18 @@ def main():
         f"multiobj_theta*_*sensors_workabove{round(work_threshold * 100)}cov{extension}",
         fig_dir,
     )
+    fig_parallel_work_above_threshold = find_fig_path(
+        f"multiobj_parallel_theta*_*sensors_workabove{round(work_threshold * 100)}cov{extension}",
+        fig_dir,
+    )
     fig_max_child_work_above_threshold = find_fig_path(
         f"multiobj_wplace*_child*_theta*_*sensors{extension}", fig_dir
     )
     fig_coverage_above_uo = find_fig_path(
         f"multiobj_theta*_*sensors_above_urbobs{extension}", fig_dir
+    )
+    fig_parallel_coverage_above_uo = find_fig_path(
+        f"multiobj_parallel_theta*_*sensors_above_urbobs{extension}", fig_dir
     )
     fig_max_min_coverage = find_fig_path(
         f"multiobj_compromise_theta*_*sensors_cov*{extension}", fig_dir
@@ -125,11 +140,15 @@ def main():
         fig_urb_obs_coverage_oa=fig_urb_obs_coverage_oa,
         fig_urb_obs_coverage_diff_oa=fig_urb_obs_coverage_diff_oa,
         all_threshold=all_threshold,
+        fig_parallel_color_workers=fig_parallel_color_workers,
         fig_all_above_threshold=fig_all_above_threshold,
+        fig_parallel_all_above_threshold=fig_parallel_all_above_threshold,
         work_threshold=work_threshold,
         fig_work_above_threshold=fig_work_above_threshold,
+        fig_parallel_work_above_threshold=fig_parallel_work_above_threshold,
         fig_max_child_work_above_threshold=fig_max_child_work_above_threshold,
         fig_coverage_above_uo=fig_coverage_above_uo,
+        fig_parallel_coverage_above_uo=fig_parallel_coverage_above_uo,
         fig_max_min_coverage=fig_max_min_coverage,
         obj_1=obj_1,
         obj_2=obj_2,

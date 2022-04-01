@@ -330,7 +330,6 @@ greedy_scores = greedy_scores.rename(
 )
 
 # convergence
-
 with open(
     "/Users/jroberts/GitHub/spatial-inequality/publications/OptimisingForEquity/results/E08000021_custom_log/networks/networks_multiobj.pkl_theta500_55sensors.log",
     "rb",
