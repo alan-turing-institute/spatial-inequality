@@ -122,12 +122,14 @@ def main():
 
     for t in thetas:
         for ns in n_sensors:
-            multi_log_path = Path(networks_dir, f"_theta{t}_{ns}sensors.log")
+            multi_log_path = Path(
+                networks_dir, f"networks_multiobj.pkl_theta{t}_{ns}sensors.log"
+            )
             multi_log = load_pickle(multi_log_path)
             rnd_scores = rnd_results[f"theta{t}"][f"{ns}sensors"]
             single_scores = [
                 single_results[o][f"theta{t}"][f"{ns}sensors"]["coverage_history"][-1]
-                for o in objectives
+                for o in single_results.keys()
             ]
             filename = f"convergence_theta{t}_{ns}sensors"
             plot_convergence_metrics(
