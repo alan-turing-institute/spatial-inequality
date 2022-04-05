@@ -144,7 +144,6 @@ def make_multi_obj_networks(
         for ns in n_sensors:
             print("theta", t, ", n_sensors", ns)
             prob = build_problem(inputs, n_sensors=ns, theta=t)
-            """
             pop, log = run_nsga_with_log(
                 prob,
                 gen=gen,
@@ -163,6 +162,7 @@ def make_multi_obj_networks(
             results[f"theta{t}"][f"{ns}sensors"] = {"pop": pop, "log": log}
             with open(f"{save_path}_theta{t}_{ns}sensors.log", "wb") as f:
                 pickle.dump(log, f)
+            """
 
     return results
 

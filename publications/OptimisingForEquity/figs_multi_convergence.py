@@ -1,21 +1,56 @@
-import pickle
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import matplotlib.transforms as mtransforms
+from pathlib import Path
+
 from pygmo import hypervolume
 
 from spineq.plotting import save_fig
 
-from utils import set_fig_style
+from utils import (
+    get_networks_save_dir,
+    load_pickle,
+    set_fig_style,
+    get_config,
+    get_all_optimisation_params,
+    get_objectives,
+    get_figures_params,
+)
+from networks_single_obj import get_single_obj_filepath
 
 
 def plot_convergence_metrics(
-    multi_log, objectives, rnd_scores, single_scores, filename, save_dir, extension
+    multi_log: dict,
+    objectives: list,
+    rnd_scores: np.ndarray,
+    single_scores: list,
+    filename: str,
+    save_dir: Path,
+    extension: str,
 ):
+    """Save convergence figures - hypervolume vs. number of generations and maximum
+    coverage of each objective vs. number of generations.
 
+    Parameters
+    ----------
+    multi_log : dict
+        Log of population hypervolume and maximum coverage as saved by
+        networks_multi_obj.py
+    objectives : list
+        List of objective names (in the order they appear in coverage scores)
+    rnd_scores : np.ndarray
+        Array of coverage scores for random networks generated with networks_random.py
+    single_scores : list
+        List of coverage achieved with the greedy algorithm (extracted from the results
+        of networks_single_obj.py)
+    filename : str
+        File name of the figure to save (excluding directory and extension)
+    save_dir : Path
+        Directory to save the figure in
+    extension : str
+        Format to save the figure in
+    """
     rnd_hyper = hypervolume(-rnd_scores).compute([0, 0, 0, 0])
 
     fig, ax = plt.subplots(1, 2, figsize=(7, 3))
@@ -63,22 +98,33 @@ def plot_convergence_metrics(
 
 
 def main():
+    """
+    Save figures showing the convergence of the multi-objective algorithm over
+    generations and comparisons with the single-objective results.
+    """
     set_fig_style()
 
-    objectives = None  # TODO: Load from config
-    thetas = None
-    n_sensors = None
-    extension = None
-    fig_dir = None
-    rnd_results = None  # TODO: Load random networks from file
-    single_results = None  # TODO: Load single obj results
+    config = get_config()
+    networks_dir = get_networks_save_dir(config)
+
+    single_networks_path = get_single_obj_filepath(config)
+    single_results = load_pickle(single_networks_path)
+
+    rnd_results = load_pickle(
+        Path(networks_dir, config["optimisation"]["random"]["filename"])
+    )
+
+    thetas, n_sensors = get_all_optimisation_params(config)
+    _, all_groups = get_objectives(config)
+    objectives = [g["title"] for g in all_groups.values()]
+
+    fig_dir, extension = get_figures_params(config)
 
     for t in thetas:
         for ns in n_sensors:
-            multi_log = None  # TODO: load log of multi-objective metrics
-            rnd_scores = rnd_results[
-                ...
-            ]  # TODO: Get results for number of sensors and theta value
+            multi_log_path = Path(networks_dir, f"_theta{t}_{ns}sensors.log")
+            multi_log = load_pickle(multi_log_path)
+            rnd_scores = rnd_results[f"theta{t}"][f"{ns}sensors"]
             single_scores = [
                 single_results[o][f"theta{t}"][f"{ns}sensors"]["coverage_history"][-1]
                 for o in objectives

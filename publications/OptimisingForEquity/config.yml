@@ -62,7 +62,7 @@ optimisation:
   # Parameters for generating random networks
   random:
     n: 10000  # number of random networks to generate
-    filename: "random.pkl"
+    filename: "networks_random.pkl"
 
 # Parameters for Urban Observatory network commparisons
 urb_obs:
