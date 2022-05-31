@@ -83,7 +83,7 @@ def plot_convergence_metrics(
     labels = ["A)", "B)"]
     for i, a in enumerate(ax):
         a.set_xlabel("Generations")
-        a.set_xlim([0, 20000])
+        a.set_xlim([0, max(multi_log["generations"])])
         trans = mtransforms.ScaledTranslation(-30 / 72, 16 / 72, fig.dpi_scale_trans)
         a.text(
             0.0,

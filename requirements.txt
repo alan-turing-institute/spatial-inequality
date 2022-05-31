@@ -42,4 +42,3 @@ xlrd==2.0.1
 distinctipy==1.1.5
 matplotlib-scalebar==0.7.2
 openpyxl==3.0.7
--e .
