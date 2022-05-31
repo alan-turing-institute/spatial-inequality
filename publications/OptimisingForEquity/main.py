@@ -30,7 +30,7 @@ def main():
     figs_urb_obs.main()
     figs_multi_objs.main()
     figs_two_objs.main()
-    figs_muli_convergence.main()
+    figs_multi_convergence.main()
     report.main()
 
 
