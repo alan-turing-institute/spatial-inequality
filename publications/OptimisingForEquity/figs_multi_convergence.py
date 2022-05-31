@@ -1,23 +1,22 @@
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib.transforms as mtransforms
 from pathlib import Path
 
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.transforms as mtransforms
+import numpy as np
+from networks_single_obj import get_single_obj_filepath
 from pygmo import hypervolume
+from utils import (
+    get_all_optimisation_params,
+    get_config,
+    get_figures_params,
+    get_networks_save_dir,
+    get_objectives,
+    load_jsonpickle,
+    set_fig_style,
+)
 
 from spineq.plotting import save_fig
-
-from utils import (
-    get_networks_save_dir,
-    load_pickle,
-    set_fig_style,
-    get_config,
-    get_all_optimisation_params,
-    get_objectives,
-    get_figures_params,
-)
-from networks_single_obj import get_single_obj_filepath
 
 
 def plot_convergence_metrics(
@@ -108,9 +107,9 @@ def main():
     networks_dir = get_networks_save_dir(config)
 
     single_networks_path = get_single_obj_filepath(config)
-    single_results = load_pickle(single_networks_path)
+    single_results = load_jsonpickle(single_networks_path)
 
-    rnd_results = load_pickle(
+    rnd_results = load_jsonpickle(
         Path(networks_dir, config["optimisation"]["random"]["filename"])
     )
 
@@ -125,7 +124,7 @@ def main():
             multi_log_path = Path(
                 networks_dir, f"networks_multiobj.pkl_theta{t}_{ns}sensors.log"
             )
-            multi_log = load_pickle(multi_log_path)
+            multi_log = load_jsonpickle(multi_log_path)
             rnd_scores = rnd_results[f"theta{t}"][f"{ns}sensors"]
             single_scores = [
                 single_results[o][f"theta{t}"][f"{ns}sensors"]["coverage_history"][-1]

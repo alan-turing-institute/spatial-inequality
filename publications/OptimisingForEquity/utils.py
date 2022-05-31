@@ -1,10 +1,10 @@
 import os
-import pickle
 import shutil
 import sys
 from pathlib import Path
 from typing import Any, List, Tuple, Union
 
+import jsonpickle
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.transforms as mtransforms
@@ -84,8 +84,26 @@ def add_subplot_label(
     )
 
 
-def load_pickle(path: Union[Path, str]) -> Any:
-    """Loads a pickle file
+def save_jsonpickle(obj: Any, path: Union[Path, str]):
+    """Saves a jsonpickle file
+
+    Parameters
+    ----------
+    obj : Any
+    path : Union[Path, str]
+        Path to pickle file
+
+    Returns
+    -------
+    Any
+        Loaded pickle file contents
+    """
+    with open(path, "w") as f:
+        f.write(jsonpickle.encode(obj))
+
+
+def load_jsonpickle(path: Union[Path, str]) -> Any:
+    """Loads a jsonpickle file
 
     Parameters
     ----------
@@ -98,7 +116,7 @@ def load_pickle(path: Union[Path, str]) -> Any:
         Loaded pickle file contents
     """
     with open(path, "rb") as f:
-        return pickle.load(f)
+        return jsonpickle.decode(f.read())
 
 
 def get_objectives(config: dict) -> Tuple[dict, dict]:

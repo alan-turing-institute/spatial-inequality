@@ -1,4 +1,3 @@
-import pickle
 from pathlib import Path
 from typing import Union
 
@@ -10,10 +9,11 @@ from utils import (
     get_config,
     get_networks_save_dir,
     get_objectives,
+    save_jsonpickle,
 )
 
 from spineq.data_fetcher import lad20nm_to_lad20cd
-from spineq.genetic import build_problem, run_problem, extract_all
+from spineq.genetic import build_problem, extract_all, run_problem
 from spineq.optimise import get_optimisation_inputs
 
 
@@ -95,8 +95,7 @@ def run_nsga_with_log(
         pop = algo.evolve(pop)
         log.log(pop, g)
         if save_path:
-            with open(f"{save_path}.log", "wb") as f:
-                pickle.dump(log.__dict__, f)
+            save_jsonpickle(log.__dict__, save_path)
 
     return pop, log
 
@@ -160,8 +159,7 @@ def make_multi_obj_networks(
             )
             log = algo.extract(pg.nsga2).get_log()
             results[f"theta{t}"][f"{ns}sensors"] = {"pop": pop, "log": log}
-            with open(f"{save_path}_theta{t}_{ns}sensors.log", "wb") as f:
-                pickle.dump(log, f)
+            save_jsonpickle(log, f"{save_path}_theta{t}_{ns}sensors.log")
             """
 
     return results
@@ -193,8 +191,7 @@ def main():
         population_size,
         save_path=save_path,
     )
-    with open(save_path, "wb") as f:
-        pickle.dump(results, f)
+    save_jsonpickle(results, save_path)
 
 
 if __name__ == "__main__":

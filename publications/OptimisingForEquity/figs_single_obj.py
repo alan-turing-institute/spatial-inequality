@@ -10,7 +10,7 @@ from utils import (
     get_default_optimisation_params,
     get_figures_params,
     get_objectives,
-    load_pickle,
+    load_jsonpickle,
     set_fig_style,
 )
 
@@ -142,7 +142,7 @@ def main():
 
     config = get_config()
     networks_path = get_single_obj_filepath(config)
-    results = load_pickle(networks_path)
+    results = load_jsonpickle(networks_path)
 
     figs_dir, extension = get_figures_params(config)
 

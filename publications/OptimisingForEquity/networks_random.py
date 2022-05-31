@@ -1,4 +1,3 @@
-import pickle
 from pathlib import Path
 
 import numpy as np
@@ -8,6 +7,7 @@ from utils import (
     get_config,
     get_networks_save_dir,
     get_objectives,
+    save_jsonpickle,
 )
 
 from spineq.data_fetcher import lad20nm_to_lad20cd
@@ -111,8 +111,7 @@ def main():
     results = make_random_networks(
         lad20cd, population_groups, thetas, n_sensors, n_networks
     )
-    with open(save_path, "wb") as f:
-        pickle.dump(results, f)
+    save_jsonpickle(results, save_path)
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ from utils import (
     get_default_optimisation_params,
     get_figures_params,
     get_objectives,
-    load_pickle,
+    load_jsonpickle,
     set_fig_style,
 )
 
@@ -483,7 +483,7 @@ def main():
 
     lad20cd = lad20nm_to_lad20cd(config["la"])
     networks_path = get_multi_objs_filepath(config)
-    networks = load_pickle(networks_path)
+    networks = load_jsonpickle(networks_path)
 
     figs_dir, extension = get_figures_params(config)
 

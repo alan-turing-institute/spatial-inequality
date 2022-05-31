@@ -1,4 +1,3 @@
-import pickle
 from pathlib import Path
 
 import pygmo as pg
@@ -7,6 +6,7 @@ from utils import (
     get_config,
     get_networks_save_dir,
     get_objectives,
+    save_jsonpickle,
 )
 
 from spineq.data_fetcher import lad20nm_to_lad20cd
@@ -136,8 +136,7 @@ def main():
     inputs = get_two_obj_inputs(lad20cd, objectives, population_groups)
 
     results = make_two_obj_networks(inputs, thetas, n_sensors, gen, population_size)
-    with open(save_path, "wb") as f:
-        pickle.dump(results, f)
+    save_jsonpickle(results, save_path)
 
 
 if __name__ == "__main__":

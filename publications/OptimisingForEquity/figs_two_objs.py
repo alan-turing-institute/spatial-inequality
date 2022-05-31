@@ -10,7 +10,7 @@ from utils import (
     get_default_optimisation_params,
     get_figures_params,
     get_objectives,
-    load_pickle,
+    load_jsonpickle,
     set_fig_style,
 )
 
@@ -163,7 +163,7 @@ def main():
     figs_dir, extension = get_figures_params(config)
 
     networks_path = get_two_objs_filepath(config)
-    networks = load_pickle(networks_path)
+    networks = load_jsonpickle(networks_path)
     theta, n_sensors = get_default_optimisation_params(config)
     n = networks[f"theta{theta}"][f"{n_sensors}sensors"]
     scores, solutions = extract_all(n)

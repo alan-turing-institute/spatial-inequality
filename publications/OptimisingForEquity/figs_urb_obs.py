@@ -16,7 +16,7 @@ from utils import (
     get_figures_params,
     get_la_save_dir,
     get_objectives,
-    load_pickle,
+    load_jsonpickle,
     set_fig_style,
 )
 
@@ -402,7 +402,7 @@ def main():
     config = get_config()
     lad20cd = lad20nm_to_lad20cd(config["la"])
     networks_path = get_single_obj_filepath(config)
-    networks = load_pickle(networks_path)
+    networks = load_jsonpickle(networks_path)
     uo_sensors = load_uo_sensors(config)
 
     figs_dir, extension = get_figures_params(config)
