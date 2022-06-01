@@ -5,7 +5,7 @@ Figures and scripts for our pre-print: [10.21203/rs.3.rs-902765/v1](https://doi.
 ## Pre-Generated Figures and Data
 
 Pre-generated networks and figures can be found in the `publications/OptimisingForEquity/results` directory in our upload on Zenodo:
-https://doi.org/10.5281/zenodo.5950713
+https://doi.org/10.5281/zenodo.5552876
 
 
 ## Instructions
@@ -13,7 +13,7 @@ https://doi.org/10.5281/zenodo.5950713
 To generate the figures:
 
 1. Checkout/download the correct version of the code by doing one of the following:
-   - Download the source code from Zenodo: https://doi.org/10.5281/zenodo.5552877
+   - Download the source code from Zenodo: https://doi.org/10.5281/zenodo.5552876
    - Download from GitHub: https://github.com/alan-turing-institute/spatial-inequality/releases/tag/v2.2
    - From a local clone of the repo, checkout tag `v2.2` or commit `2876e73`.
 
