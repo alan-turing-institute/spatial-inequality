@@ -2,9 +2,10 @@ from pathlib import Path
 
 import geopandas as gpd
 from utils import (
+    add_subplot_label,
     get_config,
     get_default_optimisation_params,
-    get_figures_save_dir,
+    get_figures_params,
     get_objectives,
     set_fig_style,
 )
@@ -110,6 +111,7 @@ def fig_importance(
     oa_weights: dict,
     theta: float,
     save_dir: Path,
+    extension: str,
     vmax: float = 0.06,
 ):
     """Save a figure showing the "importance" of each output area for each objective,
@@ -129,6 +131,8 @@ def fig_importance(
         Coverage distance
     save_dir : Path
         Directory to save figure in
+    extension : str
+        Figure file format
     vmax : float, optional
         Max value for colour scale, by default 0.06
     """
@@ -148,11 +152,12 @@ def fig_importance(
             title=title,
             cmap=cmap,
         )
+        add_subplot_label(fig, grid[i], i)
         if i == 1:
             add_scalebar(grid[i])
 
     add_colorbar(grid[-1], vmax=vmax, label="Importance", cmap=cmap)
-    save_fig(fig, "demographics_importance.png", save_dir)
+    save_fig(fig, "demographics_importance", save_dir, extension)
 
 
 def fig_density(
@@ -160,6 +165,7 @@ def fig_density(
     oa: gpd.GeoDataFrame,
     all_groups: dict,
     save_dir: Path,
+    extension: str,
     vmax: float = 6,
 ):
     """Save a figure showing the density of each demographic variable/objective for each
@@ -177,6 +183,8 @@ def fig_density(
         Short name (keys) and long title (values) for each objective
     save_dir : Path
         Directory to save figure in
+    extension : str
+        Figure file format
     vmax : float, optional
         Max value for colour scale, by default 6
     """
@@ -194,11 +202,12 @@ def fig_density(
             legend=False,
             show=False,
         )
+        add_subplot_label(fig, grid[i], i)
         if i == 1:
             add_scalebar(grid[i])
 
     add_colorbar(grid[-1], vmax=vmax, label=r"Density [% / $\mathrm{km}^2$]")
-    save_fig(fig, "demographics_density.png", save_dir)
+    save_fig(fig, "demographics_density", save_dir, extension)
 
 
 def main():
@@ -210,15 +219,15 @@ def main():
 
     config = get_config()
     lad20cd = lad20nm_to_lad20cd(config["la"])
-    figs_dir = get_figures_save_dir(config)
+    figs_dir, extension = get_figures_params(config)
 
     theta, _ = get_default_optimisation_params(config)
     population_groups, all_groups = get_objectives(config)
 
     oa_weights = get_weights(lad20cd, population_groups)
-    fig_importance(lad20cd, all_groups, oa_weights, theta, figs_dir)
+    fig_importance(lad20cd, all_groups, oa_weights, theta, figs_dir, extension)
     oa = calc_oa_density(lad20cd, all_groups, population_groups)
-    fig_density(lad20cd, oa, all_groups, figs_dir)
+    fig_density(lad20cd, oa, all_groups, figs_dir, extension)
 
 
 if __name__ == "__main__":

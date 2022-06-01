@@ -8,6 +8,7 @@ import numpy as np
 import pygmo as pg
 from tqdm import tqdm
 
+from publications.OptimisingForEquity.utils import save_jsonpickle
 from spineq.data_fetcher import lad20nm_to_lad20cd
 from spineq.genetic import build_problem, extract_all, run_problem
 from spineq.optimise import calc_coverage, get_optimisation_inputs
@@ -158,25 +159,24 @@ def make_multi_obj_networks(
                     verbosity=0,
                 )
                 net_name = f"theta_{t}_nsensors_{ns}_objs_{inp_idx}"
-                net_path = Path(save_path, net_name + ".pkl")
-                with open(net_path, "wb") as f:
-                    pickle.dump(
-                        {
-                            "lad20cd": lad20cd,
-                            "objectives": list(inp["oa_weight"].keys()),
-                            "theta": t,
-                            "n_sensors": ns,
-                            "population": pop,
-                        },
-                        f,
-                    )
+                net_path = Path(save_path, f"{net_name}.pkl")
+                save_jsonpickle(
+                    {
+                        "lad20cd": lad20cd,
+                        "objectives": list(inp["oa_weight"].keys()),
+                        "theta": t,
+                        "n_sensors": ns,
+                        "population": pop,
+                    },
+                    net_path,
+                )
                 scores, solutions = extract_all(pop)
                 scores = -scores
                 if include_oa_coverage:
                     oa_coverage = get_pop_oa_coverage(solutions, inp, lad20cd, t)
                 else:
                     oa_coverage = np.array([])
-                net_path = Path(save_path, net_name + ".json")
+                net_path = Path(save_path, f"{net_name}.json")
                 with open(net_path, "w") as f:
                     json.dump(
                         {
