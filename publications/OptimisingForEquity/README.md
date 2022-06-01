@@ -14,8 +14,8 @@ To generate the figures:
 
 1. Checkout/download the correct version of the code by doing one of the following:
    - Download the source code from Zenodo: https://doi.org/10.5281/zenodo.5552877
-   - Download from GitHub: https://github.com/alan-turing-institute/spatial-inequality/releases/tag/v2.1
-   - From a local clone of the repo, checkout tag `v2.1` or commit `8e1cd93`.
+   - Download from GitHub: https://github.com/alan-turing-institute/spatial-inequality/releases/tag/v2.2
+   - From a local clone of the repo, checkout tag `v2.2` or commit `2876e73`.
 
 2. Follow the setup instructions to create and activate the conda environment in [the repo readme file](../../README.md])
 
