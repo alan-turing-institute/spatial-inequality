@@ -165,7 +165,7 @@ def main():
     networks_path = get_two_objs_filepath(config)
     networks = load_jsonpickle(networks_path)
     theta, n_sensors = get_default_optimisation_params(config)
-    n = networks[f"theta{theta}"][f"{n_sensors}sensors"]
+    n = networks[f"theta{theta}"][f"{n_sensors}sensors"][0]
     scores, solutions = extract_all(n)
     scores = -scores
 

@@ -148,7 +148,7 @@ def make_multi_obj_networks(
                 gen=gen,
                 population_size=population_size,
                 log_every=100,
-                save_path=f"{save_path}_theta{t}_{ns}sensors",
+                save_path=f"{save_path}_theta{t}_{ns}sensors.log",
             )
             results[f"theta{t}"][f"{ns}sensors"] = {"pop": pop, "log": log.__dict__}
             """

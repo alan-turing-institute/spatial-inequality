@@ -122,7 +122,7 @@ def main():
     for t in thetas:
         for ns in n_sensors:
             multi_log_path = Path(
-                networks_dir, f"networks_multiobj.pkl_theta{t}_{ns}sensors.log"
+                networks_dir, f"networks_multiobj.json_theta{t}_{ns}sensors.log"
             )
             multi_log = load_jsonpickle(multi_log_path)
             rnd_scores = rnd_results[f"theta{t}"][f"{ns}sensors"]

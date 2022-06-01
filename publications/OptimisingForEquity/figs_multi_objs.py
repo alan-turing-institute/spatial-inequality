@@ -488,7 +488,7 @@ def main():
     figs_dir, extension = get_figures_params(config)
 
     theta, n_sensors = get_default_optimisation_params(config)
-    n = networks[f"theta{theta}"][f"{n_sensors}sensors"]  # ["pop"]
+    n = networks[f"theta{theta}"][f"{n_sensors}sensors"]["pop"]
     scores, solutions = extract_all(n)
     scores = -scores
 
