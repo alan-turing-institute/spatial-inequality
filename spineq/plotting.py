@@ -2,7 +2,7 @@
 optimisation results.
 """
 from pathlib import Path
-from typing import Union, Optional
+from typing import Optional, Union
 
 import contextily as ctx
 import matplotlib as mpl

@@ -1,18 +1,18 @@
 import pickle
 
+import geopandas as gpd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.transforms as mtransforms
 import numpy as np
-import geopandas as gpd
 import pandas as pd
 from matplotlib import cm, colors
-import matplotlib.transforms as mtransforms
 from pandas.plotting import parallel_coordinates
 from pygmo import fast_non_dominated_sorting, hypervolume
 
-from spineq.genetic import extract_all
 from spineq.data_fetcher import get_oa_centroids
-from spineq.optimise import get_optimisation_inputs, calc_coverage
+from spineq.genetic import extract_all
+from spineq.optimise import calc_coverage, get_optimisation_inputs
 from spineq.plotting import save_fig
 
 plt.style.use("fivethirtyeight")

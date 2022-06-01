@@ -1,18 +1,17 @@
 """Creates the Flask and Flask-Socketio endpoints for the
 optimisation backend.
 """
+import pandas as pd
 import rq
-from flask import Flask, request, jsonify
+from config import FLASK_HOST, FLASK_PORT, REDIS_HOST, REDIS_PORT
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from rq.job import Job
-import pandas as pd
+from worker import conn, queue
 
 from spineq.optimise import calc_coverage, get_optimisation_inputs
 from spineq.utils import make_age_range, make_job_dict
-
-from config import FLASK_HOST, FLASK_PORT, REDIS_HOST, REDIS_PORT
-from worker import conn, queue
 
 redis_url = "redis://{}:{}".format(REDIS_HOST, REDIS_PORT)
 
