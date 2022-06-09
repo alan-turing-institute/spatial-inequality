@@ -29,8 +29,12 @@ def download_la_shape(lad20cd="E08000021", overwrite=False):
         return gpd.read_file(save_path)
     os.makedirs(save_path.parent, exist_ok=True)
 
-    # From https://geoportal.statistics.gov.uk/datasets/ons::local-authority-districts-december-2020-uk-bgc/about
-    base = "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Local_Authority_Districts_December_2020_UK_BGC/FeatureServer/0"
+    # From https://geoportal.statistics.gov.uk/datasets/
+    #          ons::local-authority-districts-december-2020-uk-bgc/about
+    base = (
+        "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/"
+        "Local_Authority_Districts_December_2020_UK_BGC/FeatureServer/0"
+    )
     query = (
         f"query?where=LAD20CD%20%3D%20%27{lad20cd}%27&outFields=*&outSR=27700&f=json"
     )
@@ -85,8 +89,13 @@ def download_oa_shape(lad11cd="E08000021", lad20cd=None, overwrite=False):
 
     oa = []
     for la in lad11cd:
-        # From https://geoportal.statistics.gov.uk/datasets/ons::output-areas-december-2011-boundaries-ew-bgc-1/about
-        url = f"https://ons-inspire.esriuk.com/arcgis/rest/services/Census_Boundaries/Output_Area_December_2011_Boundaries/FeatureServer/2/query?where=lad11cd%20%3D%20'{la}'&outFields=*&outSR=27700&f=json"
+        # From https://geoportal.statistics.gov.uk/datasets/
+        #             ons::output-areas-december-2011-boundaries-ew-bgc-1/about
+        url = (
+            "https://ons-inspire.esriuk.com/arcgis/rest/services/Census_Boundaries/"
+            "Output_Area_December_2011_Boundaries/FeatureServer/2/query?"
+            f"where=lad11cd%20%3D%20'{la}'&outFields=*&outSR=27700&f=json"
+        )
         oa.append(query_ons_records(url, save_path=None))
 
     oa = pd.concat(oa)
@@ -102,14 +111,26 @@ def download_oa_mappings(overwrite=False):
         return pd.read_csv(save_path, dtype=str)
 
     # 2011
-    # https://geoportal.statistics.gov.uk/datasets/ons::output-area-to-lower-layer-super-output-area-to-middle-layer-super-output-area-to-local-authority-district-december-2011-lookup-in-england-and-wales/about
-    url = "https://opendata.arcgis.com/api/v3/datasets/6ecda95a83304543bc8feedbd1a58303_0/downloads/data?format=csv&spatialRefId=4326"
+    # https://geoportal.statistics.gov.uk/datasets/ons::
+    #      output-area-to-lower-layer-super-output-area-to-middle-layer-super-output
+    #      -area-to-local-authority-district-december-2011-lookup-in-england-and-wales
+    #      /about
+    url = (
+        "https://opendata.arcgis.com/api/v3/datasets/6ecda95a83304543bc8feedbd1a58303_0"
+        "/downloads/data?format=csv&spatialRefId=4326"
+    )
     df2011 = pd.read_csv(url)
     df2011.drop("ObjectId", axis=1, inplace=True)
 
     # 2020
-    # https://geoportal.statistics.gov.uk/datasets/ons::output-area-to-lower-layer-super-output-area-to-middle-layer-super-output-area-to-local-authority-district-december-2020-lookup-in-england-and-wales/about
-    url = "https://opendata.arcgis.com/api/v3/datasets/65664b00231444edb3f6f83c9d40591f_0/downloads/data?format=csv&spatialRefId=4326"
+    # https://geoportal.statistics.gov.uk/datasets/ons::
+    #         output-area-to-lower-layer-super-output-area-to-middle-layer-super-output
+    #         -area-to-local-authority-district-december-2020-lookup-in-england-and
+    #         -wales/about
+    url = (
+        "https://opendata.arcgis.com/api/v3/datasets/65664b00231444edb3f6f83c9d40591f_0"
+        "/downloads/data?format=csv&spatialRefId=4326"
+    )
     df2020 = pd.read_csv(url)
     df2020.drop("FID", axis=1, inplace=True)
 
@@ -124,8 +145,12 @@ def download_centroids(overwrite=False):
     if os.path.exists(save_path) and not overwrite:
         return pd.read_csv(save_path)
 
-    # From https://geoportal.statistics.gov.uk/datasets/ons::output-areas-december-2011-population-weighted-centroids-1/about
-    url = "https://opendata.arcgis.com/api/v3/datasets/b0c86eaafc5a4f339eb36785628da904_0/downloads/data?format=csv&spatialRefId=27700"
+    # From https://geoportal.statistics.gov.uk/datasets/ons::
+    #              output-areas-december-2011-population-weighted-centroids-1/about
+    url = (
+        "https://opendata.arcgis.com/api/v3/datasets/b0c86eaafc5a4f339eb36785628da904_0"
+        "/downloads/data?format=csv&spatialRefId=27700"
+    )
     df = pd.read_csv(url)
     df = columns_to_lowercase(df)
     df = df[["oa11cd", "x", "y"]]
@@ -175,18 +200,40 @@ def download_populations(overwrite=False):
     ):
         return pd.read_csv(save_path_total), pd.read_csv(save_path_ages)
 
-    # From https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenortheastregionofengland
+    # From https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/
+    #              populationestimates/datasets/
+    #              censusoutputareaestimatesinthenortheastregionofengland
+    prefix = (
+        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/"
+        "populationandmigration/populationestimates/"
+        "datasets/censusoutputareaestimatesin"
+    )
+    region_names = [
+        "thelondonregionofengland",
+        "theyorkshireandthehumberregionofengland",
+        "thesouthwestregionofengland",
+        "theeastmidlandsregionofengland",
+        "thesoutheastregionofengland",
+        "theeastregionofengland",
+        "thewestmidlandsregionofengland",
+        "thenorthwestregionofengland",
+        "thenortheastregionofengland",
+        "wales",
+    ]
+    file_names = [
+        "mid2019sape22dt10a/sape22dt10amid2019london.zip",
+        "mid2019sape22dt10c/sape22dt10cmid2019yorkshireandthehumber.zip",
+        "mid2019sape22dt10g/sape22dt10gmid2019southwest.zip",
+        "mid2019sape22dt10f/sape22dt10fmid2019eastmidlands.zip",
+        "mid2019sape22dt10i/sape22dt10imid2019southeast.zip",
+        "mid2019sape22dt10h/sape22dt10hmid2019east.zip",
+        "mid2019sape22dt10e/sape22dt10emid2019westmidlands.zip",
+        "mid2019sape22dt10b/sape22dt10bmid2019northwest.zip",
+        "mid2019sape22dt10d/sape22dt10dmid2019northeast.zip",
+        "mid2019sape22dt10j/sape22dt10jmid2019wales.zip",
+    ]
     region_urls = [
-        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthelondonregionofengland/mid2019sape22dt10a/sape22dt10amid2019london.zip",
-        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesintheyorkshireandthehumberregionofengland/mid2019sape22dt10c/sape22dt10cmid2019yorkshireandthehumber.zip",
-        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthesouthwestregionofengland/mid2019sape22dt10g/sape22dt10gmid2019southwest.zip",
-        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesintheeastmidlandsregionofengland/mid2019sape22dt10f/sape22dt10fmid2019eastmidlands.zip",
-        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthesoutheastregionofengland/mid2019sape22dt10i/sape22dt10imid2019southeast.zip",
-        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesintheeastregionofengland/mid2019sape22dt10h/sape22dt10hmid2019east.zip",
-        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthewestmidlandsregionofengland/mid2019sape22dt10e/sape22dt10emid2019westmidlands.zip",
-        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenorthwestregionofengland/mid2019sape22dt10b/sape22dt10bmid2019northwest.zip",
-        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenortheastregionofengland/mid2019sape22dt10d/sape22dt10dmid2019northeast.zip",
-        "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinwales/mid2019sape22dt10j/sape22dt10jmid2019wales.zip",
+        f"{prefix}{r_name}/{f_name}" for r_name, f_name in zip(region_names, file_names)
     ]
 
     df_total = []
@@ -210,7 +257,8 @@ def download_workplace(overwrite=False):
     if overwrite:
         warnings.warn(
             "Not possible to download workplace data directly. Go to "
-            "https://www.nomisweb.co.uk/query/construct/summary.asp?mode=construct&version=0&dataset=1300"
+            "https://www.nomisweb.co.uk/query/construct/summary.asp"
+            "?mode=construct&version=0&dataset=1300"
         )
     workplace = pd.read_csv(save_path, thousands=",")
     workplace = columns_to_lowercase(workplace)
@@ -222,7 +270,7 @@ def download_uo_sensors(overwrite=False):
     if os.path.exists(save_path) and not overwrite:
         return gpd.read_file(save_path)
 
-    query = "http://uoweb3.ncl.ac.uk/api/v1.1/sensors/json/?theme=Air+Quality"  # &bbox_p1_x=-1.988472&bbox_p1_y=54.784364&bbox_p2_x=-1.224922&bbox_p2_y=55.190148"
+    query = "http://uoweb3.ncl.ac.uk/api/v1.1/sensors/json/?theme=Air+Quality"
     response = requests.get(query)
     sensors = json.loads(response.content)["sensors"]
     df = pd.DataFrame(sensors)

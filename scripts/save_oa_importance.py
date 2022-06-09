@@ -15,7 +15,7 @@ workplace_weight = 0
 vmin = None
 vmax = None
 
-save_dir = "/Users/jroberts/OneDrive - The Alan Turing Institute/UrbanObservatorySpatialInequality/AIUK/importance"
+save_dir = "~/Desktop"
 
 oa_weights = calc_oa_weights(
     lad20cd="E08000021",

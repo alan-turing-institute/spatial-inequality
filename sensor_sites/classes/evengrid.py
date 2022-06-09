@@ -38,7 +38,8 @@ class EvenGrid(PointSet):
 
     def even_spaced_points_in_area(self):
         """
-        | Generate even-spaced points in the AOI (assumed supplied as a single polygon in BNG)
+        | Generate even-spaced points in the AOI (assumed supplied as a single polygon
+        in BNG)
         """
         self.logger.info("Generate evenly-spaced points within selected LADs")
 
@@ -50,7 +51,8 @@ class EvenGrid(PointSet):
         minx, miny, maxx, maxy = self.aoi.total_bounds + [-buff, -buff, buff, buff]
         aoi_bbox_area = (maxx - minx) * (maxy - miny)
 
-        # Revise the number of points to generate such that there will be 'npoints' in the polygon
+        # Revise the number of points to generate such that there will be 'npoints' in
+        # the polygon
         tot_npoints = math.ceil(self.npoints * aoi_bbox_area / aoi_area)
 
         xlist = []

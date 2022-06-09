@@ -253,7 +253,10 @@ def fig_uo_coverage_grid_diff(
     add_colorbar(grid[-1], cmap=cmap, vmin=vmin, vmax=vmax, label="Coverage Difference")
 
     fig.suptitle(
-        f"Comparisons with Urban Observatory Network (n = {n_uo_oa}, $\\theta$ = {theta} m)",
+        (
+            f"Comparisons with Urban Observatory Network "
+            f"(n = {n_uo_oa}, $\\theta$ = {theta} m)"
+        ),
         y=0.89,
         fontsize=12,
     )
@@ -380,7 +383,10 @@ def fig_uo_coverage_oa_diff(
     add_scalebar(grid[1])
     add_colorbar(grid[-1], cmap=cmap, label="Coverage Difference", vmin=vmin, vmax=vmax)
     fig.suptitle(
-        f"Comparisons with Urban Observatory Network (n = {n_uo_oa}, $\\theta$ = {theta} m)",
+        (
+            f"Comparisons with Urban Observatory Network "
+            f"(n = {n_uo_oa}, $\\theta$ = {theta} m)"
+        ),
         y=0.89,
         fontsize=12,
     )

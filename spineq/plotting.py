@@ -19,7 +19,8 @@ from spineq.utils import coverage_matrix
 
 def get_color_axis(ax):
     """Make a colour axis matched to be the same size as the plot.
-    See: https://www.science-emergence.com/Articles/How-to-match-the-colorbar-size-with-the-figure-size-in-matpltolib-/
+    See: https://www.science-emergence.com/Articles/
+         How-to-match-the-colorbar-size-with-the-figure-size-in-matpltolib-/
     """
     divider = make_axes_locatable(ax)
     return divider.append_axes("right", size="5%", pad=0.1)
@@ -293,8 +294,10 @@ def plot_oa_importance(
         alpha {float} -- transparency of fill areas (default: {0.75})
         cmap {str} -- matplotlib colormap for fill areas (default: {"plasma"})
         legend {bool} -- if True show the color scale (default: {True})
-        vmin {[type]} -- minimum value of color scale, or None to autoscale (default: {None})
-        vmax {[type]} -- maximum value of color scale, or None to autoscale (default: {None})
+        vmin {[type]} -- minimum value of color scale, or None to autoscale
+                         (default: {None})
+        vmax {[type]} -- maximum value of color scale, or None to autoscale
+                         (default: {None})
     """
 
     oa_centroids = get_oa_centroids(lad20cd)

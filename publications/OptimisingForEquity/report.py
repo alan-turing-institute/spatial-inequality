@@ -88,16 +88,25 @@ def main():
         fig_dir,
     )
     fig_parallel_all_above_threshold = find_fig_path(
-        f"multiobj_parallel_theta*_*sensors_above{round(all_threshold * 100)}cov{extension}",
+        (
+            "multiobj_parallel_theta*_*sensors_above"
+            f"{round(all_threshold * 100)}cov{extension}"
+        ),
         fig_dir,
     )
     work_threshold = config["figures"]["multi_objectives"]["work_coverage_threshold"]
     fig_work_above_threshold = find_fig_path(
-        f"multiobj_theta*_*sensors_workabove{round(work_threshold * 100)}cov{extension}",
+        (
+            "multiobj_theta*_*sensors_workabove"
+            f"{round(work_threshold * 100)}cov{extension}"
+        ),
         fig_dir,
     )
     fig_parallel_work_above_threshold = find_fig_path(
-        f"multiobj_parallel_theta*_*sensors_workabove{round(work_threshold * 100)}cov{extension}",
+        (
+            "multiobj_parallel_theta*_*sensors_"
+            f"workabove{round(work_threshold * 100)}cov{extension}"
+        ),
         fig_dir,
     )
     fig_max_child_work_above_threshold = find_fig_path(

@@ -1,8 +1,6 @@
 """Starts a RQ worker, which will extract jobs from the Redis
 server and processes them.
 """
-import os
-
 import redis
 from config import REDIS_HOST, REDIS_PORT, REDIS_QUEUE
 from rq import Connection, Queue, Worker

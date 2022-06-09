@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Extract from existing data point set generation class
-Generates a sample set of 'npoints' points from an existing dataset 
+Generates a sample set of 'npoints' points from an existing dataset
 
 Created on Created on Thur Jan 16 2020 11:03
 

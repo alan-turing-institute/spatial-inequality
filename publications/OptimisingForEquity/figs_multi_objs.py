@@ -134,7 +134,10 @@ def fig_work_above_threshold(
     networks_swarmplot(scores, objs, thresholds=thresholds, ax=ax)
     save_fig(
         fig,
-        f"multiobj_theta{theta}_{n_sensors}sensors_workabove{round(threshold * 100)}cov",
+        (
+            f"multiobj_theta{theta}_{n_sensors}sensors_"
+            f"workabove{round(threshold * 100)}cov"
+        ),
         save_dir,
         extension,
     )
@@ -259,7 +262,10 @@ def fig_max_child_work_above_threshold(
     add_colorbar(ax[0], cmap="Greens", label="Coverage")
     save_fig(
         fig,
-        f"multiobj_wplace{round(cov[3], 2)}_child{round(cov[1], 2)}_theta{theta}_{n_sensors}sensors",
+        (
+            f"multiobj_wplace{round(cov[3], 2)}_child{round(cov[1], 2)}"
+            f"_theta{theta}_{n_sensors}sensors"
+        ),
         save_dir,
         extension,
     )
