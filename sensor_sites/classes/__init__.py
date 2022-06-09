@@ -7,7 +7,7 @@ Created on Thu Jun  6 15:17:03 2019
 
 @author: ndh114
 """
-
+# flake8: noqa
 from .config import Config
 from .evengrid import EvenGrid
 from .extractgrid import ExtractGrid

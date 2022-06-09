@@ -36,7 +36,8 @@ class RandomGrid(PointSet):
 
     def random_points_in_area(self):
         """
-        | Generate random points in the AOI (assumed supplied as a single polygon in BNG)
+        | Generate random points in the AOI (assumed supplied as a single polygon in
+        | BNG)
         """
         self.logger.info("Generate random points within selected LADs")
 

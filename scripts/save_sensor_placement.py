@@ -1,5 +1,3 @@
-import pandas as pd
-
 from spineq.optimise import optimise
 
 theta = 500
@@ -22,7 +20,7 @@ optimise(
     save_result=True,
     save_plots="all",
     run_name="workplace",
-    save_dir="/Users/jroberts/OneDrive - The Alan Turing Institute/UrbanObservatorySpatialInequality/AIUK/workplace_nocolor",
+    save_dir="~/Desktop",
     fill_oa=False,
     sensor_size=64,
     sensor_color="red",

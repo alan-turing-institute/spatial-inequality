@@ -77,7 +77,8 @@ class PointSet:
     def generate(self):
         """
         | Method to compute the AOI GeoDataFrame from the LAD codes supplied
-        | Note: a 'generate' method should be implemented for each child class, with the first line being:
+        | Note: a 'generate' method should be implemented for each child class, with the
+        | first line being:
         | super().generate()
         """
         self.aoi = self.nismod_db_call(
@@ -87,17 +88,22 @@ class PointSet:
     def snap_to_roads(self, points):
         """
         | Snap a generated point set to the road network within the area of interest
-        | Grateful to https://gis.stackexchange.com/questions/306838/snap-points-shapefile-to-line-shapefile-using-shapely
+        | Grateful to
+        | https://gis.stackexchange.com/questions/
+        |    306838/snap-points-shapefile-to-line-shapefile-using-shapely
         | as I don't think I would have ever worked out how to do this otherwise!
         |
         | Arguments:
         | points          -- GeoDataFrame containing the points to snap
         |
         | Returns:
-        | updated_points  -- New GeoDataFrame containing closest points on the road network to the originals
+        | updated_points  -- New GeoDataFrame containing closest points on the road
+        | network to the originals
         """
-        # Step 1: get road network lines from NISMOD-DB++ and spatially index (may take some time...)
-        # Note: this output should be cached as GeoJSON somewhere eventually to avoid the performance overhead
+        # Step 1: get road network lines from NISMOD-DB++ and spatially index (may take
+        # some time...).
+        # Note: this output should be cached as GeoJSON somewhere eventually to avoid
+        # the performance overhead
         roads_gdf = self.nismod_db_call(
             "networks/highways", "edges", scale="lad", area_codes=self.lad_codes
         )
@@ -114,10 +120,13 @@ class PointSet:
 
     def nismod_db_call(self, verb, collection_name="edges", **kwargs):
         """
-        |  Make a generic call to NISMOD-DB++ and return a single FeatureCollection as a GeoDataFrame
+        |  Make a generic call to NISMOD-DB++ and return a single FeatureCollection as a
+        |  GeoDataFrame
         |  Arguments:
-        |  verb                 -- NISMOD API verb (part of the REST path after /api/data, so may contain '/')
-        |  collection_name      -- For multiple FeatureCollections (e.g. road networks), which one to return (e.g. 'nodes'/'edges')
+        |  verb                 -- NISMOD API verb (part of the REST path after
+        |                         /api/data, so may contain '/')
+        |  collection_name      -- For multiple FeatureCollections (e.g. road networks),
+        |                          which one to return (e.g. 'nodes'/'edges')
         |  kwargs               -- Arguments corresponding to the above REST verb
         |
         |  Returns:
@@ -128,7 +137,7 @@ class PointSet:
         api_url = "{}/{}".format(Config.get("NISMOD_DB_API_URL"), verb)
         auth_username = Config.get("NISMOD_DB_API_USERNAME")
         auth_password = Config.get("NISMOD_DB_API_PASSWORD")
-        if not "export_format" in api_params:
+        if "export_format" not in api_params:
             # Add in GeoJSON as the default export format
             api_params["export_format"] = "geojson"
         try:
@@ -137,7 +146,7 @@ class PointSet:
             )
             r.raise_for_status()
             target_geojson = r.json()
-            if not "type" in target_geojson and collection_name in target_geojson:
+            if "type" not in target_geojson and collection_name in target_geojson:
                 # Potentially multiple FeatureCollections, so extract the one we want
                 target_geojson = target_geojson[collection_name]
             geojson_gdf = gpd.GeoDataFrame.from_features(target_geojson)
@@ -156,7 +165,8 @@ class PointSet:
 
     def validate_geodataframe(self, gdf, crs=Config.get("BRITISH_NATIONAL_GRID")):
         """
-        |  Do some simple checks on a GeoDataFrame i.e. correct type and projection as specified
+        |  Do some simple checks on a GeoDataFrame i.e. correct type and projection as
+        |  specified
         |  Keyword arguments:
         |  gdf     -- GeoDataFrame to validate
         |  crs     -- Projection, defaults to EPSG:27700 (British National Grid)
@@ -168,7 +178,7 @@ class PointSet:
         if not isinstance(gdf, gpd.GeoDataFrame):
             # Not a GeoDataFrame at all
             self.logger.warning(
-                "No GeoDataFrame containing existing dataset supplied for extract generator"
+                "No GeoDataFrame with existing dataset supplied for extract generator"
             )
         elif gdf.crs["init"] != crs:
             # Wrong projection

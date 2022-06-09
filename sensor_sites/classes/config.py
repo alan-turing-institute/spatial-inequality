@@ -3,9 +3,10 @@
 """
 | System-wide configuration
 |
-| Assumes the existence of the file 'settings.ini' for accessing the NISMOD DB++ API.  This should reside in
-| the same directory ('classes') as this file, and contain the following lines:
-|     
+| Assumes the existence of the file 'settings.ini' for accessing the NISMOD DB++ API.
+| This should reside in the same directory ('classes') as this file, and contain the
+| following lines:
+|
 | [API_CREDENTIALS]
 | username = <api_username>
 | password = <api_password>

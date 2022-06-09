@@ -51,7 +51,10 @@ class OaGrid(PointSet):
                 password=Config.get("NISMOD_DB_PASSWORD"),
                 host=Config.get("NISMOD_DB_HOST"),
             )
-            sql = "SELECT oa_code, lad_code, centroid as geometry FROM {} WHERE lad_code IN ({})".format(
+            sql = (
+                "SELECT oa_code, lad_code, centroid as geometry FROM {} "
+                "WHERE lad_code IN ({})"
+            ).format(
                 OaGrid.__OA_TABLE,
                 ",".join(list(map(lambda elt: "'{}'".format(elt), self.lad_codes))),
             )
@@ -60,9 +63,9 @@ class OaGrid(PointSet):
             ).sample(self.npoints)
         except psycopg2.Error as pgerr:
             self.logger.error(
-                "Failed to retrieve OA centroids from NISMOD database - error {}".format(
-                    pgerr
-                )
+                (
+                    "Failed to retrieve OA centroids from NISMOD database " "- error {}"
+                ).format(pgerr)
             )
         finally:
             if con is not None:

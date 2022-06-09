@@ -13,7 +13,7 @@ from utils import (
 )
 
 from spineq.data_fetcher import lad20nm_to_lad20cd
-from spineq.genetic import build_problem, extract_all, run_problem
+from spineq.genetic import build_problem, extract_all
 from spineq.optimise import get_optimisation_inputs
 
 
@@ -151,16 +151,6 @@ def make_multi_obj_networks(
                 save_path=f"{save_path}_theta{t}_{ns}sensors.log",
             )
             results[f"theta{t}"][f"{ns}sensors"] = {"pop": pop, "log": log.__dict__}
-            """
-            pop, algo = run_problem(
-                prob,
-                uda=pg.nsga2(gen=gen),
-                population_size=population_size,
-            )
-            log = algo.extract(pg.nsga2).get_log()
-            results[f"theta{t}"][f"{ns}sensors"] = {"pop": pop, "log": log}
-            save_jsonpickle(log, f"{save_path}_theta{t}_{ns}sensors.log")
-            """
 
     return results
 

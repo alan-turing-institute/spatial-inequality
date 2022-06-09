@@ -43,7 +43,8 @@ def route_optimise_job():
         - theta: decay rate for coverage measure (default: 500)
         - min_age: minimum age to consider (default: 0)
         - max_age: maximum age to consider (default: 90)
-        - population_weight: overall weight for residential population coverage (default: 1)
+        - population_weight: overall weight for residential population coverage
+        (default: 1)
         - workplace_weight: overall weight for place of work coverage (default: 0)
 
     Returns:
@@ -200,7 +201,8 @@ def socket_optimise_job(parameters):
              - theta: decay rate for coverage measure.
              - min_age: minimum age to consider (default: 0)
              - max_age: maximum age to consider (default: 90)
-             - population_weight: overall weight for residential population coverage (default: 1)
+             - population_weight: overall weight for residential population coverage
+             (default: 1)
              - workplace_weight: overall weight for place of work coverage (default: 0)
 
      Returns:
@@ -308,8 +310,10 @@ def submit_optimise_job(
         - theta {float}: decay rate for coverage measure (default: {500})
         - min_age {int}: minimum age to consider (default: {0})
         - max_age {int}: maximum age to consider (default: {90})
-        - population_weight {float}: overall weight for residential population coverage (default: {1})
-        - workplace_weight {float}: overall weight for place of work coverage (default: {0})
+        - population_weight {float}: overall weight for residential population coverage
+        (default: {1})
+        - workplace_weight {float}: overall weight for place of work coverage
+        (default: {0})
 
     Returns:
         dict -- information about the created job, including its

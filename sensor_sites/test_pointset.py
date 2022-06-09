@@ -7,7 +7,6 @@ Created on Mon Jan 10 14:58 2020
 @author: ndh114
 """
 import logging
-import random
 import unittest
 from os import path, remove
 
