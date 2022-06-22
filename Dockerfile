@@ -1,8 +1,5 @@
 FROM mambaorg/micromamba
 
-# fixes debconf warnings/errors, see https://github.com/phusion/baseimage-docker/issues/58
-#RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
-
 USER root
 
 RUN apt-get update && \
@@ -16,19 +13,20 @@ EXPOSE $PORT
 
 # Copy files
 COPY api /app/api
-COPY data/processed /app/data/processed
 COPY spineq /app/spineq
 COPY .env environment.yml pyproject.toml poetry.lock /app/
 
 # Install python requirements
 RUN cd /app && \
     micromamba install -y -n base -f environment.yml && \
-    micromamba clean --all --yes
+    micromamba clean -afy
 
 # needed to activate env in dockerfile
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
-# download data
-RUN python /app/spineq/data_fetcher.py --lad20cd E08000021
+# download data for a local authority
+ARG LAD20CD=E08000021 
+ENV LAD20CD=$LAD20CD
+RUN python /app/spineq/data_fetcher.py --lad20cd $LAD20CD
 
 WORKDIR /app/api

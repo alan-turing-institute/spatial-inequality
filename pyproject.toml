@@ -50,6 +50,9 @@ plot = ["matplotlib", "descartes", "contextily", "seaborn", "distinctipy", "matp
 notebook = ["jupyter"]
 api = ["Flask", "Flask-Cors", "Flask-SocketIO", "gunicorn", "python-socketio", "redis", "rq", "eventlet"]
 
+[tool.poetry.scripts]
+spineq_download = "spineq.data_fetcher:main"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
