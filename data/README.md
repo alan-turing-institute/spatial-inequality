@@ -11,5 +11,4 @@ Contains OS data © Crown copyright and database right 2021
 - Output Area to Local Authority mappings: [2011](https://geoportal.statistics.gov.uk/datasets/ons::output-area-to-lower-layer-super-output-area-to-middle-layer-super-output-area-to-local-authority-district-december-2011-lookup-in-england-and-wales/about), [2020](https://geoportal.statistics.gov.uk/datasets/ons::output-area-to-lower-layer-super-output-area-to-middle-layer-super-output-area-to-local-authority-district-december-2020-lookup-in-england-and-wales/about)
 - [Output Area population weighted centroids](https://geoportal.statistics.gov.uk/datasets/ons::output-areas-december-2011-population-weighted-centroids-1/about)
 - [Output Area population estimates](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenortheastregionofengland)
-- [Output Area workplace population](https://www.nomisweb.co.uk/datasets/1300_1/about)
-
+- [Output Area workplace population](https://www.nomisweb.co.uk/datasets/1300_1)

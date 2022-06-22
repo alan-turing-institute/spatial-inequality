@@ -12,9 +12,7 @@ import geopandas as gpd
 import pandas as pd
 import requests
 
-DATA_DIR = Path(os.path.dirname(__file__), "../data")
-RAW_DIR = Path(DATA_DIR, "raw")
-PROCESSED_DIR = Path(DATA_DIR, "processed")
+from spineq.config import PROCESSED_DIR, RAW_DIR
 
 
 def load_gdf(path, epsg=27700):
@@ -254,14 +252,12 @@ def download_populations(overwrite=False):
 
 def download_workplace(overwrite=False):
     save_path = Path(RAW_DIR, "workplace.csv")
-    if overwrite:
-        warnings.warn(
-            "Not possible to download workplace data directly. Go to "
-            "https://www.nomisweb.co.uk/query/construct/summary.asp"
-            "?mode=construct&version=0&dataset=1300"
-        )
-    workplace = pd.read_csv(save_path, thousands=",")
-    workplace = columns_to_lowercase(workplace)
+    if os.path.exists(save_path) and not overwrite:
+        return pd.read_csv(save_path)
+
+    url = "https://zenodo.org/record/6683974/files/workplace.csv"
+    workplace = pd.read_csv(url)
+    workplace.to_csv(save_path, index=False)
     return workplace
 
 
