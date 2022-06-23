@@ -638,11 +638,7 @@ def networks_parallel_coords_plot(
         fig = ax.get_figure()
 
     if cmap is None and colors is None:
-        if color_by is not None or (color_by is None and thresholds is None):
-            cmap = "plasma"
-        else:
-            cmap = "Set1"
-
+        cmap = "plasma" if color_by is not None or thresholds is None else "Set1"
     pd.plotting.parallel_coordinates(
         df[obj_order + [color_col]],
         color_col,
