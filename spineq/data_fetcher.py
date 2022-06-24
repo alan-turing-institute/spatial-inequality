@@ -12,9 +12,7 @@ import geopandas as gpd
 import pandas as pd
 import requests
 
-DATA_DIR = Path(os.path.dirname(__file__), "../data")
-RAW_DIR = Path(DATA_DIR, "raw")
-PROCESSED_DIR = Path(DATA_DIR, "processed")
+from spineq.config import PROCESSED_DIR, RAW_DIR
 
 
 def load_gdf(path, epsg=27700):
@@ -163,11 +161,7 @@ def download_populations_region(url):
     r = requests.get(url)
 
     zip_file = zipfile.ZipFile(BytesIO(r.content))
-    file_name = None
-    for name in zip_file.namelist():
-        if ".xlsx" in name:
-            file_name = name
-            break
+    file_name = next((name for name in zip_file.namelist() if ".xlsx" in name), None)
 
     if not file_name:
         raise ValueError("No .xlsx found in zip archive")
@@ -254,14 +248,12 @@ def download_populations(overwrite=False):
 
 def download_workplace(overwrite=False):
     save_path = Path(RAW_DIR, "workplace.csv")
-    if overwrite:
-        warnings.warn(
-            "Not possible to download workplace data directly. Go to "
-            "https://www.nomisweb.co.uk/query/construct/summary.asp"
-            "?mode=construct&version=0&dataset=1300"
-        )
-    workplace = pd.read_csv(save_path, thousands=",")
-    workplace = columns_to_lowercase(workplace)
+    if os.path.exists(save_path) and not overwrite:
+        return pd.read_csv(save_path)
+
+    url = "https://zenodo.org/record/6683974/files/workplace.csv"
+    workplace = pd.read_csv(url)
+    workplace.to_csv(save_path, index=False)
     return workplace
 
 
@@ -356,7 +348,7 @@ def query_ons_records(
         try:
             r = requests.get(base_query + offset_param.format(n_queried_records))
 
-        except requests.exceptions.Timeout:
+        except requests.exceptions.Timeout as e:
             print("timeout, retrying...")
             for i in range(10):
                 print("attempt", i + 1)
@@ -369,7 +361,7 @@ def query_ons_records(
                     r = None
                     continue
             if not r:
-                raise requests.exceptions.Timeout("FAILED - timeout.")
+                raise requests.exceptions.Timeout("FAILED - timeout.") from e
 
         j = r.json()
 
@@ -426,6 +418,7 @@ def filter_oa(oa11cd, df):
 
 
 def extract_la_data(lad20cd="E08000021", overwrite=False):
+    print(f"Extracting data for {lad20cd}...")
     save_dir = Path(PROCESSED_DIR, lad20cd)
     os.makedirs(save_dir, exist_ok=True)
 
@@ -495,9 +488,10 @@ def process_uo_sensors(lad20cd="E08000021", overwrite=False):
 
 
 def get_uo_sensors(lad20cd="E08000021"):
-    return gpd.read_file(
-        Path(PROCESSED_DIR, lad20cd, "uo_sensors", "uo_sensors.shp")
-    ).set_index("id")
+    path = Path(PROCESSED_DIR, lad20cd, "uo_sensors", "uo_sensors.shp")
+    if not path.exists():
+        extract_la_data(lad20cd)
+    return gpd.read_file(path).set_index("id")
 
 
 def get_oa_stats(lad20cd="E08000021"):
@@ -506,14 +500,15 @@ def get_oa_stats(lad20cd="E08000021"):
     Returns:
         dict -- Dictionary of dataframe with keys population_ages and workplace.
     """
-    population_ages = pd.read_csv(
-        Path(PROCESSED_DIR, lad20cd, "population_ages.csv"), index_col="oa11cd"
-    )
+    pop_path = Path(PROCESSED_DIR, lad20cd, "population_ages.csv")
+    work_path = Path(PROCESSED_DIR, lad20cd, "workplace.csv")
+    if not pop_path.exists() or not work_path.exists():
+        extract_la_data(lad20cd)
+
+    population_ages = pd.read_csv(pop_path, index_col="oa11cd")
     population_ages.columns = population_ages.columns.astype(int)
 
-    workplace = pd.read_csv(
-        Path(PROCESSED_DIR, lad20cd, "workplace.csv"), index_col="oa11cd"
-    )
+    workplace = pd.read_csv(work_path, index_col="oa11cd")
     workplace = workplace["workers"]
 
     return {"population_ages": population_ages, "workplace": workplace}
@@ -525,25 +520,28 @@ def get_oa_centroids(lad20cd="E08000021"):
     Returns:
         pd.DataFrame -- Dataframe with index oa11cd and columns x and y.
     """
-    return pd.read_csv(
-        Path(PROCESSED_DIR, lad20cd, "centroids.csv"), index_col="oa11cd"
-    )
+    path = Path(PROCESSED_DIR, lad20cd, "centroids.csv")
+    if not path.exists():
+        extract_la_data(lad20cd)
+    return pd.read_csv(path, index_col="oa11cd")
 
 
 def get_la_shape(lad20cd="E08000021"):
-    return gpd.read_file(Path(PROCESSED_DIR, lad20cd, "la_shape")).iloc[0]
+    path = Path(PROCESSED_DIR, lad20cd, "la_shape")
+    if not path.exists():
+        extract_la_data(lad20cd)
+    return gpd.read_file(path).iloc[0]
 
 
 def get_oa_shapes(lad20cd="E08000021"):
-    shapes = gpd.read_file(Path(PROCESSED_DIR, lad20cd, "oa_shape"))
+    path = Path(PROCESSED_DIR, lad20cd, "oa_shape")
+    if not path.exists():
+        extract_la_data(lad20cd)
+    shapes = gpd.read_file(path)
     return shapes.set_index("oa11cd")
 
 
-if __name__ == "__main__":
-    # extract_la_data(lad20cd="E08000021", overwrite=True)
-    # extract_la_data(lad20cd="E08000037", overwrite=True)
-    # download_raw_data(overwrite=True)
-
+def main():
     parser = argparse.ArgumentParser(
         description="Save output area data for a local authority district"
     )
@@ -561,12 +559,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.lad20cd:
-        lad20cd = lad20cd_to_lad20nm(args.lad20cd)
-        print(f"Saving data for {args.lad20nm} ({lad20cd})")
-        extract_la_data(lad20cd=args.lad20cd, overwrite=args.overwrite)
+        lad20cd = args.lad20cd
+        lad20nm = lad20cd_to_lad20nm(lad20cd)
     elif args.lad20nm:
-        lad20cd = lad20nm_to_lad20cd(args.lad20nm)
-        print(f"Saving data for {args.lad20nm} ({lad20cd})")
-        extract_la_data(lad20cd=lad20cd, overwrite=args.overwrite)
+        lad20nm = args.lad20nm
+        lad20cd = lad20nm_to_lad20cd(lad20nm)
     else:
         print("Either --lad20cd or --lad20nm must be given")
+
+    print(f"Saving data for {lad20nm} ({lad20cd})")
+    extract_la_data(lad20cd=lad20cd, overwrite=args.overwrite)
+
+
+if __name__ == "__main__":
+    main()
