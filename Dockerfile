@@ -24,7 +24,7 @@ RUN cd /app && \
 # needed to activate env in dockerfile
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
-# download data for a local authority
+# download data for a local authority (Newcastle by default)
 ARG LAD20CD=E08000021 
 ENV LAD20CD=$LAD20CD
 RUN python /app/spineq/data_fetcher.py --lad20cd $LAD20CD
