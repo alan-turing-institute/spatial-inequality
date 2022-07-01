@@ -157,6 +157,30 @@ def download_centroids(overwrite=False):
     return df
 
 
+def download_schools(overwrite=False):
+    save_path = Path(RAW_DIR, "schools.csv")
+    if os.path.exists(save_path) and not overwrite:
+        return pd.read_csv(save_path)
+
+    url = "https://zenodo.org/record/6780061/files/ukschools_20220629.csv?download=1"
+    df = pd.read_csv(url)
+    df.to_csv(save_path, index=False)
+
+    return df
+
+
+def download_health(overwrite=False):
+    save_path = Path(RAW_DIR, "health.csv")
+    if os.path.exists(save_path) and not overwrite:
+        return pd.read_csv(save_path)
+
+    url = "https://zenodo.org/record/6783029/files/health_lc3101ewls.csv?download=1"
+    df = pd.read_csv(url)
+    df.to_csv(save_path, index=False)
+
+    return df
+
+
 def download_populations_region(url):
     r = requests.get(url)
 
@@ -413,8 +437,26 @@ def columns_to_lowercase(df):
     return df.rename(columns=cols_replace_dict)
 
 
-def filter_oa(oa11cd, df):
-    return df[df["oa11cd"].isin(oa11cd)]
+def filter_row_values(values, df, column="oa11cd"):
+    return df[df[column].isin(values)]
+
+
+def process_schools(schools):
+    # fill missing number of pupils with estimate based on mean % capacity of schools
+    # (where capacity is available)
+    mean_capac = (schools["NumberOfPupils"] / schools["SchoolCapacity"]).mean()
+    na_pupils = schools["NumberOfPupils"].isna()
+    schools.loc[na_pupils, "NumberOfPupils"] = (
+        mean_capac * schools.loc[na_pupils, "SchoolCapacity"]
+    )
+
+    # return outpput area pupil totals
+    return schools.groupby("oa11cd")["NumberOfPupils"].sum()
+
+
+def process_health(health):
+    print("NOT IMPLEMENTED: Health")
+    return health
 
 
 def extract_la_data(lad20cd="E08000021", overwrite=False):
@@ -427,7 +469,9 @@ def extract_la_data(lad20cd="E08000021", overwrite=False):
 
     mappings = download_oa_mappings(overwrite=overwrite)
     oa_in_la = mappings.loc[mappings["lad20cd"] == lad20cd, "oa11cd"]
+    lsoa_in_la = mappings.loc[mappings["lad20cd"] == lad20cd, "lsoa11cd"].unique()
     print("OA in this LA (mappings):", len(oa_in_la), "rows")
+    print("LSOA in this LA (mappings):", len(lsoa_in_la), "rows")
 
     lad11cd = lad20cd_to_lad11cd(lad20cd, mappings)
     oa = download_oa_shape(lad11cd=lad11cd, overwrite=overwrite)
@@ -435,24 +479,24 @@ def extract_la_data(lad20cd="E08000021", overwrite=False):
 
     # centroids
     centroids = download_centroids(overwrite=overwrite)
-    centroids = filter_oa(oa_in_la, centroids)
+    centroids = filter_row_values(oa_in_la, centroids)
     centroids.to_csv(Path(save_dir, "centroids.csv"), index=False)
     print("Centroids:", len(centroids), "rows")
 
     # population data
     population_total, population_ages = download_populations(overwrite=overwrite)
-    population_total = filter_oa(oa_in_la, population_total)
+    population_total = filter_row_values(oa_in_la, population_total)
     population_total.to_csv(Path(save_dir, "population_total.csv"), index=False)
     print("Total Population:", len(population_total), "rows")
 
     population_ages = columns_to_lowercase(population_ages)
-    population_ages = filter_oa(oa_in_la, population_ages)
+    population_ages = filter_row_values(oa_in_la, population_ages)
     population_ages.to_csv(Path(save_dir, "population_ages.csv"), index=False)
     print("Population by Age:", len(population_ages), "rows")
 
     # workplace
     workplace = download_workplace(overwrite=overwrite)
-    workplace = filter_oa(oa_in_la, workplace)
+    workplace = filter_row_values(oa_in_la, workplace)
     workplace.to_csv(Path(save_dir, "workplace.csv"), index=False)
     print("Place of Work:", len(workplace), "rows")
 
@@ -463,6 +507,20 @@ def extract_la_data(lad20cd="E08000021", overwrite=False):
         and len(oa) == len(workplace)
     ):
         warnings.warn("Lengths of processed data don't match, optimisation will fail!")
+
+    # schools
+    schools = download_schools(overwrite=overwrite)
+    schools = filter_row_values(oa_in_la, schools)
+    schools = process_schools(schools)
+    schools.to_csv(Path(save_dir, "schools.csv"), index=False)
+    print("Schools:", len(schools), "rows")
+
+    # health
+    health = download_health(overwrite=overwrite)
+    health = filter_row_values(lsoa_in_la, health, column="lsoa11cd")
+    health = process_health(health)
+    health.to_csv(Path(save_dir, "health.csv"), index=False)
+    print("Health:", len(health), "rows")
 
     process_uo_sensors(lad20cd=lad20cd, overwrite=overwrite)
 
