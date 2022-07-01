@@ -1,4 +1,3 @@
-import argparse
 import json
 import os
 import time
@@ -42,36 +41,6 @@ def download_la_shape(lad20cd="E08000021", overwrite=False):
     la = la[["geometry", "lad20cd", "lad20nm"]]
     la.to_file(save_path)
     return la
-
-
-def lad20cd_to_lad11cd(lad20cd, mappings=None):
-    if mappings is None:
-        mappings = download_oa_mappings()
-    return mappings[mappings.lad20cd == lad20cd]["lad11cd"].unique()
-
-
-def lad11cd_to_lad20cd(lad11cd, mappings=None):
-    if mappings is None:
-        mappings = download_oa_mappings()
-    return mappings[mappings.lad11cd == lad11cd]["lad20cd"].unique()
-
-
-def lad20nm_to_lad20cd(lad20nm, mappings=None):
-    if mappings is None:
-        mappings = download_oa_mappings()
-    return mappings[mappings.lad20nm == lad20nm]["lad20cd"].iloc[0]
-
-
-def lad20cd_to_lad20nm(lad20cd, mappings=None):
-    if mappings is None:
-        mappings = download_oa_mappings()
-    return mappings[mappings.lad20cd == lad20cd]["lad20nm"].iloc[0]
-
-
-def lad11nm_to_lad11cd(lad11nm, mappings=None):
-    if mappings is None:
-        mappings = download_oa_mappings()
-    return mappings[mappings.lad11nm == lad11nm]["lad11cd"].iloc[0]
 
 
 @cache
@@ -554,37 +523,3 @@ def get_oa_shapes(lad20cd="E08000021"):
         extract_la_data(lad20cd)
     shapes = gpd.read_file(path)
     return shapes.set_index("oa11cd")
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Save output area data for a local authority district"
-    )
-    parser.add_argument(
-        "--lad20cd", help="LAD20CD (2020 local authority district code)", type=str
-    )
-    parser.add_argument(
-        "--lad20nm", help="LAD20NM (2020 local authority district name)", type=str
-    )
-    parser.add_argument(
-        "--overwrite",
-        help="If set download and overwrite any pre-existing files",
-        action="store_true",
-    )
-    args = parser.parse_args()
-
-    if args.lad20cd:
-        lad20cd = args.lad20cd
-        lad20nm = lad20cd_to_lad20nm(lad20cd)
-    elif args.lad20nm:
-        lad20nm = args.lad20nm
-        lad20cd = lad20nm_to_lad20cd(lad20nm)
-    else:
-        print("Either --lad20cd or --lad20nm must be given")
-
-    print(f"Saving data for {lad20nm} ({lad20cd})")
-    extract_la_data(lad20cd=lad20cd, overwrite=args.overwrite)
-
-
-if __name__ == "__main__":
-    main()

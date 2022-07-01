@@ -1,7 +1,8 @@
 from functools import cached_property
 
 from spineq.data_fetcher import get_la_shape, get_oa_centroids, get_oa_shapes
-from spineq.oa_lookup import la_to_oas
+from spineq.dataset import LSOADataset
+from spineq.mappings import la_to_oas
 
 
 class LocalAuthority:
@@ -17,7 +18,7 @@ class LocalAuthority:
         return self.datasets[name]
 
     def __setitem__(self, dataset, name):
-        dataset = dataset.filter_la(self).to_oa_dataset()
+        dataset = dataset.filter_la(self)
         dataset = ...  # TODO: Match index
         self.datasets[name] = dataset
 
@@ -25,6 +26,14 @@ class LocalAuthority:
         if not name:
             name = dataset.name
         self.__setitem__(dataset, name)
+
+    def to_oa_dataset(self, oa_weights=None):
+        datasets = []
+        for d in datasets.values():
+            if isinstance(d, LSOADataset):
+                datasets.append(d.to_oa_dataset(oa_weights))
+            else:
+                datasets.append(d.to_oa_dataset())
 
     @cached_property
     def la_shape(self):
