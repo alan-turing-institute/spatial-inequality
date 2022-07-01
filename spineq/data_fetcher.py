@@ -4,10 +4,10 @@ import os
 import time
 import warnings
 import zipfile
+from functools import cache
 from io import BytesIO
 from pathlib import Path
 
-import fiona
 import geopandas as gpd
 import pandas as pd
 import requests
@@ -74,29 +74,19 @@ def lad11nm_to_lad11cd(lad11nm, mappings=None):
     return mappings[mappings.lad11nm == lad11nm]["lad11cd"].iloc[0]
 
 
-def download_oa_shape(lad11cd="E08000021", lad20cd=None, overwrite=False):
-    if isinstance(lad11cd, str):
-        lad11cd = [lad11cd]
-    if lad20cd is None:
-        lad20cd = lad11cd_to_lad20cd(lad11cd[0])[0]
-
-    save_path = Path(PROCESSED_DIR, lad20cd, "oa_shape", "oa.shp")
+@cache
+def download_oa_shape(overwrite=False):
+    save_path = Path(RAW_DIR, "oa_shape")
     if os.path.exists(save_path) and not overwrite:
         return gpd.read_file(save_path)
     os.makedirs(save_path.parent, exist_ok=True)
 
-    oa = []
-    for la in lad11cd:
-        # From https://geoportal.statistics.gov.uk/datasets/
-        #             ons::output-areas-december-2011-boundaries-ew-bgc-1/about
-        url = (
-            "https://ons-inspire.esriuk.com/arcgis/rest/services/Census_Boundaries/"
-            "Output_Area_December_2011_Boundaries/FeatureServer/2/query?"
-            f"where=lad11cd%20%3D%20'{la}'&outFields=*&outSR=27700&f=json"
-        )
-        oa.append(query_ons_records(url, save_path=None))
-
-    oa = pd.concat(oa)
+    url = (
+        "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/"
+        "Output_Areas_December_2011_Boundaries_EW_BGC/FeatureServer/0/query?"
+        "where=1%3D1&outFields=OA11CD&outSR=27700&f=json"
+    )
+    oa = query_ons_records(url, save_path=None)
     oa = columns_to_lowercase(oa)
     oa = oa[["oa11cd", "geometry"]]
     oa.to_file(save_path)
@@ -196,8 +186,7 @@ def download_populations_region(url):
         xl_file, sheet_name="Mid-2019 Persons", skiprows=4, thousands=","
     )
 
-    df_total = df[["OA11CD", "All Ages"]]
-    df_total.rename(columns={"All Ages": "population"}, inplace=True)
+    df_total = df.rename(columns={"All Ages": "population"})
     df_total = columns_to_lowercase(df_total)
     df_total = df_total[["oa11cd", "population"]]
 
@@ -344,7 +333,7 @@ def download_raw_data(overwrite=False):
 
 
 def query_ons_records(
-    base_query, time_between_queries=1, save_path=None, overwrite=False
+    base_query, time_between_queries=0.1, save_path=None, overwrite=False
 ):
     if save_path and os.path.exists(save_path) and not overwrite:
         return gpd.read_file(save_path)
@@ -353,8 +342,7 @@ def query_ons_records(
     count_param = "&returnCountOnly=true"
 
     r = requests.get(base_query + count_param)
-    j = r.json()
-    n_records_to_query = j["count"]
+    n_records_to_query = r.json()["count"]
 
     if n_records_to_query > 0:
         print("This query returns", n_records_to_query, "records.")
@@ -362,56 +350,21 @@ def query_ons_records(
         raise ValueError("Input query returns no records.")
 
     n_queried_records = 0
-    all_records = None
+    all_records = []
     while n_queried_records < n_records_to_query:
         print("PROGRESS:", n_queried_records, "out of", n_records_to_query, "records")
-        start_time = time.time()
-
         print("Querying... ", end="")
-
-        try:
-            r = requests.get(base_query + offset_param.format(n_queried_records))
-
-        except requests.exceptions.Timeout as e:
-            print("timeout, retrying...")
-            for i in range(10):
-                print("attempt", i + 1)
-                try:
-                    r = requests.get(
-                        base_query + offset_param.format(n_queried_records)
-                    )
-                    break
-                except requests.exceptions.Timeout:
-                    r = None
-                    continue
-            if not r:
-                raise requests.exceptions.Timeout("FAILED - timeout.") from e
-
-        j = r.json()
-
-        n_new_records = len(j["features"])
-        n_queried_records += n_new_records
-        print("Got", n_new_records, "records.")
-
-        if n_new_records > 0:
-            b = bytes(r.content)
-            with fiona.BytesCollection(b) as f:
-                crs = f.crs
-                new_records = gpd.GeoDataFrame.from_features(f, crs=crs)
-
-            if all_records is None:
-                all_records = new_records.copy(deep=True)
-            else:
-                all_records = all_records.append(new_records)
-
-        if "exceededTransferLimit" in j.keys() and j["exceededTransferLimit"] is True:
-            end_time = time.time()
-            if end_time - start_time < time_between_queries:
-                time.sleep(time_between_queries + start_time - end_time)
-                continue
-        else:
-            print("No more records to query.")
+        new_records = gpd.read_file(base_query + offset_param.format(n_queried_records))
+        n_new_records = len(new_records)
+        if n_new_records == 0:
+            print("No more records to query")
             break
+        n_queried_records += n_new_records
+        all_records.append(new_records)
+        print("Got", n_new_records, "records.")
+        time.sleep(time_between_queries)
+
+    all_records = pd.concat(all_records)
 
     if save_path:
         os.makedirs(save_path.parent, exist_ok=True)
@@ -464,17 +417,21 @@ def extract_la_data(lad20cd="E08000021", overwrite=False):
     save_dir = Path(PROCESSED_DIR, lad20cd)
     os.makedirs(save_dir, exist_ok=True)
 
+    # local authority boundaries
     la = download_la_shape(lad20cd=lad20cd, overwrite=overwrite)
     print("LA shape:", len(la), "rows")
 
+    # OA and LSOA in this local authority
     mappings = download_oa_mappings(overwrite=overwrite)
     oa_in_la = mappings.loc[mappings["lad20cd"] == lad20cd, "oa11cd"]
     lsoa_in_la = mappings.loc[mappings["lad20cd"] == lad20cd, "lsoa11cd"].unique()
     print("OA in this LA (mappings):", len(oa_in_la), "rows")
     print("LSOA in this LA (mappings):", len(lsoa_in_la), "rows")
 
-    lad11cd = lad20cd_to_lad11cd(lad20cd, mappings)
-    oa = download_oa_shape(lad11cd=lad11cd, overwrite=overwrite)
+    # output area boundaries
+    oa = download_oa_shape(overwrite=overwrite)
+    oa = filter_row_values(oa_in_la, oa)
+    oa.to_file(Path(save_dir, "oa_shape"))
     print("OA shapes:", len(oa), "rows")
 
     # centroids

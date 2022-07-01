@@ -1,12 +1,13 @@
 from functools import cached_property
 
 from spineq.data_fetcher import get_la_shape, get_oa_centroids, get_oa_shapes
+from spineq.oa_lookup import la_to_oas
 
 
 class LocalAuthority:
     def __init__(self, lad20cd, datasets=None):
         self.lad20cd = lad20cd
-        self.oa11cd = ...
+        self.oa11cd = la_to_oas(lad20cd)
         self.datasets = {}
         if datasets:
             for d in datasets:
