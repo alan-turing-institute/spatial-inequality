@@ -8,7 +8,7 @@ from utils import (
     save_jsonpickle,
 )
 
-from spineq.data_fetcher import lad20nm_to_lad20cd
+from spineq.data.fetcher import lad20nm_to_lad20cd
 from spineq.optimise import optimise
 
 

@@ -1,6 +1,6 @@
 import argparse
 
-from spineq.data_fetcher import extract_la_data
+from spineq.data.fetcher import extract_la_data
 from spineq.mappings import lad20cd_to_lad20nm, lad20nm_to_lad20cd
 
 

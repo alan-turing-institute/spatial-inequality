@@ -13,7 +13,7 @@ from utils import (
     set_fig_style,
 )
 
-from spineq.data_fetcher import lad20nm_to_lad20cd
+from spineq.data.fetcher import lad20nm_to_lad20cd
 from spineq.genetic import extract_all
 from spineq.optimise import calc_coverage
 from spineq.plotting import (

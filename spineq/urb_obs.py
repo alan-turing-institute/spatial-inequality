@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from spineq.data_fetcher import get_oa_centroids, get_oa_shapes, get_uo_sensors
+from spineq.data.fetcher import get_oa_centroids, get_oa_shapes, get_uo_sensors
 from spineq.plotting import plot_coverage_grid
 from spineq.utils import coverage_grid
 

@@ -1,7 +1,6 @@
 # Data files
 # don't store data apart from processed data for Newcastle
-data
-!data/processed/E08000021
+scripts/data
 notebooks/paper_figures/
 publications/OptimisingForEquity/results
 

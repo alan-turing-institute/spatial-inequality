@@ -13,7 +13,7 @@ import seaborn as sns
 from matplotlib_scalebar.scalebar import ScaleBar
 from mpl_toolkits.axes_grid1 import ImageGrid, make_axes_locatable
 
-from spineq.data_fetcher import get_oa_centroids, get_oa_shapes
+from spineq.data.fetcher import get_oa_centroids, get_oa_shapes
 from spineq.utils import coverage_matrix
 
 

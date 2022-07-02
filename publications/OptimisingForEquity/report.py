@@ -6,7 +6,7 @@ from jinja2 import Template
 from markdown import markdown
 from utils import get_config, get_figures_params, get_objectives
 
-from spineq.data_fetcher import lad20nm_to_lad20cd
+from spineq.data.fetcher import lad20nm_to_lad20cd
 
 
 def find_fig_path(match_name: str, fig_dir: Union[str, Path]) -> Optional[Path]:

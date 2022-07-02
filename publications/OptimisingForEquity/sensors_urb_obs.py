@@ -5,7 +5,7 @@ import geopandas as gpd
 import yaml
 from utils import get_config
 
-from spineq.data_fetcher import get_uo_sensors, lad20nm_to_lad20cd
+from spineq.data.fetcher import get_uo_sensors, lad20nm_to_lad20cd
 
 
 def save_uo_sensors(lad20cd: str, save_path: Path) -> gpd.GeoDataFrame:
@@ -36,7 +36,7 @@ def add_n_uo_sensors_to_config(uo_sensors: gpd.GeoDataFrame, config: dict):
     Parameters
     ----------
     uo_sensors : gpd.GeoDataFrame
-        Urban Observatory sensor locations from spineq.data_fetcher.get_uo_sensors()
+        Urban Observatory sensor locations from spineq.data.fetcher.get_uo_sensors()
     config : dict
         Config loaded by utils.get_config()
     """

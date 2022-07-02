@@ -20,7 +20,7 @@ from utils import (
     set_fig_style,
 )
 
-from spineq.data_fetcher import get_oa_shapes, lad20nm_to_lad20cd
+from spineq.data.fetcher import get_oa_shapes, lad20nm_to_lad20cd
 from spineq.optimise import calc_coverage
 from spineq.plotting import (
     add_colorbar,

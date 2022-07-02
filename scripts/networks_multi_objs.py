@@ -8,7 +8,7 @@ import pygmo as pg
 from tqdm import tqdm
 
 from publications.OptimisingForEquity.utils import save_jsonpickle
-from spineq.data_fetcher import lad20nm_to_lad20cd
+from spineq.data.fetcher import lad20nm_to_lad20cd
 from spineq.genetic import build_problem, extract_all, run_problem
 from spineq.optimise import calc_coverage, get_optimisation_inputs
 

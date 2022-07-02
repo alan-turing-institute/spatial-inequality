@@ -9,7 +9,7 @@ from utils import (
     save_jsonpickle,
 )
 
-from spineq.data_fetcher import lad20nm_to_lad20cd
+from spineq.data.fetcher import lad20nm_to_lad20cd
 from spineq.genetic import build_problem, run_problem
 from spineq.optimise import get_optimisation_inputs
 

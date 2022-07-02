@@ -1,6 +1,6 @@
 import numpy as np
 
-from spineq.data_fetcher import download_oa_mappings, download_oa_shape
+from spineq.data.fetcher import download_oa_mappings, download_oa_shape
 
 mappings = download_oa_mappings()
 
