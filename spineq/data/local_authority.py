@@ -2,7 +2,7 @@ from functools import cached_property
 
 from spineq.data.base import LSOADataset
 from spineq.data.fetcher import get_la_shape, get_oa_centroids, get_oa_shapes
-from spineq.mappings import la_to_oas
+from spineq.mappings import la_to_oas, lad20cd_to_lad20nm
 
 
 class LocalAuthority:
@@ -20,6 +20,16 @@ class LocalAuthority:
     def __setitem__(self, dataset, name):
         dataset = dataset.filter_la(self)
         self.datasets[name] = dataset
+
+    def __repr__(self):
+        return (
+            f"{type(self).__name__}: {self.lad20nm} ({self.lad20cd}):\n"
+            f"- {len(self)} output areas\n"
+            f"- {len(self.datasets)} datasets {tuple(self.datasets.keys())}\n"
+        )
+
+    def __len__(self):
+        return len(self.oa11cd)
 
     def add_dataset(self, dataset, name=None):
         if not name:
@@ -48,3 +58,7 @@ class LocalAuthority:
     @cached_property
     def oa_centroids(self):
         return get_oa_centroids(self.lad20cd)
+
+    @cached_property
+    def lad20nm(self):
+        return lad20cd_to_lad20nm(self.lad20cd)

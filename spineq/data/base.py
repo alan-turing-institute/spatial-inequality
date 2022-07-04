@@ -59,7 +59,11 @@ class PointDataset(Dataset):
 
     def filter_la(self, la):
         filtered = deepcopy(self)
-        filtered.values = filtered.values[filtered.values["geometry"].isin(la.la_shape)]
+        filtered.values = filtered.values[
+            filtered.values["geometry"].within(la.la_shape["geometry"])
+        ]
+        if not self.description:
+            self.description = la.lad20cd
         return filtered
 
 
@@ -73,6 +77,8 @@ class OADataset(Dataset):
     def filter_la(self, la):
         filtered = deepcopy(self)
         filtered.values = filtered.values[filtered.values.index.isin(la.oa11cd)]
+        if not self.description:
+            self.description = la.lad20cd
         return filtered
 
 
@@ -99,4 +105,6 @@ class LSOADataset(Dataset):
         lsoa11cd = la_to_lsoas(la.lad20cd)
         filtered = deepcopy(self)
         filtered.values = filtered.values[filtered.values.index.isin(lsoa11cd)]
+        if not self.description:
+            self.description = la.lad20cd
         return filtered

@@ -381,6 +381,39 @@ def process_health(health):
     return health
 
 
+def get_oa_population(lad20cd=None):
+    if lad20cd:
+        pop_path = Path(PROCESSED_DIR, lad20cd, "population_ages.csv")
+        if not pop_path.exists():
+            extract_la_data(lad20cd)
+        oa_populations = pd.read_csv(pop_path, index_col="oa11cd")
+        oa_populations.columns = oa_populations.columns.astype(int)
+    else:
+        _, oa_populations = download_populations()
+    return oa_populations
+
+
+def get_oa_workplace(lad20cd=None):
+    if lad20cd:
+        work_path = Path(PROCESSED_DIR, lad20cd, "workplace.csv")
+        if not work_path.exists():
+            extract_la_data(lad20cd)
+        workplace = pd.read_csv(work_path, index_col="oa11cd")
+        workplace = workplace["workers"]
+    else:
+        workplace = download_workplace(overwrite=False)
+    return workplace
+
+
+def get_lsoa_health(lad20cd=None):
+    if not lad20cd:
+        return download_health(overwrite=False)
+    health_path = Path(PROCESSED_DIR, lad20cd, "health.csv")
+    if not health_path.exists():
+        extract_la_data(lad20cd)
+    return pd.read_csv(health_path)
+
+
 def extract_la_data(lad20cd="E08000021", overwrite=False):
     print(f"Extracting data for {lad20cd}...")
     save_dir = Path(PROCESSED_DIR, lad20cd)
@@ -489,11 +522,8 @@ def get_oa_stats(lad20cd="E08000021"):
     if not pop_path.exists() or not work_path.exists():
         extract_la_data(lad20cd)
 
-    population_ages = pd.read_csv(pop_path, index_col="oa11cd")
-    population_ages.columns = population_ages.columns.astype(int)
-
-    workplace = pd.read_csv(work_path, index_col="oa11cd")
-    workplace = workplace["workers"]
+    population_ages = get_oa_population(lad20cd)
+    workplace = get_oa_workplace(lad20cd)
 
     return {"population_ages": population_ages, "workplace": workplace}
 

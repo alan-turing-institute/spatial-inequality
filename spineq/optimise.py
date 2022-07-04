@@ -32,7 +32,7 @@ def optimise(
     save_plot=False,
     save_dir="",
     run_name="",
-    **kwargs
+    **kwargs,
 ):
     """Greedily place sensors to maximise coverage.
 
@@ -204,9 +204,8 @@ def calc_oa_weights(
 
     if len(population_ages) != len(workplace):
         raise ValueError(
-            "Lengths of inputs don't match: population_ages={}, workplace={}".format(
-                len(population_ages), len(workplace)
-            )
+            "Lengths of inputs don't match: "
+            f"population_ages={len(population_ages)}, workplace={len(workplace)}"
         )
 
     # weightings for residential population by age group
