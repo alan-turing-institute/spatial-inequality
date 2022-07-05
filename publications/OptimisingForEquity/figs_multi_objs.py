@@ -14,9 +14,9 @@ from utils import (
 )
 
 from spineq.data.fetcher import lad20nm_to_lad20cd
-from spineq.genetic import extract_all
-from spineq.optimise import calc_coverage
-from spineq.plotting import (
+from spineq.opt.genetic import extract_all
+from spineq.opt.optimise import calc_coverage
+from spineq.plot.plotting import (
     add_colorbar,
     add_scalebar,
     get_fig_grid,

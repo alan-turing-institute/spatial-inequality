@@ -11,7 +11,7 @@ from utils import (
 )
 
 from spineq.data.fetcher import lad20nm_to_lad20cd
-from spineq.optimise import calc_coverage, get_optimisation_inputs
+from spineq.opt.optimise import calc_coverage, get_optimisation_inputs
 
 
 def get_random_filepath(config: dict) -> Path:

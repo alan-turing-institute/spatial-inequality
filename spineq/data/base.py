@@ -54,7 +54,10 @@ class PointDataset(Dataset):
         values = values.groupby("oa11cd").agg(func)
 
         return OADataset(
-            self.name, values, title=self.title, description=self.description
+            self.name,
+            values.reset_index(),  # reset index as constructor expects oa11cd column
+            title=self.title,
+            description=self.description,
         )
 
     def filter_la(self, la):

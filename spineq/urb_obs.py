@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from spineq.data.fetcher import get_oa_centroids, get_oa_shapes, get_uo_sensors
-from spineq.plotting import plot_coverage_grid
+from spineq.plot.plotting import plot_coverage_grid
 from spineq.utils import coverage_grid
 
 
@@ -15,21 +15,19 @@ def get_uo_sensor_dict(lad20cd, centroids=True, uo_sensors=None):
     if uo_sensors is None:
         uo_sensors = get_uo_sensors(lad20cd)
 
-    if centroids:
-        sensor_oa = uo_sensors["oa11cd"].unique()
-        oa_centroids = get_oa_centroids(lad20cd)
-        sensor_dict = (
-            oa_centroids[oa_centroids.index.isin(sensor_oa)][["x", "y"]]
-            .reset_index()
-            .to_dict(orient="records")
-        )
-    else:
-        sensor_dict = [
+    if not centroids:
+        return [
             {"oa11cd": row["oa11cd"], "x": row["geometry"].x, "y": row["geometry"].y}
             for idx, row in uo_sensors.iterrows()
         ]
 
-    return sensor_dict
+    sensor_oa = uo_sensors["oa11cd"].unique()
+    oa_centroids = get_oa_centroids(lad20cd)
+    return (
+        oa_centroids[oa_centroids.index.isin(sensor_oa)][["x", "y"]]
+        .reset_index()
+        .to_dict(orient="records")
+    )
 
 
 def plot_uo_coverage_grid(

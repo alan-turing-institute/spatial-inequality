@@ -9,7 +9,7 @@ from utils import (
 )
 
 from spineq.data.fetcher import lad20nm_to_lad20cd
-from spineq.optimise import optimise
+from spineq.opt.optimise import optimise
 
 
 def get_single_obj_filepath(config: dict) -> Path:

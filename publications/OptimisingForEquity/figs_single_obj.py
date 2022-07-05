@@ -14,7 +14,7 @@ from utils import (
     set_fig_style,
 )
 
-from spineq.plotting import (
+from spineq.plot.plotting import (
     add_colorbar,
     add_scalebar,
     get_fig_grid,

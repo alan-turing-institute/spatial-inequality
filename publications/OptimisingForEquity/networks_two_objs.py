@@ -10,8 +10,8 @@ from utils import (
 )
 
 from spineq.data.fetcher import lad20nm_to_lad20cd
-from spineq.genetic import build_problem, run_problem
-from spineq.optimise import get_optimisation_inputs
+from spineq.opt.genetic import build_problem, run_problem
+from spineq.opt.optimise import get_optimisation_inputs
 
 
 def get_two_objs_filepath(config: dict) -> Path:
@@ -57,7 +57,7 @@ def get_two_obj_inputs(
     -------
     dict
         Output area centroids and weights for each output area for each objective, as
-        calculated by spineq.optimise.get_optimisation_inputs
+        calculated by spineq.opt.optimise.get_optimisation_inputs
     """
     if len(objectives) != 2:
         raise ValueError(f"Must define 2 objectives in config.yml. Got {objectives}")

@@ -1,7 +1,7 @@
 import pandas as pd
 
-from spineq.optimise import calc_oa_weights
-from spineq.plotting import plot_oa_importance
+from spineq.opt.optimise import calc_oa_weights
+from spineq.plot.plotting import plot_oa_importance
 
 theta = 500
 

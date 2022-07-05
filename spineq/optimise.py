@@ -10,7 +10,7 @@ import rq
 from flask_socketio import SocketIO
 
 from spineq.data.fetcher import get_oa_centroids, get_oa_stats
-from spineq.greedy import greedy_opt
+from spineq.opt.greedy import greedy_opt
 from spineq.utils import coverage_matrix, make_job_dict, total_coverage
 
 

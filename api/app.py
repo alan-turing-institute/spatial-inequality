@@ -10,7 +10,7 @@ from flask_socketio import SocketIO, emit
 from rq.job import Job
 from worker import conn, queue
 
-from spineq.optimise import calc_coverage, get_optimisation_inputs
+from spineq.opt.optimise import calc_coverage, get_optimisation_inputs
 from spineq.utils import make_age_range, make_job_dict
 
 redis_url = "redis://{}:{}".format(REDIS_HOST, REDIS_PORT)
@@ -321,7 +321,7 @@ def submit_optimise_job(
     """
 
     job = queue.enqueue(
-        "spineq.optimise.optimise",
+        "spineq.opt.optimise.optimise",
         meta={"status": "Queued", "progress": 0},
         ttl=86400,  # maximum time to stay in queue (seconds)
         job_timeout=3600,  # max job execution time (seconds)

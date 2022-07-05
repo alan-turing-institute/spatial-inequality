@@ -13,8 +13,8 @@ from utils import (
 )
 
 from spineq.data.fetcher import lad20nm_to_lad20cd
-from spineq.genetic import build_problem, extract_all
-from spineq.optimise import get_optimisation_inputs
+from spineq.opt.genetic import build_problem, extract_all
+from spineq.opt.optimise import get_optimisation_inputs
 
 
 def get_multi_objs_filepath(config: dict) -> Path:
@@ -50,7 +50,7 @@ def get_multi_obj_inputs(lad20cd: str, population_groups: dict) -> dict:
     -------
     dict
         Output area centroids and weights for each output area for each objective, as
-        calculated by spineq.optimise.get_optimisation_inputs
+        calculated by spineq.opt.optimise.get_optimisation_inputs
     """
     return get_optimisation_inputs(
         lad20cd=lad20cd,

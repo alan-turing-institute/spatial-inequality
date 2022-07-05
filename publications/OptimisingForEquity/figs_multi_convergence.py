@@ -16,7 +16,7 @@ from utils import (
     set_fig_style,
 )
 
-from spineq.plotting import save_fig
+from spineq.plot.plotting import save_fig
 
 
 def plot_convergence_metrics(

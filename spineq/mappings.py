@@ -6,6 +6,9 @@ mappings = download_oa_mappings()
 
 
 def point_to_oa(point):
+    # TODO - this is slow (checks all England and Wales output areas)
+    # could consider checking local authorities first, then only output areas
+    # in appropriate local authority?
     oa_shape = download_oa_shape()
     oa11cd = oa_shape[oa_shape["geometry"].contains(point)]["oa11cd"]
     if len(oa11cd) > 0:

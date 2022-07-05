@@ -21,8 +21,8 @@ from utils import (
 )
 
 from spineq.data.fetcher import get_oa_shapes, lad20nm_to_lad20cd
-from spineq.optimise import calc_coverage
-from spineq.plotting import (
+from spineq.opt.optimise import calc_coverage
+from spineq.plot.plotting import (
     add_colorbar,
     add_scalebar,
     get_fig_grid,
