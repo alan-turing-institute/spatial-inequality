@@ -505,6 +505,8 @@ def process_uo_sensors(lad20cd="E08000021", overwrite=False):
 
 
 def get_uo_sensors(lad20cd="E08000021"):
+    if not lad20cd:
+        return download_uo_sensors()
     path = Path(PROCESSED_DIR, lad20cd, "uo_sensors", "uo_sensors.shp")
     if not path.exists():
         extract_la_data(lad20cd)
@@ -534,6 +536,8 @@ def get_oa_centroids(lad20cd="E08000021"):
     Returns:
         pd.DataFrame -- Dataframe with index oa11cd and columns x and y.
     """
+    if not lad20cd:
+        return download_centroids()
     path = Path(PROCESSED_DIR, lad20cd, "centroids.csv")
     if not path.exists():
         extract_la_data(lad20cd)
@@ -548,6 +552,8 @@ def get_la_shape(lad20cd="E08000021"):
 
 
 def get_oa_shapes(lad20cd="E08000021"):
+    if not lad20cd:
+        return download_oa_shape()
     path = Path(PROCESSED_DIR, lad20cd, "oa_shape")
     if not path.exists():
         extract_la_data(lad20cd)

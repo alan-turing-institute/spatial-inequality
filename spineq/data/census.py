@@ -1,7 +1,42 @@
 from copy import deepcopy
 
+import geopandas as gpd
+
 from spineq.data.base import LSOADataset, OADataset
-from spineq.data.fetcher import get_lsoa_health, get_oa_population, get_oa_workplace
+from spineq.data.fetcher import (
+    get_lsoa_health,
+    get_oa_centroids,
+    get_oa_population,
+    get_oa_shapes,
+    get_oa_workplace,
+)
+
+
+class CentroidDataset(OADataset):
+    def __init__(self, lad20cd=None, name="", title="", description=""):
+        centroids = get_oa_centroids(lad20cd)
+        values = gpd.GeoDataFrame(
+            centroids,
+            crs="EPSG:27700",
+            geometry=gpd.points_from_xy(centroids["x"], centroids["y"]),
+        )
+        super().__init__(
+            name or "centroids",
+            values.reset_index(),
+            title=title or "Output Area Centroids",
+            description=description,
+        )
+
+
+class BoundaryDataset(OADataset):
+    def __init__(self, lad20cd=None, name="", title="", description=""):
+        boundaries = get_oa_shapes(lad20cd)
+        super().__init__(
+            name or "boundary",
+            boundaries.reset_index(),
+            title=title or "Output Area Boundaries",
+            description=description,
+        )
 
 
 class PopulationDataset(OADataset):

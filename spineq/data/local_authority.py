@@ -1,7 +1,8 @@
 from functools import cached_property
 
 from spineq.data.base import LSOADataset
-from spineq.data.fetcher import get_la_shape, get_oa_centroids, get_oa_shapes
+from spineq.data.census import BoundaryDataset, CentroidDataset
+from spineq.data.fetcher import get_la_shape
 from spineq.mappings import la_to_oas, lad20cd_to_lad20nm
 
 
@@ -43,7 +44,8 @@ class LocalAuthority:
                 oa_dat = d.to_oa_dataset(oa_weights)
             else:
                 oa_dat = d.to_oa_dataset()
-            datasets[name] = oa_dat.reindex(self.oa11cd)
+            oa_dat.values = oa_dat.values.reindex(self.oa11cd)
+            datasets[name] = oa_dat
 
         return LocalAuthority(self.lad20cd, datasets)
 
@@ -53,11 +55,15 @@ class LocalAuthority:
 
     @cached_property
     def oa_shapes(self):
-        return get_oa_shapes(self.lad20cd)
+        boundaries = BoundaryDataset(self.lad20cd)
+        boundaries.values = boundaries.values.reindex(self.oa11cd)
+        return boundaries
 
     @cached_property
     def oa_centroids(self):
-        return get_oa_centroids(self.lad20cd)
+        centroids = CentroidDataset(self.lad20cd)
+        centroids.values = centroids.values.reindex(self.oa11cd)
+        return centroids
 
     @cached_property
     def lad20nm(self):
