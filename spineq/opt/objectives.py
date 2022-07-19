@@ -1,24 +1,64 @@
-class SingleObjective:
-    # - Output area indices
-    # - Output area weights (1 x n)
-    #   - From dataset
-    #   - with normalisation
-    # - Coverage metric
-    pass
+from dataclasses import dataclass
+from typing import Optional
+
+import numpy as np
+
+from spineq.data.local_authority import LocalAuthority
+from spineq.opt.coverage import Coverage
+from spineq.utils import normalize
+
+
+@dataclass
+class Objective:
+    dataset: str
+    column: str
+    weight: float = 1.0
+    label: Optional[str] = None
+
+    def __post_init__(self):
+        if not self.label:
+            self.label = f"{self.dataset}_{self.column}"
 
 
 class MultiObjectives:
-    # - Output area indices
-    # - Output area weights (k x n)
-    # - Coverage metric
-    # - Convert to single objective
-    #   - weight for each objective
-    #   - normalisation
-    def __init__(self, objectives):
+    def __init__(
+        self,
+        la: LocalAuthority,
+        objectives: list[Objective],
+        coverage: Coverage,
+        norm: bool = True,
+    ):
+        self.la = la.to_oa_dataset()
         self.objectives = objectives
+        self.coverage = coverage(la)
+        self.norm = norm
 
-    def to_single_objective(self, weights, norm=True):
-        ...
+        self.weights = np.full((len(self.la), len(objectives), np.nan))
+        for i, obj in enumerate(objectives):
+            self.weights[:, i] = self.la[obj.dataset][obj.column]
+        if norm:
+            self.weights = normalize(self.weights, axis=0)
+
+    def oa_coverage(self, sensors):
+        return self.coverage.coverage(sensors)
+
+    def fitness(self, sensors):
+        cov = self.oa_coverage(sensors)
+        return (self.weights * cov[:, np.newaxis]).sum(axis=1)
 
 
-# !!! THESE SHOULD BUILD ON LOCAL AUTHORITY CLASS?? !!!
+class CombinedObjectives(MultiObjectives):
+    def __init__(
+        self,
+        la: LocalAuthority,
+        objectives: list[Objective],
+        coverage: Coverage,
+        norm: bool = True,
+    ):
+        super().__init__(la, objectives, coverage, norm=norm)
+        self.objective_weights = np.array([obj.weight for obj in objectives])
+        if norm:
+            self.objective_weights = normalize(self.objective_weights)
+
+        # weight for each OA is weighted sum of all objectives
+        self.weights = (self.objective_weights * self.weights).sum(axis=1)

@@ -1,5 +1,7 @@
 """Utility functions used by other files.
 """
+from typing import Optional
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -207,3 +209,21 @@ def make_age_range(min_age=0, max_age=90):
     age_weights = pd.Series(0, index=range(91))
     age_weights[(age_weights.index >= min_age) & (age_weights.index <= max_age)] = 1
     return age_weights
+
+
+def normalize(array: np.ndarray, axis: Optional[int] = None) -> np.ndarray:
+    """Normalise an array so that its elements (optionally along an axis) sum to one.
+
+    Parameters
+    ----------
+    array : np.ndarray
+        Array with values to normalise
+    axis : Optional[int], optional
+        Axis along which values should sum to 1, by default None
+
+    Returns
+    -------
+    np.ndarray
+        Normalised array
+    """
+    return array / array.sum(axis=axis)
