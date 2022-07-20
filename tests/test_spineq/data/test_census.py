@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -14,7 +12,6 @@ from spineq.data.census import (
 )
 
 
-@dataclass
 class TestConfig:
     lad20cd = "E08000021"  # Newcastle upon tyne
     n_oa_total = 27
@@ -71,7 +68,7 @@ class TestOABoundaryDataset(TestConfig):
 
 class TestPopulationDataset(TestConfig):
     @pytest.fixture
-    def dataset():
+    def dataset(self):
         return PopulationDataset()
 
     def test_init_defaults(self, dataset):
