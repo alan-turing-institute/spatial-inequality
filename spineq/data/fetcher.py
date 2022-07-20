@@ -360,7 +360,14 @@ def columns_to_lowercase(df):
 
 
 def filter_row_values(values, df, column="oa11cd"):
-    return df[df[column].isin(values)]
+    if column in df.columns:
+        return df[df[column].isin(values)]
+    if df.index.name == column:
+        return df.loc[values]
+    raise ValueError(
+        f"{column} is not in df columns ({df.columns.values})"
+        f"or index ({df.index.name})"
+    )
 
 
 def process_schools(schools):

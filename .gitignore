@@ -1,8 +1,8 @@
 # Data files
-# don't store data apart from processed data for Newcastle
 scripts/data
 notebooks/paper_figures/
 publications/OptimisingForEquity/results
+tests/sample/data/processed
 
 # Mac config files
 .DS_Store
