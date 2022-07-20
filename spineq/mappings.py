@@ -10,9 +10,9 @@ def point_to_oa(point):
     # could consider checking local authorities first, then only output areas
     # in appropriate local authority?
     oa_shape = download_oa_shape()
-    oa11cd = oa_shape[oa_shape["geometry"].contains(point)]["oa11cd"]
+    oa11cd = oa_shape[oa_shape["geometry"].contains(point)].index
     if len(oa11cd) > 0:
-        return oa11cd.iloc[0]
+        return oa11cd[0]
     return np.nan
 
 

@@ -28,11 +28,11 @@ class CentroidDataset(OADataset):
         )
 
 
-class BoundaryDataset(OADataset):
+class OABoundaryDataset(OADataset):
     def __init__(self, lad20cd=None, name="", title="", description=""):
         boundaries = get_oa_shapes(lad20cd)
         super().__init__(
-            name or "boundary",
+            name or "oa_boundary",
             boundaries.reset_index(),
             title=title or "Output Area Boundaries",
             description=description,

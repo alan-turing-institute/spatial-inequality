@@ -47,7 +47,7 @@ def download_la_shape(lad20cd="E08000021", overwrite=False):
 def download_oa_shape(overwrite=False):
     save_path = Path(RAW_DIR, "oa_shape")
     if os.path.exists(save_path) and not overwrite:
-        return gpd.read_file(save_path)
+        return gpd.read_file(save_path).set_index("oa11cd")
     os.makedirs(save_path.parent, exist_ok=True)
 
     url = (
@@ -59,7 +59,7 @@ def download_oa_shape(overwrite=False):
     oa = columns_to_lowercase(oa)
     oa = oa[["oa11cd", "geometry"]]
     oa.to_file(save_path)
-    return oa
+    return oa.set_index("oa11cd")
 
 
 def download_oa_mappings(overwrite=False):
@@ -100,7 +100,7 @@ def download_oa_mappings(overwrite=False):
 def download_centroids(overwrite=False):
     save_path = Path(RAW_DIR, "centroids.csv")
     if os.path.exists(save_path) and not overwrite:
-        return pd.read_csv(save_path)
+        return pd.read_csv(save_path, index_col="oa11cd")
 
     # From https://geoportal.statistics.gov.uk/datasets/ons::
     #              output-areas-december-2011-population-weighted-centroids-1/about
@@ -113,7 +113,7 @@ def download_centroids(overwrite=False):
     df = df[["oa11cd", "x", "y"]]
     df.to_csv(save_path, index=False)
 
-    return df
+    return df.set_index("oa11cd")
 
 
 def download_schools(overwrite=False):
