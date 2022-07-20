@@ -56,3 +56,10 @@ spineq_download = "spineq.cli:spineq_download"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = "--cov=spineq --cov-report=term-missing:skip-covered"
+testpaths = ["tests"]
+
+[tool.isort]
+profile = "black"

@@ -38,7 +38,7 @@ jobs:
           nbqa flake8 .
       - name: Test with pytest  
         run: |
-          pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=spineq tests/ | tee pytest-coverage.txt
+          pytest --junitxml=pytest.xml | tee pytest-coverage.txt
 
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
