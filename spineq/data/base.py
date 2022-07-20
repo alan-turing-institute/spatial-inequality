@@ -4,6 +4,7 @@ import geopandas as gpd
 import pandas as pd
 
 from spineq.mappings import la_to_lsoas, lsoa_to_oas, point_to_oa
+from spineq.utils import normalize
 
 
 class Dataset:
@@ -51,7 +52,9 @@ class PointDataset(Dataset):
         for i in range(len(values)):
             values.loc[i, "oa11cd"] = point_to_oa(values.loc[i, "geometry"])
 
-        values = values.groupby("oa11cd").agg(func)
+        values = pd.DataFrame(
+            values.drop("geometry", axis=1).groupby("oa11cd").agg(func)
+        )
 
         return OADataset(
             self.name,
@@ -90,18 +93,30 @@ class LSOADataset(Dataset):
         super().__init__(*args, index="lsoa11cd", **kwargs)
 
     def to_oa_dataset(self, oa_weights=None):
-        values = []
+        converted_values = []
         for lsoa11cd in self.values.index:
-            if oa_weights:
-                oas = lsoa_to_oas(lsoa11cd)
-                weights = oa_weights.loc[oas] / oa_weights.loc[oas].sum()
-                values.append(weights * self.values.loc[lsoa11cd])
-            else:
-                values.append(self.values.loc[lsoa11cd])
-        values = pd.concat(values)
+            oas = lsoa_to_oas(lsoa11cd)
 
+            if oa_weights is not None:
+                # divide lsoa count between OAs based on OA weights
+                weights = normalize(oa_weights.loc[oas])
+            else:
+                # divide lsoa count between OAs equally
+                weights = pd.Series(1 / len(oas), index=oas)
+            weights.index.name = "oa11cd"
+
+            oa_values = pd.DataFrame(index=oas, columns=self.values.columns)
+            oa_values.index.name = "oa11cd"
+            for col in oa_values.columns:
+                oa_values[col] = weights * self.values.loc[lsoa11cd, col]
+            converted_values.append(oa_values)
+
+        converted_values = pd.concat(converted_values).reset_index()
         return OADataset(
-            self.name, values, title=self.title, description=self.description
+            self.name,
+            converted_values,
+            title=self.title,
+            description=self.description,
         )
 
     def filter_la(self, la):
