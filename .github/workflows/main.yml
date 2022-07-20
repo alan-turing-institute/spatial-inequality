@@ -36,7 +36,8 @@ jobs:
           nbqa black --check .
           nbqa isort --check .
           nbqa flake8 .
-      - name: Test with pytest
+      - name: Test with pytest  
+        run: |
           pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=spineq tests/ | tee pytest-coverage.txt
 
       - name: Pytest coverage comment
