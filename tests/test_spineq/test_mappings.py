@@ -1,3 +1,4 @@
+import numpy as np
 from shapely.geometry import Point
 
 from spineq import mappings
@@ -5,6 +6,7 @@ from spineq import mappings
 
 def test_point_to_oa():
     assert mappings.point_to_oa(Point(425800, 568100)) == "E00042201"
+    assert np.isnan(mappings.point_to_oa(Point(415800, 558100)))
 
 
 def test_oa_to_la():
