@@ -108,12 +108,12 @@ def download_centroids(overwrite=False):
         "https://opendata.arcgis.com/api/v3/datasets/b0c86eaafc5a4f339eb36785628da904_0"
         "/downloads/data?format=csv&spatialRefId=27700"
     )
-    df = pd.read_csv(url)
+    df = pd.read_csv(url, index_col="oa11cd")
     df = columns_to_lowercase(df)
     df = df[["oa11cd", "x", "y"]]
-    df.to_csv(save_path, index=False)
+    df.to_csv(save_path)
 
-    return df.set_index("oa11cd")
+    return df
 
 
 def download_schools(overwrite=False):
@@ -152,16 +152,20 @@ def download_populations_region(url):
     xl_file = zip_file.open(file_name)
 
     df = pd.read_excel(
-        xl_file, sheet_name="Mid-2019 Persons", skiprows=4, thousands=","
+        xl_file,
+        sheet_name="Mid-2019 Persons",
+        skiprows=4,
+        thousands=",",
+        index_col="oa11cd",
     )
+    df = columns_to_lowercase(df)
 
-    df_total = df.rename(columns={"All Ages": "population"})
-    df_total = columns_to_lowercase(df_total)
+    df_total = df.rename(columns={"all ages": "population"})
     df_total = df_total[["oa11cd", "population"]]
 
-    df_ages = df.drop(["All Ages", "LSOA11CD"], axis=1)
+    df_ages = df.drop(["all ages", "lsoa11cd"], axis=1)
     df_ages.rename(columns={"90+": 90}, inplace=True)
-    df_ages = columns_to_lowercase(df_ages)
+    df_ages.columns = df_ages.columns.astype(int)
 
     return df_total, df_ages
 
@@ -174,7 +178,10 @@ def download_populations(overwrite=False):
         and os.path.exists(save_path_ages)
         and not overwrite
     ):
-        return pd.read_csv(save_path_total), pd.read_csv(save_path_ages)
+        df_total = pd.read_csv(save_path_total, index_col="oa11cd")
+        df_ages = pd.read_csv(save_path_ages, index_col="oa11cd")
+        df_ages.columns = df_ages.columns.astype(int)
+        return df_total, df_ages
 
     # From https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/
     #              populationestimates/datasets/
@@ -222,8 +229,8 @@ def download_populations(overwrite=False):
 
     df_total = pd.concat(df_total)
     df_ages = pd.concat(df_ages)
-    df_total.to_csv(save_path_total, index=False)
-    df_ages.to_csv(save_path_ages, index=False)
+    df_total.to_csv(save_path_total)
+    df_ages.to_csv(save_path_ages)
 
     return df_total, df_ages
 
@@ -231,11 +238,11 @@ def download_populations(overwrite=False):
 def download_workplace(overwrite=False):
     save_path = Path(RAW_DIR, "workplace.csv")
     if os.path.exists(save_path) and not overwrite:
-        return pd.read_csv(save_path)
+        return pd.read_csv(save_path, index_col="oa11cd")
 
     url = "https://zenodo.org/record/6683974/files/workplace.csv"
-    workplace = pd.read_csv(url)
-    workplace.to_csv(save_path, index=False)
+    workplace = pd.read_csv(url, index_col="oa11cd")
+    workplace.to_csv(save_path)
     return workplace
 
 
@@ -446,24 +453,24 @@ def extract_la_data(lad20cd="E08000021", overwrite=False):
     # centroids
     centroids = download_centroids(overwrite=overwrite)
     centroids = filter_row_values(oa_in_la, centroids)
-    centroids.to_csv(Path(save_dir, "centroids.csv"), index=False)
+    centroids.to_csv(Path(save_dir, "centroids.csv"))
     print("Centroids:", len(centroids), "rows")
 
     # population data
     population_total, population_ages = download_populations(overwrite=overwrite)
     population_total = filter_row_values(oa_in_la, population_total)
-    population_total.to_csv(Path(save_dir, "population_total.csv"), index=False)
+    population_total.to_csv(Path(save_dir, "population_total.csv"))
     print("Total Population:", len(population_total), "rows")
 
     population_ages = columns_to_lowercase(population_ages)
     population_ages = filter_row_values(oa_in_la, population_ages)
-    population_ages.to_csv(Path(save_dir, "population_ages.csv"), index=False)
+    population_ages.to_csv(Path(save_dir, "population_ages.csv"))
     print("Population by Age:", len(population_ages), "rows")
 
     # workplace
     workplace = download_workplace(overwrite=overwrite)
     workplace = filter_row_values(oa_in_la, workplace)
-    workplace.to_csv(Path(save_dir, "workplace.csv"), index=False)
+    workplace.to_csv(Path(save_dir, "workplace.csv"))
     print("Place of Work:", len(workplace), "rows")
 
     if not (

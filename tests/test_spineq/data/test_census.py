@@ -96,7 +96,7 @@ class TestPopulationDataset(TestConfig):
         filt_pop = dataset.filter_age()
         pd.testing.assert_frame_equal(dataset.values, filt_pop.values)
         assert filt_pop.name == "population_0_to_90"
-        assert filt_pop.title == "Residents Between 0 and 90 Years Old"
+        assert filt_pop.title == "Number of Residents Between 0 and 90 Years Old"
 
     def test_filter_age_labels(self, dataset):
         filt_pop = dataset.filter_age(
@@ -145,7 +145,7 @@ class TestPopulationDataset(TestConfig):
             }
         )
         exp_totals.index.name = "oa11cd"
-        pd.testing.assert_series_equal(total.values, exp_totals)
+        pd.testing.assert_series_equal(total.values.sort_index(), exp_totals)
 
 
 class TestWorkplaceDataset(TestConfig):
@@ -179,16 +179,16 @@ class TestHealthDataset(TestConfig):
         assert dataset.title == "Long-term Health Issues and Disabilty"
         assert isinstance(dataset.values, pd.DataFrame)
         assert len(dataset) == self.n_lsoa_total
-        np.testing.assert_array_equal(dataset.values.columns, ["workers"])
+        np.testing.assert_array_equal(dataset.values.columns, ["health_or_disability"])
 
     def test_init_all(self):
-        dataset = WorkplaceDataset(
+        dataset = HealthDataset(
             lad20cd=self.lad20cd, name="NAME", title="TITLE", description="DESCRIPTION"
         )
-        assert isinstance(dataset, WorkplaceDataset)
+        assert isinstance(dataset, HealthDataset)
         assert dataset.name == "NAME"
         assert dataset.title == "TITLE"
         assert dataset.description == "DESCRIPTION"
         assert isinstance(dataset.values, pd.DataFrame)
         assert len(dataset) == self.n_lsoa_la
-        np.testing.assert_array_equal(dataset.values.columns, ["workers"])
+        np.testing.assert_array_equal(dataset.values.columns, ["health_or_disability"])

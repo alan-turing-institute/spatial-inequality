@@ -50,22 +50,25 @@ class PopulationDataset(OADataset):
         )
 
     def filter_age(self, low=0, high=90, name="", title="", description=""):
-        values = deepcopy(self.values).loc[
+        filt_self = deepcopy(self)
+        filt_self.values = filt_self.values.loc[
             :,
             (self.values.columns >= low) & (self.values.columns <= high),
         ]
-        # reset index as OADataset constructor expects oa11cd column to be presents
-        values = values.reset_index()
-        if not name:
-            name = f"population_{low}_to_{high}"
-        if not title:
-            title = f"Residents Between {low} and {high} Years Old"
-        return PopulationDataset(
-            name,
-            values,
-            title=title,
-            description=description or self.description,
-        )
+        if name:
+            filt_self.name = name
+        else:
+            pre = filt_self.name or "population"
+            filt_self.name = f"{pre}_{low}_to_{high}"
+        if title:
+            filt_self.title = title
+        else:
+            pre = filt_self.title or "Number of Residents"
+            filt_self.title = f"{pre} Between {low} and {high} Years Old"
+        if description:
+            filt_self.description = description
+
+        return filt_self
 
     def to_total(self):
         self_total = deepcopy(self)
