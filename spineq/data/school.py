@@ -22,8 +22,9 @@ class SchoolDataset(PointDataset):
             description=description,
         )
 
+    # TODO Consider overriding to_oa_dataset including extracting numeric columns
+
     def number_of_pupils(self, title=""):
-        # TODO Consider overriding to_oa_dataset including extracting a single column
         num_pupils = deepcopy(self)
         num_pupils.values = num_pupils[["NumberOfPupils"]]
         if title:

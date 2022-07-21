@@ -18,7 +18,9 @@ class LocalAuthority:
     def __getitem__(self, name):
         return self.datasets[name]
 
-    def __setitem__(self, dataset, name):
+    def __setitem__(self, name, dataset):
+        if not name:
+            raise ValueError("name must be defined")
         dataset = dataset.filter_la(self)
         self.datasets[name] = dataset
 
@@ -26,28 +28,30 @@ class LocalAuthority:
         return (
             f"{type(self).__name__}: {self.lad20nm} ({self.lad20cd}):\n"
             f"- {len(self)} output areas\n"
-            f"- {len(self.datasets)} datasets {tuple(self.datasets.keys())}\n"
+            f"- {len(self.datasets)} datasets {tuple(self.datasets.keys())}"
         )
 
     def __len__(self):
         return len(self.oa11cd)
 
-    def add_dataset(self, dataset, name=None):
-        if not name:
-            name = dataset.name
-        self.__setitem__(dataset, name)
+    def add_dataset(self, dataset):
+        self.__setitem__(dataset.name, dataset)
 
     def to_oa_dataset(self, oa_weights=None):
-        datasets = {}
-        for name, d in self.datasets.items():
+        datasets = []
+        for _, d in self.datasets.items():
             if isinstance(d, LSOADataset):
                 oa_dat = d.to_oa_dataset(oa_weights)
             else:
                 oa_dat = d.to_oa_dataset()
             oa_dat.values = oa_dat.values.reindex(self.oa11cd)
-            datasets[name] = oa_dat
+            datasets.append(oa_dat)
 
         return LocalAuthority(self.lad20cd, datasets)
+
+    @property
+    def n_datasets(self):
+        return len(self.datasets)
 
     @cached_property
     def la_shape(self):

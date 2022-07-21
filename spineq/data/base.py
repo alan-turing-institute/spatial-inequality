@@ -63,6 +63,8 @@ class PointDataset(Dataset):
             description=self.description,
         )
 
+    # TODO add_oa11cd method (to add output area index without converting to OAdataset)
+
     def filter_la(self, la):
         filtered = deepcopy(self)
         filtered.values = filtered.values[
