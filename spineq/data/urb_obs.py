@@ -4,6 +4,7 @@ from spineq.data.fetcher import get_uo_sensors
 
 class UODataset(PointDataset):
     def __init__(self, name="", title="", description=""):
+        # TODO LA filter
         values = get_uo_sensors(lad20cd=None)
         super().__init__(
             name or "urban_observatory",
