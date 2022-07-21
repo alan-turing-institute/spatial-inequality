@@ -8,10 +8,12 @@ import pytest
 from spineq.data.base import Dataset, LSOADataset, OADataset, PointDataset
 from spineq.data.local_authority import LocalAuthority
 
+test_la_key = "gateshead"
+
 
 @pytest.fixture
-def la():
-    return LocalAuthority("E08000037")  # Gateshead
+def la(sample_params):
+    return LocalAuthority(sample_params[test_la_key]["lad20cd"])
 
 
 class TestDataset:
@@ -47,19 +49,19 @@ class TestDataset:
     def test_get(self, values, dataset):
         np.testing.assert_array_equal(dataset["a"], values["a"])
 
-    def test_read_pandas(self):
+    def test_read_pandas(self, sample_params):
         path = Path(__file__).parent / "../../sample/data/raw/centroids.csv"
         d = Dataset.read_pandas("NAME", path)
         assert isinstance(d, Dataset)
         assert isinstance(d.values, pd.DataFrame)
-        assert len(d) == 27
+        assert len(d) == sample_params["total"]["n_oa"]
 
-    def test_read_geopandas(self):
+    def test_read_geopandas(self, sample_params):
         path = Path(__file__).parent / "../../sample/data/raw/oa_shape"
         d = Dataset.read_geopandas("NAME", path)
         assert isinstance(d, Dataset)
         assert isinstance(d.values, gpd.GeoDataFrame)
-        assert len(d) == 27
+        assert len(d) == sample_params["total"]["n_oa"]
 
     def test_to_oa_dataset(self, dataset):
         with pytest.raises(NotImplementedError):
@@ -118,10 +120,10 @@ class TestPointDataset:
         exp_counts.index.name = "oa11cd"
         pd.testing.assert_series_equal(oa_d["NumberOfPupils"].sort_index(), exp_counts)
 
-    def test_filter_la(self, dataset, la):
+    def test_filter_la(self, dataset, la, sample_params):
         filt_points = dataset.filter_la(la)
         assert isinstance(filt_points, PointDataset)
-        assert len(filt_points) == 12
+        assert len(filt_points) == sample_params[test_la_key]["n_school"]
 
 
 class TestOADataset:
@@ -143,10 +145,10 @@ class TestOADataset:
         assert isinstance(oa_d, OADataset)
         pd.testing.assert_frame_equal(dataset.values, oa_d.values)
 
-    def test_filter_la(self, dataset, la):
+    def test_filter_la(self, dataset, la, sample_params):
         filt_oa = dataset.filter_la(la)
         assert isinstance(filt_oa, OADataset)
-        assert len(filt_oa) == 11
+        assert len(filt_oa) == sample_params[test_la_key]["n_oa"]
 
 
 class TestLSOADataset:
@@ -183,7 +185,7 @@ class TestLSOADataset:
         assert oa_d["health_or_disability"].loc["E00042370"] == pytest.approx(657.276)
         assert oa_d["health_or_disability"].loc["E00042378"] == pytest.approx(886.724)
 
-    def test_filter_la(self, dataset, la):
+    def test_filter_la(self, dataset, la, sample_params):
         filt_lsoa = dataset.filter_la(la)
         assert isinstance(filt_lsoa, LSOADataset)
-        assert len(filt_lsoa) == 11
+        assert len(filt_lsoa) == sample_params[test_la_key]["n_lsoa"]

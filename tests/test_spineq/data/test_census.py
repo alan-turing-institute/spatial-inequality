@@ -11,84 +11,87 @@ from spineq.data.census import (
     WorkplaceDataset,
 )
 
-
-class TestConfig:
-    lad20cd = "E08000021"  # Newcastle upon tyne
-    n_oa_total = 27
-    n_lsoa_total = 25
-    n_oa_la = 16
-    n_lsoa_la = 14
+test_la_key = "newcastle"
 
 
-class TestCentroidDataset(TestConfig):
-    def test_init_defaults(self):
+class TestCentroidDataset:
+    def test_init_defaults(self, sample_params):
         dataset = CentroidDataset()
         assert isinstance(dataset, CentroidDataset)
         assert dataset.name == "centroids"
         assert dataset.title == "Output Area Centroids"
         assert isinstance(dataset.values, gpd.GeoDataFrame)
-        assert len(dataset) == self.n_oa_total
+        assert len(dataset) == sample_params["total"]["n_oa"]
         np.testing.assert_array_equal(dataset.values.columns, ["x", "y", "geometry"])
 
-    def test_init_all(self):
+    def test_init_all(self, sample_params):
         dataset = CentroidDataset(
-            lad20cd=self.lad20cd, name="NAME", title="TITLE", description="DESCRIPTION"
+            lad20cd=sample_params[test_la_key]["lad20cd"],
+            name="NAME",
+            title="TITLE",
+            description="DESCRIPTION",
         )
         assert isinstance(dataset, CentroidDataset)
         assert dataset.name == "NAME"
         assert dataset.title == "TITLE"
         assert dataset.description == "DESCRIPTION"
         assert isinstance(dataset.values, gpd.GeoDataFrame)
-        assert len(dataset) == self.n_oa_la
+        assert len(dataset) == sample_params[test_la_key]["n_oa"]
         np.testing.assert_array_equal(dataset.values.columns, ["x", "y", "geometry"])
 
 
-class TestOABoundaryDataset(TestConfig):
-    def test_init_defaults(self):
+class TestOABoundaryDataset:
+    def test_init_defaults(self, sample_params):
         dataset = OABoundaryDataset()
         assert isinstance(dataset, OABoundaryDataset)
         assert dataset.name == "oa_boundary"
         assert dataset.title == "Output Area Boundaries"
         assert isinstance(dataset.values, gpd.GeoDataFrame)
-        assert len(dataset) == self.n_oa_total
+        assert len(dataset) == sample_params["total"]["n_oa"]
         np.testing.assert_array_equal(dataset.values.columns, ["geometry"])
 
-    def test_init_all(self):
+    def test_init_all(self, sample_params):
         dataset = OABoundaryDataset(
-            lad20cd=self.lad20cd, name="NAME", title="TITLE", description="DESCRIPTION"
+            lad20cd=sample_params[test_la_key]["lad20cd"],
+            name="NAME",
+            title="TITLE",
+            description="DESCRIPTION",
         )
         assert isinstance(dataset, OABoundaryDataset)
         assert dataset.name == "NAME"
         assert dataset.title == "TITLE"
         assert dataset.description == "DESCRIPTION"
         assert isinstance(dataset.values, gpd.GeoDataFrame)
-        assert len(dataset) == self.n_oa_la
+        assert len(dataset) == sample_params[test_la_key]["n_oa"]
         np.testing.assert_array_equal(dataset.values.columns, ["geometry"])
 
 
-class TestPopulationDataset(TestConfig):
+class TestPopulationDataset:
     @pytest.fixture
     def dataset(self):
         return PopulationDataset()
 
-    def test_init_defaults(self, dataset):
+    def test_init_defaults(self, dataset, sample_params):
         assert isinstance(dataset, PopulationDataset)
         assert dataset.name == "population"
         assert dataset.title == "Number of Residents"
         assert isinstance(dataset.values, pd.DataFrame)
-        assert len(dataset) == self.n_oa_total
+        assert len(dataset) == sample_params["total"]["n_oa"]
         np.testing.assert_array_equal(dataset.values.columns, range(91))
 
-    def test_init_all(self):
+    def test_init_all(self, sample_params):
         dataset = PopulationDataset(
-            lad20cd=self.lad20cd, name="NAME", title="TITLE", description="DESCRIPTION"
+            lad20cd=sample_params[test_la_key]["lad20cd"],
+            name="NAME",
+            title="TITLE",
+            description="DESCRIPTION",
         )
         assert isinstance(dataset, PopulationDataset)
         assert dataset.name == "NAME"
         assert dataset.title == "TITLE"
         assert dataset.description == "DESCRIPTION"
         assert isinstance(dataset.values, pd.DataFrame)
-        assert len(dataset) == self.n_oa_la
+        assert len(dataset) == sample_params[test_la_key]["n_oa"]
         np.testing.assert_array_equal(dataset.values.columns, range(91))
 
     def test_filter_age_defaults(self, dataset):
@@ -148,47 +151,53 @@ class TestPopulationDataset(TestConfig):
         pd.testing.assert_series_equal(total.values.sort_index(), exp_totals)
 
 
-class TestWorkplaceDataset(TestConfig):
-    def test_init_defaults(self):
+class TestWorkplaceDataset:
+    def test_init_defaults(self, sample_params):
         dataset = WorkplaceDataset()
         assert isinstance(dataset, WorkplaceDataset)
         assert dataset.name == "workplace"
         assert dataset.title == "Number of Workers"
         assert isinstance(dataset.values, pd.DataFrame)
-        assert len(dataset) == self.n_oa_total
+        assert len(dataset) == sample_params["total"]["n_oa"]
         np.testing.assert_array_equal(dataset.values.columns, ["workers"])
 
-    def test_init_all(self):
+    def test_init_all(self, sample_params):
         dataset = WorkplaceDataset(
-            lad20cd=self.lad20cd, name="NAME", title="TITLE", description="DESCRIPTION"
+            lad20cd=sample_params[test_la_key]["lad20cd"],
+            name="NAME",
+            title="TITLE",
+            description="DESCRIPTION",
         )
         assert isinstance(dataset, WorkplaceDataset)
         assert dataset.name == "NAME"
         assert dataset.title == "TITLE"
         assert dataset.description == "DESCRIPTION"
         assert isinstance(dataset.values, pd.DataFrame)
-        assert len(dataset) == self.n_oa_la
+        assert len(dataset) == sample_params[test_la_key]["n_oa"]
         np.testing.assert_array_equal(dataset.values.columns, ["workers"])
 
 
-class TestHealthDataset(TestConfig):
-    def test_init_defaults(self):
+class TestHealthDataset:
+    def test_init_defaults(self, sample_params):
         dataset = HealthDataset()
         assert isinstance(dataset, HealthDataset)
         assert dataset.name == "health"
         assert dataset.title == "Long-term Health Issues and Disabilty"
         assert isinstance(dataset.values, pd.DataFrame)
-        assert len(dataset) == self.n_lsoa_total
+        assert len(dataset) == sample_params["total"]["n_lsoa"]
         np.testing.assert_array_equal(dataset.values.columns, ["health_or_disability"])
 
-    def test_init_all(self):
+    def test_init_all(self, sample_params):
         dataset = HealthDataset(
-            lad20cd=self.lad20cd, name="NAME", title="TITLE", description="DESCRIPTION"
+            lad20cd=sample_params[test_la_key]["lad20cd"],
+            name="NAME",
+            title="TITLE",
+            description="DESCRIPTION",
         )
         assert isinstance(dataset, HealthDataset)
         assert dataset.name == "NAME"
         assert dataset.title == "TITLE"
         assert dataset.description == "DESCRIPTION"
         assert isinstance(dataset.values, pd.DataFrame)
-        assert len(dataset) == self.n_lsoa_la
+        assert len(dataset) == sample_params[test_la_key]["n_lsoa"]
         np.testing.assert_array_equal(dataset.values.columns, ["health_or_disability"])
