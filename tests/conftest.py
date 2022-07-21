@@ -13,7 +13,13 @@ def pytest_configure():
 def sample_params():
     return {
         "total": {"n_oa": 27, "n_lsoa": 25, "n_school": 29, "n_urb_obs": 10},
-        "newcastle": {"lad20cd": "E08000021", "n_oa": 16, "n_lsoa": 14},
+        "newcastle": {
+            "lad20cd": "E08000021",
+            "n_oa": 16,
+            "n_lsoa": 14,
+            "n_school": 17,
+            "lad20nm": "Newcastle upon Tyne",
+        },
         "gateshead": {
             "lad20cd": "E08000037",
             "n_oa": 11,

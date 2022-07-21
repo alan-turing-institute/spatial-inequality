@@ -562,7 +562,7 @@ def get_la_shape(lad20cd="E08000021"):
     path = Path(PROCESSED_DIR, lad20cd, "la_shape")
     if not path.exists():
         extract_la_data(lad20cd)
-    return gpd.read_file(path).iloc[0]
+    return gpd.read_file(path).set_index("lad20cd").iloc[0]
 
 
 def get_oa_shapes(lad20cd="E08000021"):
