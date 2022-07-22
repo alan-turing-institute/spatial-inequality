@@ -76,6 +76,9 @@ class TestDatasetGroup:
         assert len(group_empty) == 0
         assert len(group_data) == 2
 
+    def test_n_sites(self, group_data, sample_params):
+        assert group_data.n_sites == sample_params["total"]["n_oa"]
+
 
 class TestLocalAuthority:
     @pytest.fixture

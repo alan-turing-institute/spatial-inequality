@@ -31,6 +31,10 @@ class DatasetGroup:
     def __len__(self):
         return len(self.datasets)
 
+    @property
+    def n_sites(self):
+        return len(self.datasets[next(iter(self.datasets))])
+
     def add_dataset(self, dataset):
         self.__setitem__(dataset.name, dataset)
 
@@ -69,6 +73,10 @@ class LocalAuthority(DatasetGroup):
     @property
     def n_oa11cd(self):
         return len(self.oa11cd)
+
+    @property
+    def n_sites(self):
+        return self.n_oa11cd
 
     @cached_property
     def la_shape(self):

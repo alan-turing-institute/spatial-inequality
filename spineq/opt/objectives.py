@@ -9,7 +9,7 @@ from spineq.utils import normalize
 
 
 @dataclass
-class Objective:
+class Column:
     dataset: str
     column: str
     weight: float = 1.0
@@ -20,24 +20,26 @@ class Objective:
             self.label = f"{self.dataset}_{self.column}"
 
 
-class MultiObjectives:
+class Objectives:
     def __init__(
         self,
         datasets: DatasetGroup,
-        objectives: list[Objective],
+        objectives: list[Column],
         coverage: Coverage,
         norm: bool = True,
     ):
-        self.datasets = datasets
         self.objectives = objectives
         self.coverage = coverage
         self.norm = norm
 
-        self.weights = np.full((len(self.la), len(objectives), np.nan))
+        self.weights = np.full((datasets.n_sites, len(objectives)), np.nan)
         for i, obj in enumerate(objectives):
-            self.weights[:, i] = self.datasets[obj.dataset][obj.column]
+            self.weights[:, i] = datasets[obj.dataset][obj.column]
         if norm:
             self.weights = normalize(self.weights, axis=0)
+
+    def __len__(self):
+        return len(self.objectives)
 
     def oa_coverage(self, sensors):
         return self.coverage.coverage(sensors)
@@ -47,11 +49,11 @@ class MultiObjectives:
         return (self.weights * cov[:, np.newaxis]).sum(axis=1)
 
 
-class CombinedObjectives(MultiObjectives):
+class CombinedObjectives(Objectives):
     def __init__(
         self,
         datasets: DatasetGroup,
-        objectives: list[Objective],
+        objectives: list[Column],
         coverage: Coverage,
         norm: bool = True,
     ):
