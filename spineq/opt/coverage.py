@@ -17,8 +17,8 @@ class Coverage:
 
 
 class DistanceMatrixCoverage(Coverage):
-    def __init__(self, x, y):
-        self.distances = distance_matrix(x, y)
+    def __init__(self, x_sensors, y_sensors, x_sites=None, y_sites=None):
+        self.distances = distance_matrix(x_sensors, y_sensors, x_sites, y_sites)
 
     @classmethod
     def from_la(cls, la):
@@ -30,15 +30,15 @@ class DistanceMatrixCoverage(Coverage):
             raise NotImplementedError(
                 "Use a DitanceMatrixCoverage subclass that creates a coverage_matrix"
             )
-        mask_cov = np.multiply(self.coverage_matrix, sensors[np.newaxis, :])
+        mask_cov = np.multiply(self.coverage_matrix, sensors[:, np.newaxis])
         # coverage at each site = coverage due to nearest sensor
-        return np.max(mask_cov, axis=1)
+        return np.max(mask_cov, axis=0)
 
 
 class BinaryCoverage(DistanceMatrixCoverage):
     # 1 if within radius, else 0
-    def __init__(self, x, y, radius):
-        super().__init__(x, y)
+    def __init__(self, x_sensors, y_sensors, radius, x_sites=None, y_sites=None):
+        super().__init__(x_sensors, y_sensors, x_sites, y_sites)
         self.radius = radius
         self.coverage_matrix = (self.distances < radius).astype(int)
 
@@ -49,8 +49,8 @@ class BinaryCoverage(DistanceMatrixCoverage):
 
 class ExponentialCoverage(DistanceMatrixCoverage):
     # exp(-d/theta)
-    def __init__(self, x, y, theta):
-        super().__init__(x, y)
+    def __init__(self, x_sensors, y_sensors, theta, x_sites=None, y_sites=None):
+        super().__init__(x_sensors, y_sensors, x_sites, y_sites)
         self.theta = theta
         self.coverage_matrix = np.exp(-self.distances / theta)
 

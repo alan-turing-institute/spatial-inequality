@@ -18,11 +18,22 @@ def la(sample_params):
 
 
 @pytest.fixture
-def sample_xyd():
+def sample_3x3():
     return {
         "x": [0, 3, 6],
         "y": [0, 4, 8],
         "d": np.array([[0, 5, 10], [5, 0, 5], [10, 5, 0]]),
+    }
+
+
+@pytest.fixture
+def sample_2x3():
+    return {
+        "x_sensors": [0, 6],
+        "y_sensors": [0, 8],
+        "x_sites": [0, 3, 6],
+        "y_sites": [0, 4, 8],
+        "d": np.array([[0, 5, 10], [10, 5, 0]]),
     }
 
 
@@ -54,6 +65,15 @@ class TestDistanceMatrixCoverage:
         )
         assert cov.distances[0, 1] == pytest.approx(distance)
 
+    def test_init_2x3(self, sample_2x3):
+        cov = DistanceMatrixCoverage(
+            sample_2x3["x_sensors"],
+            sample_2x3["y_sensors"],
+            sample_2x3["x_sites"],
+            sample_2x3["y_sites"],
+        )
+        np.testing.assert_array_almost_equal(cov.distances, sample_2x3["d"])
+
     def test_coverage(self, cov):
         with pytest.raises(NotImplementedError):
             cov.coverage(np.array([0, 1, 0]))
@@ -61,8 +81,18 @@ class TestDistanceMatrixCoverage:
 
 class TestBinaryCoverage:
     @pytest.fixture
-    def cov(self, sample_xyd):
-        return BinaryCoverage(sample_xyd["x"], sample_xyd["y"], 6)
+    def cov_3x3(self, sample_3x3):
+        return BinaryCoverage(sample_3x3["x"], sample_3x3["y"], 6)
+
+    @pytest.fixture
+    def cov_2x3(self, sample_2x3):
+        return BinaryCoverage(
+            sample_2x3["x_sensors"],
+            sample_2x3["y_sensors"],
+            6,
+            sample_2x3["x_sites"],
+            sample_2x3["y_sites"],
+        )
 
     def test_init(self, la):
         cov = BinaryCoverage.from_la(la, 500)
@@ -70,30 +100,59 @@ class TestBinaryCoverage:
         assert cov.radius == 500
         assert isinstance(cov.coverage_matrix, np.ndarray)
 
-    def test_coverage_matrix(self, cov, sample_xyd):
-        np.testing.assert_array_almost_equal(
-            cov.coverage_matrix, sample_xyd["d"] < cov.radius
+    def test_coverage_matrix_3x3(self, cov_3x3, sample_3x3):
+        np.testing.assert_array_equal(
+            cov_3x3.coverage_matrix, sample_3x3["d"] < cov_3x3.radius
         )
 
-    def test_coverage(self, cov):
-        np.testing.assert_array_almost_equal(
-            cov.coverage(np.array([0, 0, 0])), np.array([0, 0, 0])
+    def test_coverage_3x3(self, cov_3x3):
+        np.testing.assert_array_equal(
+            cov_3x3.coverage(np.array([0, 0, 0])), np.array([0, 0, 0])
         )
-        np.testing.assert_array_almost_equal(
-            cov.coverage(np.array([1, 0, 0])), np.array([1, 1, 0])
+        np.testing.assert_array_equal(
+            cov_3x3.coverage(np.array([1, 0, 0])), np.array([1, 1, 0])
         )
-        np.testing.assert_array_almost_equal(
-            cov.coverage(np.array([0, 0, 1])), np.array([0, 1, 1])
+        np.testing.assert_array_equal(
+            cov_3x3.coverage(np.array([0, 0, 1])), np.array([0, 1, 1])
         )
-        np.testing.assert_array_almost_equal(
-            cov.coverage(np.array([1, 1, 1])), np.array([1, 1, 1])
+        np.testing.assert_array_equal(
+            cov_3x3.coverage(np.array([1, 1, 1])), np.array([1, 1, 1])
+        )
+
+    def test_init_2x3(self, cov_2x3, sample_2x3):
+        np.testing.assert_array_equal(
+            cov_2x3.coverage_matrix, sample_2x3["d"] < cov_2x3.radius
+        )
+
+    def test_coverage_2x3(self, cov_2x3):
+        np.testing.assert_array_equal(
+            cov_2x3.coverage(np.array([0, 0])), np.array([0, 0, 0])
+        )
+        np.testing.assert_array_equal(
+            cov_2x3.coverage(np.array([1, 0])), np.array([1, 1, 0])
+        )
+        np.testing.assert_array_equal(
+            cov_2x3.coverage(np.array([0, 1])), np.array([0, 1, 1])
+        )
+        np.testing.assert_array_equal(
+            cov_2x3.coverage(np.array([1, 1])), np.array([1, 1, 1])
         )
 
 
 class TestExponentialCoverage:
     @pytest.fixture
-    def cov(self, sample_xyd):
-        return ExponentialCoverage(sample_xyd["x"], sample_xyd["y"], 2)
+    def cov_2x3(self, sample_2x3):
+        return ExponentialCoverage(
+            sample_2x3["x_sensors"],
+            sample_2x3["y_sensors"],
+            6,
+            sample_2x3["x_sites"],
+            sample_2x3["y_sites"],
+        )
+
+    @pytest.fixture
+    def cov_3x3(self, sample_3x3):
+        return ExponentialCoverage(sample_3x3["x"], sample_3x3["y"], 2)
 
     def test_init(self, la):
         cov = ExponentialCoverage.from_la(la, 500)
@@ -101,27 +160,49 @@ class TestExponentialCoverage:
         assert cov.theta == 500
         assert isinstance(cov.coverage_matrix, np.ndarray)
 
-    def test_coverage_matrix(self, cov, sample_xyd):
+    def test_coverage_matrix_3x3(self, cov_3x3, sample_3x3):
         np.testing.assert_array_almost_equal(
-            cov.coverage_matrix, np.exp(-sample_xyd["d"] / cov.theta)
+            cov_3x3.coverage_matrix, np.exp(-sample_3x3["d"] / cov_3x3.theta)
         )
 
-    def test_coverage(self, cov):
+    def test_coverage_3x3(self, cov_3x3):
         np.testing.assert_array_almost_equal(
-            cov.coverage(np.array([0, 0, 0])), np.array([0, 0, 0])
+            cov_3x3.coverage(np.array([0, 0, 0])), np.array([0, 0, 0])
         )
         np.testing.assert_array_almost_equal(
-            cov.coverage(np.array([1, 1, 1])), np.array([1, 1, 1])
+            cov_3x3.coverage(np.array([1, 1, 1])), np.array([1, 1, 1])
         )
         np.testing.assert_array_almost_equal(
-            cov.coverage(np.array([1, 0, 0])),
-            np.array([1, cov.coverage_matrix[0, 1], cov.coverage_matrix[0, 2]]),
+            cov_3x3.coverage(np.array([1, 0, 0])),
+            np.array([1, cov_3x3.coverage_matrix[0, 1], cov_3x3.coverage_matrix[0, 2]]),
         )
         np.testing.assert_array_almost_equal(
-            cov.coverage(np.array([0, 0, 1])),
-            np.array([cov.coverage_matrix[2, 0], cov.coverage_matrix[2, 1], 1]),
+            cov_3x3.coverage(np.array([0, 0, 1])),
+            np.array([cov_3x3.coverage_matrix[2, 0], cov_3x3.coverage_matrix[2, 1], 1]),
         )
         np.testing.assert_array_almost_equal(
-            cov.coverage(np.array([1, 0, 1])),
-            np.array([1, cov.coverage_matrix[0, 1], 1]),
+            cov_3x3.coverage(np.array([1, 0, 1])),
+            np.array([1, cov_3x3.coverage_matrix[0, 1], 1]),
+        )
+
+    def test_init_2x3(self, cov_2x3, sample_2x3):
+        np.testing.assert_array_almost_equal(
+            cov_2x3.coverage_matrix, np.exp(-sample_2x3["d"] / cov_2x3.theta)
+        )
+
+    def test_coverage_2x3(self, cov_2x3):
+        np.testing.assert_array_almost_equal(
+            cov_2x3.coverage(np.array([0, 0])), np.array([0, 0, 0])
+        )
+        np.testing.assert_array_almost_equal(
+            cov_2x3.coverage(np.array([1, 1])),
+            np.array([1, cov_2x3.coverage_matrix[1, 1], 1]),
+        )
+        np.testing.assert_array_almost_equal(
+            cov_2x3.coverage(np.array([1, 0])),
+            np.array([1, cov_2x3.coverage_matrix[0, 1], cov_2x3.coverage_matrix[0, 2]]),
+        )
+        np.testing.assert_array_almost_equal(
+            cov_2x3.coverage(np.array([0, 1])),
+            np.array([cov_2x3.coverage_matrix[1, 0], cov_2x3.coverage_matrix[1, 1], 1]),
         )
