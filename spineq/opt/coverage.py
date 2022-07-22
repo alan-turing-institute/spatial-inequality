@@ -11,10 +11,12 @@ class Coverage:
 
 
 class DistanceMatrixCoverage(Coverage):
-    def __init__(self, la):
-        self.distances = distance_matrix(
-            la.oa_centroids.values["x"], la.oa_centroids.values["y"]
-        )
+    def __init__(self, x, y):
+        self.distances = distance_matrix(x, y)
+
+    @classmethod
+    def from_la(cls, la):
+        return cls(la.oa_centroids.values["x"], la.oa_centroids.values["y"])
 
     def coverage(self, sensors):
         # only keep coverages due to sites where a sensor is present
@@ -29,13 +31,23 @@ class DistanceMatrixCoverage(Coverage):
 
 class BinaryCoverage(DistanceMatrixCoverage):
     # 1 if within radius, else 0
-    def __init__(self, la, radius):
-        super().__init__(la)
+    def __init__(self, x, y, radius):
+        super().__init__(x, y)
+        self.radius = radius
         self.coverage_matrix = (self.distances < radius).astype(int)
+
+    @classmethod
+    def from_la(cls, la, radius):
+        return cls(la.oa_centroids.values["x"], la.oa_centroids.values["y"], radius)
 
 
 class ExponentialCoverage(DistanceMatrixCoverage):
     # exp(-d/theta)
-    def __init__(self, la, theta):
-        super().__init__(la)
+    def __init__(self, x, y, theta):
+        super().__init__(x, y)
+        self.theta = theta
         self.coverage_matrix = np.exp(-self.distances / theta)
+
+    @classmethod
+    def from_la(cls, la, theta):
+        return cls(la.oa_centroids.values["x"], la.oa_centroids.values["y"], theta)

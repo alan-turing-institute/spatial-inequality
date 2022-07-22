@@ -49,24 +49,6 @@ def distance_matrix(x1, y1, x2=None, y2=None):
     return distances
 
 
-def coverage_matrix(x1, y1, x2=None, y2=None, theta=1):
-    """Generate a matrix of coverages for a number of locations
-
-    Arguments:
-        x {list-like} -- x coordinate for each location
-        y {list-like} -- y coordinate for each location
-
-    Keyword Arguments:
-        theta {numeric} -- decay rate (default: {1})
-
-    Returns:
-        numpy array -- 2D matrix of coverage at each location i due to a
-        sensor placed at another location j.
-    """
-    distances = distance_matrix(x1, y1, x2=x2, y2=y2)
-    return np.exp(-distances / theta)
-
-
 def coverage_from_sensors(sensors, coverage_matrix):
     # only keep coverages due to output areas where a sensor is present
     mask_cov = np.multiply(coverage_matrix, sensors[np.newaxis, :])
@@ -121,7 +103,7 @@ def square_grid(xlim: list, ylim: list, grid_size: float):
     return grid_x, grid_y
 
 
-def coverage_grid(sensors, xlim, ylim, grid_size=100, theta=500):
+def coverage_grid(sensors, xlim, ylim, coverage_cls, grid_size=100, theta=500):
     """Generate a square grid of points and calculate coverage at each point
     due to the closest sensor.
 
@@ -142,7 +124,7 @@ def coverage_grid(sensors, xlim, ylim, grid_size=100, theta=500):
     grid_x, grid_y = square_grid(xlim, ylim, grid_size)
 
     # coverage at each grid point due to each sensor
-    grid_cov = coverage_matrix(
+    grid_cov = coverage_matrix(  # noqa # TODO update for new coverage classesx
         grid_x, grid_y, x2=sensors[:, 0], y2=sensors[:, 1], theta=theta
     )
     # max coverage at each grid point (due to nearest sensor)
