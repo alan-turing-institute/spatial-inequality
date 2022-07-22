@@ -57,9 +57,15 @@ class TestBinaryCoverage:
         assert isinstance(cov, BinaryCoverage)
         ...  # TODO
 
+    def test_coverage(self):
+        ...  # TODO
+
 
 class TestExponentialCoverage:
     def test_init(self, la, radius):
         cov = ExponentialCoverage(la, radius)
         assert isinstance(cov, ExponentialCoverage)
+        ...  # TODO
+
+    def test_coverage(self):
         ...  # TODO
