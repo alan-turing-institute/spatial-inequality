@@ -3,7 +3,7 @@ from typing import Optional
 
 import numpy as np
 
-from spineq.data.local_authority import LocalAuthority
+from spineq.data.group import DatasetGroup
 from spineq.opt.coverage import Coverage
 from spineq.utils import normalize
 
@@ -23,19 +23,19 @@ class Objective:
 class MultiObjectives:
     def __init__(
         self,
-        la: LocalAuthority,
+        datasets: DatasetGroup,
         objectives: list[Objective],
         coverage: Coverage,
         norm: bool = True,
     ):
-        self.la = la.to_oa_dataset()
+        self.datasets = datasets
         self.objectives = objectives
-        self.coverage = coverage(la)
+        self.coverage = coverage
         self.norm = norm
 
         self.weights = np.full((len(self.la), len(objectives), np.nan))
         for i, obj in enumerate(objectives):
-            self.weights[:, i] = self.la[obj.dataset][obj.column]
+            self.weights[:, i] = self.datasets[obj.dataset][obj.column]
         if norm:
             self.weights = normalize(self.weights, axis=0)
 
@@ -50,12 +50,12 @@ class MultiObjectives:
 class CombinedObjectives(MultiObjectives):
     def __init__(
         self,
-        la: LocalAuthority,
+        datasets: DatasetGroup,
         objectives: list[Objective],
         coverage: Coverage,
         norm: bool = True,
     ):
-        super().__init__(la, objectives, coverage, norm=norm)
+        super().__init__(datasets, objectives, coverage, norm=norm)
         self.objective_weights = np.array([obj.weight for obj in objectives])
         if norm:
             self.objective_weights = normalize(self.objective_weights)

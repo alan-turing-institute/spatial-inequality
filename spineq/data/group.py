@@ -6,10 +6,9 @@ from spineq.data.fetcher import get_la_shape
 from spineq.mappings import la_to_oas, lad20cd_to_lad20nm
 
 
-class LocalAuthority:
-    def __init__(self, lad20cd, datasets=None):
-        self.lad20cd = lad20cd
-        self.oa11cd = la_to_oas(lad20cd)
+class DatasetGroup:
+    def __init__(self, datasets=None, name=""):
+        self.name = name
         self.datasets = {}
         if datasets:
             for d in datasets:
@@ -21,21 +20,39 @@ class LocalAuthority:
     def __setitem__(self, name, dataset):
         if not name:
             raise ValueError("name must be defined")
+        self.datasets[name] = dataset
+
+    def __repr__(self):
+        return (
+            f"{type(self).__name__}({self.name}): "
+            f"{len(self)} datasets {tuple(self.datasets.keys())}"
+        )
+
+    def __len__(self):
+        return len(self.datasets)
+
+    def add_dataset(self, dataset):
+        self.__setitem__(dataset.name, dataset)
+
+
+class LocalAuthority(DatasetGroup):
+    def __init__(self, lad20cd, datasets=None):
+        self.lad20cd = lad20cd
+        self.oa11cd = la_to_oas(lad20cd)
+        super().__init__(datasets=datasets, name=self.lad20cd)
+
+    def __setitem__(self, name, dataset):
+        if not name:
+            raise ValueError("name must be defined")
         dataset = dataset.filter_la(self)
         self.datasets[name] = dataset
 
     def __repr__(self):
         return (
             f"{type(self).__name__}: {self.lad20nm} ({self.lad20cd}):\n"
-            f"- {len(self)} output areas\n"
-            f"- {len(self.datasets)} datasets {tuple(self.datasets.keys())}"
+            f"- {self.n_oa11cd} output areas\n"
+            f"- {len(self)} datasets {tuple(self.datasets.keys())}"
         )
-
-    def __len__(self):
-        return len(self.oa11cd)
-
-    def add_dataset(self, dataset):
-        self.__setitem__(dataset.name, dataset)
 
     def to_oa_dataset(self, oa_weights=None):
         datasets = []
@@ -50,8 +67,8 @@ class LocalAuthority:
         return LocalAuthority(self.lad20cd, datasets)
 
     @property
-    def n_datasets(self):
-        return len(self.datasets)
+    def n_oa11cd(self):
+        return len(self.oa11cd)
 
     @cached_property
     def la_shape(self):

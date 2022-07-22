@@ -11,25 +11,73 @@ from spineq.data.census import (
     OABoundaryDataset,
     PopulationDataset,
 )
-from spineq.data.local_authority import LocalAuthority
+from spineq.data.group import DatasetGroup, LocalAuthority
 from spineq.data.school import SchoolDataset
 
 test_la_key = "newcastle"
 
 
+@pytest.fixture
+def pop():
+    return PopulationDataset()
+
+
+@pytest.fixture
+def school():
+    return SchoolDataset()
+
+
+@pytest.fixture
+def datasets(pop, school):
+    return [pop, school]
+
+
+class TestDatasetGroup:
+    @pytest.fixture
+    def group_empty(self):
+        return DatasetGroup()
+
+    @pytest.fixture
+    def group_data(self, datasets):
+        return DatasetGroup(datasets=datasets, name="NAME")
+
+    def test_init_defaults(self, group_empty):
+        assert isinstance(group_empty, DatasetGroup)
+        assert group_empty.datasets == {}
+        assert group_empty.name == ""
+
+    def test_init_datasets(self, group_data, sample_params):
+        assert group_data.name == "NAME"
+        assert len(group_data.datasets) == 2
+        assert len(group_data.datasets["population"]) == sample_params["total"]["n_oa"]
+        assert len(group_data.datasets["school"]) == sample_params["total"]["n_school"]
+
+    def test_get(self, group_data):
+        assert isinstance(group_data["population"], PopulationDataset)
+
+    def test_set(self, group_empty, pop, sample_params):
+        with pytest.raises(ValueError):
+            group_empty[""] = pop
+        group_empty["population"] = pop
+        assert isinstance(group_empty["population"], PopulationDataset)
+        assert len(group_empty["population"]) == sample_params["total"]["n_oa"]
+
+    def test_repr(self, group_data):
+        assert repr(group_data) == (
+            "DatasetGroup(NAME): 2 datasets ('population', 'school')"
+        )
+
+    def test_add_dataset(self, group_empty, pop, sample_params):
+        group_empty.add_dataset(pop)
+        assert isinstance(group_empty["population"], PopulationDataset)
+        assert len(group_empty["population"]) == sample_params["total"]["n_oa"]
+
+    def test_len(self, group_empty, group_data):
+        assert len(group_empty) == 0
+        assert len(group_data) == 2
+
+
 class TestLocalAuthority:
-    @pytest.fixture
-    def pop(self):
-        return PopulationDataset()
-
-    @pytest.fixture
-    def school(self):
-        return SchoolDataset()
-
-    @pytest.fixture
-    def datasets(self, pop, school):
-        return [pop, school]
-
     @pytest.fixture
     def la_empty(self, sample_params):
         return LocalAuthority(sample_params[test_la_key]["lad20cd"])
@@ -41,16 +89,12 @@ class TestLocalAuthority:
     def test_init_defaults(self, la_empty, sample_params):
         assert isinstance(la_empty, LocalAuthority)
         assert la_empty.lad20cd == sample_params[test_la_key]["lad20cd"]
-        assert la_empty.datasets == {}
 
     def test_init_datasets(self, la_data, sample_params):
         assert la_data.lad20cd == sample_params[test_la_key]["lad20cd"]
         assert len(la_data.datasets) == 2
         assert len(la_data.datasets["population"]) == sample_params[test_la_key]["n_oa"]
         assert len(la_data.datasets["school"]) == sample_params[test_la_key]["n_school"]
-
-    def test_get(self, la_data):
-        assert isinstance(la_data["population"], PopulationDataset)
 
     def test_set(self, la_empty, pop, sample_params):
         with pytest.raises(ValueError):
@@ -67,13 +111,8 @@ class TestLocalAuthority:
             f"- 2 datasets ('population', 'school')"
         )
 
-    def test_len(self, la_empty, sample_params):
-        assert len(la_empty) == sample_params[test_la_key]["n_oa"]
-
-    def test_add_dataset_defaults(self, la_empty, pop, sample_params):
-        la_empty.add_dataset(pop)
-        assert isinstance(la_empty["population"], PopulationDataset)
-        assert len(la_empty["population"]) == sample_params[test_la_key]["n_oa"]
+    def test_n_oa11cd(self, la_empty, sample_params):
+        assert la_empty.n_oa11cd == sample_params[test_la_key]["n_oa"]
 
     def test_to_oa_dataset_defaults(self, la_data, sample_params):
         la_oa = la_data.to_oa_dataset()
@@ -99,10 +138,6 @@ class TestLocalAuthority:
             la_oa_noweight["health"].values.index, la_oa.oa11cd
         )
         assert not la_oa_noweight["health"].values.equals(la_oa["health"].values)
-
-    def test_n_datasets(self, la_empty, la_data):
-        assert la_empty.n_datasets == 0
-        assert la_data.n_datasets == 2
 
     def test_la_shape(self, la_empty, sample_params):
         assert isinstance(la_empty.la_shape, pd.Series)

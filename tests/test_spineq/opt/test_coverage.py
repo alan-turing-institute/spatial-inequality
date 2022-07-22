@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from spineq.data.local_authority import LocalAuthority
+from spineq.data.group import LocalAuthority
 from spineq.opt.coverage import (
     BinaryCoverage,
     Coverage,
@@ -31,6 +31,10 @@ class TestCoverage:
         cov = Coverage()
         with pytest.raises(NotImplementedError):
             cov.coverage(np.array([0, 1, 0]))
+
+    def test_from_la(self, la):
+        with pytest.raises(NotImplementedError):
+            Coverage.from_la(la)
 
 
 class TestDistanceMatrixCoverage:

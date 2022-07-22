@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from spineq.data.base import Dataset, LSOADataset, OADataset, PointDataset
-from spineq.data.local_authority import LocalAuthority
+from spineq.data.group import LocalAuthority
 
 test_la_key = "gateshead"
 

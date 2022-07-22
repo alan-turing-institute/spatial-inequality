@@ -9,6 +9,12 @@ class Coverage:
             "Use a Coverage subclass that implements the coverage method"
         )
 
+    @classmethod
+    def from_la(cls, la):
+        raise NotImplementedError(
+            "Use a Coverage subclass that implements the from_la method"
+        )
+
 
 class DistanceMatrixCoverage(Coverage):
     def __init__(self, x, y):
