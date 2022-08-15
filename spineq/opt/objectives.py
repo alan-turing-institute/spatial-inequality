@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 
@@ -14,6 +14,7 @@ class Column:
     column: str
     weight: float = 1.0
     label: Optional[str] = None
+    fill_na: Optional[Any] = 0
 
     def __post_init__(self):
         if not self.label:
@@ -34,7 +35,7 @@ class Objectives:
 
         self.weights = np.full((datasets.n_sites, len(objectives)), np.nan)
         for i, obj in enumerate(objectives):
-            self.weights[:, i] = datasets[obj.dataset][obj.column]
+            self.weights[:, i] = datasets[obj.dataset][obj.column].fillna(obj.fill_na)
         if norm:
             self.weights = normalize(self.weights, axis=0)
 
@@ -46,7 +47,7 @@ class Objectives:
 
     def fitness(self, sensors):
         cov = self.oa_coverage(sensors)
-        return (self.weights * cov[:, np.newaxis]).sum(axis=1)
+        return (self.weights * cov[:, np.newaxis]).sum(axis=0)
 
 
 class CombinedObjectives(Objectives):
@@ -64,3 +65,7 @@ class CombinedObjectives(Objectives):
 
         # weight for each OA is weighted sum of all objectives
         self.weights = (self.objective_weights * self.weights).sum(axis=1)
+
+    def fitness(self, sensors):
+        cov = self.oa_coverage(sensors)
+        return (self.weights * cov).sum()

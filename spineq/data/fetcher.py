@@ -485,7 +485,7 @@ def extract_la_data(lad20cd="E08000021", overwrite=False):
     schools = download_schools(overwrite=overwrite)
     schools = filter_row_values(oa_in_la, schools)
     schools = process_schools(schools)
-    schools.to_csv(Path(save_dir, "schools.csv"), index=False)
+    schools.to_csv(Path(save_dir, "schools.csv"))
     print("Schools:", len(schools), "rows")
 
     # health
