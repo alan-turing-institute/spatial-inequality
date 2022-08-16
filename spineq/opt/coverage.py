@@ -19,6 +19,7 @@ class Coverage:
 class DistanceMatrixCoverage(Coverage):
     def __init__(self, x_sensors, y_sensors, x_sites=None, y_sites=None):
         self.distances = distance_matrix(x_sensors, y_sensors, x_sites, y_sites)
+        self.n_sites = self.distances.shape[0]
 
     @classmethod
     def from_la(cls, la):

@@ -12,7 +12,7 @@ from spineq.utils import normalize
 class Column:
     dataset: str
     column: str
-    weight: float = 1.0
+    weight: Optional[float] = 1.0
     label: Optional[str] = None
     fill_na: Optional[Any] = 0
 
@@ -32,6 +32,7 @@ class Objectives:
         self.objectives = objectives
         self.coverage = coverage
         self.norm = norm
+        self.n_obj = len(self.objectives)
 
         self.weights = np.full((datasets.n_sites, len(objectives)), np.nan)
         for i, obj in enumerate(objectives):
@@ -49,6 +50,11 @@ class Objectives:
         cov = self.oa_coverage(sensors)
         return (self.weights * cov[:, np.newaxis]).sum(axis=0)
 
+    def sites_to_sensors(self, sites):
+        """convert list of site names where a sensor is placed to boolean sensors array
+        compatible with finess/coverage functions"""
+        return np.array(self.datasets.site_idx(s) for s in sites)
+
 
 class CombinedObjectives(Objectives):
     def __init__(
@@ -65,6 +71,7 @@ class CombinedObjectives(Objectives):
 
         # weight for each OA is weighted sum of all objectives
         self.weights = (self.objective_weights * self.weights).sum(axis=1)
+        self.n_obj = 1
 
     def fitness(self, sensors):
         cov = self.oa_coverage(sensors)

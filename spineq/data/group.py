@@ -1,5 +1,7 @@
 from functools import cached_property
 
+import pandas as pd
+
 from spineq.data.base import LSOADataset
 from spineq.data.census import CentroidDataset, OABoundaryDataset
 from spineq.data.fetcher import get_la_shape
@@ -7,8 +9,9 @@ from spineq.mappings import la_to_oas, lad20cd_to_lad20nm
 
 
 class DatasetGroup:
-    def __init__(self, datasets=None, name=""):
+    def __init__(self, datasets=None, name="", site_names=None):
         self.name = name
+        self.site_names = pd.Index(site_names) if site_names is not None else None
         self.datasets = {}
         if datasets:
             for d in datasets:
@@ -38,12 +41,15 @@ class DatasetGroup:
     def add_dataset(self, dataset):
         self.__setitem__(dataset.name, dataset)
 
+    def site_idx(self, name):
+        return self.site_names.get_loc(name)
+
 
 class LocalAuthority(DatasetGroup):
     def __init__(self, lad20cd, datasets=None):
         self.lad20cd = lad20cd
         self.oa11cd = la_to_oas(lad20cd)
-        super().__init__(datasets=datasets, name=self.lad20cd)
+        super().__init__(datasets=datasets, name=self.lad20cd, site_names=self.oa11cd)
 
     def __setitem__(self, name, dataset):
         if not name:

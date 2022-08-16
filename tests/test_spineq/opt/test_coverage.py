@@ -58,6 +58,7 @@ class TestDistanceMatrixCoverage:
         assert isinstance(cov.distances, np.ndarray)
         n_oa = sample_params[test_la_key]["n_oa"]
         assert cov.distances.shape == (n_oa, n_oa)
+        assert cov.n_sites == n_oa
         oa_1_xy = la.oa_centroids.values.iloc[0].values
         oa_2_xy = la.oa_centroids.values.iloc[1].values
         distance = np.sqrt(

@@ -1,38 +1,52 @@
 import numpy as np
 import pygmo as pg
 
-from spineq.utils import coverage_from_sensors, coverage_matrix
+from spineq.opt.opt import Optimisation
 
 
-class OptimiseCoveragePyGMO:
-    def __init__(self, oa_x, oa_y, oa_weight, n_sensors, theta):
+class Genetic(Optimisation):
+    def __init__(self, uda, population_size, verbosity=1):
+        self.verbosity = verbosity
+        self.uda = uda
+        self.population_size = population_size
+
+    def run(self, objectives, n_sensors):
+        prob = pg.problem(CoverageProblem(objectives, n_sensors))
+        # Create algorithm to solve problem with
+        algo = pg.algorithm(uda=self.uda)
+        algo.set_verbosity(self.verbosity)
+
+        # population of problems
+        pop = pg.population(prob=prob, size=self.population_size)
+
+        # solve problem
+        pop = algo.evolve(pop)
+        return pop, algo
+
+
+class CoverageProblem:
+    def __init__(self, objectives, n_sensors):
+        self.objectives = objectives
         self.n_sensors = n_sensors
-        self.n_locations = len(oa_x)
-        if isinstance(oa_weight, dict):
-            self.n_obj = len(oa_weight)
-            self.oa_weight = list(oa_weight.values())
-        else:
-            self.n_obj = 1
-            self.oa_weight = [oa_weight]
-        self.coverage = coverage_matrix(oa_x, oa_y, theta=theta)
 
     def fitness(self, sensors_idx):
         """Objective function to minimise."""
         # Construct sensors vector from indices
-        sensors = np.zeros(self.n_locations)
+        sensors = np.zeros(self.objectives.coverage.n_sites)
         sensors[sensors_idx.astype(int)] = 1
-        # calculate coverage at each OA due to these sensors
-        sensor_cov = coverage_from_sensors(sensors, self.coverage)
-        # coverage of objective = weighted average of OA coverages due to sensors
-        return [-1 * np.average(sensor_cov, weights=w) for w in self.oa_weight]
+        # calculate coverage
+        return -self.objectives.fitness(sensors)
 
     def get_bounds(self):
         """Min and max value for each parameter."""
-        return ([0] * self.n_sensors, [self.n_locations - 1] * self.n_sensors)
+        return (
+            [0] * self.n_sensors,
+            [self.objectives.coverage.n_sites - 1] * self.n_sensors,
+        )
 
     def get_nobj(self):
         """Number of objectives"""
-        return self.n_obj
+        return self.objectives.n_obj
 
     def get_nec(self):
         """Number of equality constraints."""
@@ -44,36 +58,6 @@ class OptimiseCoveragePyGMO:
 
     def gradient(self, x):
         return pg.estimate_gradient_h(lambda x: self.fitness(x), x)
-
-
-def build_problem(
-    optimisation_inputs,
-    n_sensors=20,
-    theta=500,
-):
-    prob = pg.problem(
-        OptimiseCoveragePyGMO(
-            optimisation_inputs["oa_x"],
-            optimisation_inputs["oa_y"],
-            optimisation_inputs["oa_weight"],
-            n_sensors,
-            theta,
-        )
-    )
-    return prob
-
-
-def run_problem(prob, uda=pg.sga(gen=100), population_size=100, verbosity=1):
-    # Create algorithm to solve problem with
-    algo = pg.algorithm(uda=uda)
-    algo.set_verbosity(verbosity)
-
-    # population of problems
-    pop = pg.population(prob=prob, size=population_size)
-
-    # solve problem
-    pop = algo.evolve(pop)
-    return pop, algo
 
 
 def extract_all(pop):
