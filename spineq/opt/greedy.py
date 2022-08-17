@@ -1,6 +1,27 @@
 import numpy as np
 
 from spineq.opt.opt import Optimisation
+from spineq.opt.result import SingleNetworkResult
+
+
+class GreedyResult(SingleNetworkResult):
+    def __init__(
+        self,
+        objectives,
+        n_sensors,
+        sensors=None,
+        total_coverage=0,
+        placement_history=None,
+        coverage_history=None,
+    ):
+        super().__init__(objectives, n_sensors, sensors, total_coverage)
+        if placement_history is None:
+            placement_history = []
+        if coverage_history is None:
+            coverage_history = []
+        self.placement_history = placement_history  # order of placed sensors
+        self.coverage_history = coverage_history  # total coverage after each sensor
+        self.sensors = sensors  # binary array - 1 if sensor at this location, 0 if not
 
 
 class Greedy(Optimisation):
@@ -9,13 +30,8 @@ class Greedy(Optimisation):
         self.job = job
         self.socket_io = socket_io
 
-    def run(self, objectives, n_sensors):
-        # binary array - 1 if sensor at this location, 0 if not
-        sensors = np.zeros(objectives.coverage.n_sites)
-
-        # coverage obtained with each number of sensors
-        placement_history = []
-        coverage_history = []
+    def run(self, objectives, n_sensors) -> GreedyResult:
+        result = GreedyResult(objectives, n_sensors)
 
         for s in range(n_sensors):
             # greedily add sensors
@@ -32,34 +48,31 @@ class Greedy(Optimisation):
                         "jobProgress", {"job_id": self.job.id, "progress": progress}
                     )
 
-            # initialise arrays to store best result so far
-            best_total_coverage = 0
-            best_sensors = sensors.copy()
-
-            for site in range(objectives.coverage.n_sites):
-                if sensors[site] == 1:
-                    # already have a sensor here, so skip to next
-                    continue
-                new_sensors = sensors.copy()
-                new_sensors[site] = 1
-
-                new_coverage = objectives.fitness(sensors)
-
-                if new_coverage > best_total_coverage:
-                    # this site is the best site for next sensor found so far
-                    best_new_site = site
-                    best_sensors = new_sensors.copy()
-                    best_total_coverage = new_coverage
-
-            sensors = best_sensors.copy()
-            placement_history.append(best_new_site)
-            coverage_history.append(best_total_coverage)
+            result = self.update(result)
             if self.verbose:
-                print("coverage = {:.2f}".format(best_total_coverage))
+                print("coverage = {:.2f}".format(result.coverage_history[-1]))
 
-        return {
-            "sensors": sensors,
-            "total_coverage": best_total_coverage,
-            "placement_history": placement_history,
-            "coverage_history": coverage_history,
-        }
+        return result
+
+    def update(self, result) -> GreedyResult:
+        n_sites = len(result.sensors)
+        new_coverages = np.zeros(n_sites)
+        for site in range(n_sites):
+            # try adding sensor at potential sensor site
+            if result.sensors[site] == 1:
+                # already have a sensor here, so skip to next
+                continue
+
+            new_sensors = result.sensors.copy()
+            new_sensors[site] = 1
+            new_coverages[site] = result.objectives.fitness(new_sensors)
+
+        best_idx = new_coverages.argmax()
+        best_coverage = new_coverages.max()
+        result.placement_history.append(best_idx)
+        result.coverage_history.append(best_coverage)
+        result.total_coverage = best_coverage
+        updated_sensors = result.sensors.copy()
+        updated_sensors[best_idx] = 1
+        result.sensors = updated_sensors
+        return result
