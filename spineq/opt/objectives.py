@@ -29,14 +29,17 @@ class Objectives:
         coverage: Coverage,
         norm: bool = True,
     ):
+        self.datasets = datasets
         self.objectives = objectives
         self.coverage = coverage
         self.norm = norm
         self.n_obj = len(self.objectives)
 
-        self.weights = np.full((datasets.n_sites, len(objectives)), np.nan)
+        self.weights = np.full((self.datasets.n_sites, len(objectives)), np.nan)
         for i, obj in enumerate(objectives):
-            self.weights[:, i] = datasets[obj.dataset][obj.column].fillna(obj.fill_na)
+            self.weights[:, i] = self.datasets[obj.dataset][obj.column].fillna(
+                obj.fill_na
+            )
         if norm:
             self.weights = normalize(self.weights, axis=0)
 
@@ -53,7 +56,10 @@ class Objectives:
     def sites_to_sensors(self, sites):
         """convert list of site names where a sensor is placed to boolean sensors array
         compatible with finess/coverage functions"""
-        return np.array(self.datasets.site_idx(s) for s in sites)
+        site_idx = np.array([self.datasets.site_idx(s) for s in sites])
+        sensors = np.zeros(self.datasets.n_sites)
+        sensors[site_idx] = 1
+        return sensors
 
 
 class CombinedObjectives(Objectives):

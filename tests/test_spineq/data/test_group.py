@@ -39,18 +39,22 @@ class TestDatasetGroup:
 
     @pytest.fixture
     def group_data(self, datasets):
-        return DatasetGroup(datasets=datasets, name="NAME")
+        return DatasetGroup(
+            datasets=datasets, name="NAME", site_names=datasets[0].values.index
+        )
 
     def test_init_defaults(self, group_empty):
         assert isinstance(group_empty, DatasetGroup)
         assert group_empty.datasets == {}
         assert group_empty.name == ""
+        assert group_empty.site_names is None
 
     def test_init_datasets(self, group_data, sample_params):
         assert group_data.name == "NAME"
         assert len(group_data.datasets) == 2
         assert len(group_data.datasets["population"]) == sample_params["total"]["n_oa"]
         assert len(group_data.datasets["school"]) == sample_params["total"]["n_school"]
+        assert len(group_data.site_names) == sample_params["total"]["n_oa"]
 
     def test_get(self, group_data):
         assert isinstance(group_data["population"], PopulationDataset)
@@ -78,6 +82,11 @@ class TestDatasetGroup:
 
     def test_n_sites(self, group_data, sample_params):
         assert group_data.n_sites == sample_params["total"]["n_oa"]
+
+    def test_site_idx(self, group_data, datasets):
+        idx = 1
+        name = datasets[0].values.index[idx]
+        assert group_data.site_idx(name) == idx
 
 
 class TestLocalAuthority:

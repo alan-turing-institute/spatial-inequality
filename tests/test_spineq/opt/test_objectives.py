@@ -51,8 +51,9 @@ class TestObjectives:
     def objs(self, la, columns, cov):
         return Objectives(la, columns, cov)
 
-    def test_init_defaults(self, objs, columns, cov):
+    def test_init_defaults(self, la, objs, columns, cov):
         assert isinstance(objs, Objectives)
+        assert objs.datasets == la
         assert objs.objectives == columns
         assert objs.coverage == cov
         assert objs.norm is True
@@ -98,6 +99,14 @@ class TestObjectives:
         np.testing.assert_array_almost_equal(
             objs.fitness(sensors), [(188 + 139) / 22556, 197 / 5274]
         )
+
+    def test_sites_to_sensors(self, objs, la):
+        sites = [la.oa11cd.iloc[0], la.oa11cd.iloc[10]]
+        actual_sensors = objs.sites_to_sensors(sites)
+        exp_sensors = np.zeros(la.n_oa11cd)
+        exp_sensors[0] = 1
+        exp_sensors[10] = 1
+        np.testing.assert_array_equal(actual_sensors, exp_sensors)
 
 
 class TestCombinedObjectives:

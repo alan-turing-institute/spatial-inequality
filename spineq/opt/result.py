@@ -29,7 +29,7 @@ class PopulationResult(Result):
         if population is None:
             population = np.zeros((population_size, self.objectives.coverage.n_sites))
         if total_coverage is None:
-            total_coverage = np.zeros(population_size, self.objectives.n_obj)
+            total_coverage = np.zeros((population_size, self.objectives.n_obj))
         self.population_size = population_size
         self.population = population
         self.total_coverage = total_coverage
