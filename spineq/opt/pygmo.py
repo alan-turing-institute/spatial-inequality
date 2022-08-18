@@ -96,5 +96,4 @@ class CoverageProblem:
         """Number of integer dimensions."""
         return self.n_sensors
 
-    def gradient(self, x):
-        return pg.estimate_gradient_h(lambda x: self.fitness(x), x)
+    # TODO - test impact of reinstating gradient estimation

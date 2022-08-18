@@ -1,0 +1,46 @@
+class TestPyGMOResult:
+    def test_init(self):
+        ...
+
+    def test_all_sensors(self):
+        ...
+
+    def test_all_coverage(self):
+        ...
+
+    def test_best_coverage(self):
+        ...
+
+    def test_best_sensors(self):
+        ...
+
+
+class TestPyGMO:
+    def test_init(self):
+        ...
+
+    def test_run(self):
+        ...
+
+    def test_update(self):
+        ...
+
+
+class TestCoverageProblem:
+    def test_init(self):
+        ...
+
+    def test_fitness(self):
+        ...
+
+    def test_get_bounds(self):
+        ...
+
+    def test_get_nobj(self):
+        ...
+
+    def test_get_nec(self):
+        ...
+
+    def test_get_nix(self):
+        ...

@@ -4,7 +4,6 @@ from typing import Optional
 
 import geopandas as gpd
 import numpy as np
-import pandas as pd
 from shapely.geometry import Polygon
 
 
@@ -24,7 +23,6 @@ def distance_matrix(x1, y1, x2=None, y2=None):
         numpy array -- 2D matrix of distance between location i and location j,
         for each i and j.
     """
-
     coords_1 = np.array([x1, y1]).T
 
     if x2 is not None and y2 is not None:
@@ -35,7 +33,7 @@ def distance_matrix(x1, y1, x2=None, y2=None):
             (coords_1[:, np.newaxis, :] - coords_2[np.newaxis, :, :]) ** 2, axis=-1
         )
 
-    elif (x2 is None and y2 is not None) or (y2 is None and x2 is not None):
+    elif x2 is None and y2 is not None or x2 is not None:
         raise ValueError("x2 and y2 both must be defined or undefined.")
 
     else:
@@ -44,35 +42,7 @@ def distance_matrix(x1, y1, x2=None, y2=None):
             (coords_1[:, np.newaxis, :] - coords_1[np.newaxis, :, :]) ** 2, axis=-1
         )
 
-    distances = np.sqrt(dist_sq)
-
-    return distances
-
-
-def coverage_from_sensors(sensors, coverage_matrix):
-    # only keep coverages due to output areas where a sensor is present
-    mask_cov = np.multiply(coverage_matrix, sensors[np.newaxis, :])
-    # coverage at each output area = coverage due to nearest sensor
-    max_mask_cov = np.max(mask_cov, axis=1)
-    return max_mask_cov
-
-
-def total_coverage(point_coverage: np.array, point_weights: np.array = None) -> float:
-    """Total coverage metric from coverage of each point
-
-    Parameters
-    ----------
-    point_coverage : np.array
-        Coverage provided at each point (due to a sensor network)
-    point_weights : np.array
-        Weight for each point
-
-    Returns
-    -------
-    float
-        Total coverage (between 0 and 1)
-    """
-    return np.average(point_coverage, weights=point_weights)
+    return np.sqrt(dist_sq)
 
 
 def square_grid(xlim: list, ylim: list, grid_size: float):
@@ -174,23 +144,6 @@ def make_job_dict(job):
         "last_message": last_message,
         "result": result,
     }
-
-
-def make_age_range(min_age=0, max_age=90):
-    """Create a pandas series of age weights as needed for the optimisation.
-    Index is from 0 to 90 (inclusive), returns weight 1 for
-    min_age <= age <= max_age and 0 for all other ages.
-
-    Keyword Arguments:
-        min_age {int} -- [description] (default: {0})
-        max_age {int} -- [description] (default: {90})
-
-    Returns:
-        [type] -- [description]
-    """
-    age_weights = pd.Series(0, index=range(91))
-    age_weights[(age_weights.index >= min_age) & (age_weights.index <= max_age)] = 1
-    return age_weights
 
 
 def normalize(array: np.ndarray, axis: Optional[int] = None) -> np.ndarray:
