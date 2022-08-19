@@ -77,10 +77,10 @@ class TestGreedyResult:
 class TestGreedy:
     @pytest.fixture
     def greedy(self):
-        return Greedy(verbose=False)
+        return Greedy()
 
     def test_init(self, greedy):
-        assert greedy.verbose is False
+        assert greedy.verbose is True
         assert greedy.job is None
         assert greedy.socket_io is None
 
