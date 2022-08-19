@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 import pygmo as pg
 
@@ -59,6 +61,7 @@ class PyGMO(Optimisation):
         return self.update(result)
 
     def update(self, result) -> PyGMOResult:
+        result = deepcopy(result)
         population = result.algorithm.evolve(result.population)
         result.population = population
         return result

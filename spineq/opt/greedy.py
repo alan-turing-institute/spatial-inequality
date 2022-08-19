@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 
 from spineq.opt.opt import Optimisation
@@ -21,7 +23,6 @@ class GreedyResult(SingleNetworkResult):
             coverage_history = []
         self.placement_history = placement_history  # order of placed sensors
         self.coverage_history = coverage_history  # total coverage after each sensor
-        self.sensors = sensors  # binary array - 1 if sensor at this location, 0 if not
 
 
 class Greedy(Optimisation):
@@ -55,6 +56,7 @@ class Greedy(Optimisation):
         return result
 
     def update(self, result) -> GreedyResult:
+        result = deepcopy(result)
         n_sites = len(result.sensors)
         new_coverages = np.zeros(n_sites)
         for site in range(n_sites):
