@@ -29,15 +29,15 @@ class PyGMOResult(PopulationResult):
 
     @property
     def all_coverage(self):
-        return self.population.get_f()
+        return -self.population.get_f()
 
     @property
     def best_coverage(self):
-        return self.population.champion_f
+        return -self.population.champion_f
 
     @property
     def best_sensors(self):
-        self.population.champion_x
+        return self.population.champion_x
 
 
 class PyGMO(Optimisation):
@@ -74,11 +74,10 @@ class CoverageProblem:
 
     def fitness(self, sensors_idx):
         """Objective function to minimise."""
-        # Construct sensors vector from indices
         sensors = np.zeros(self.objectives.coverage.n_sites)
         sensors[sensors_idx.astype(int)] = 1
-        # calculate coverage
-        return -self.objectives.fitness(sensors)
+        fit = -self.objectives.fitness(sensors)
+        return [fit] if isinstance(fit, float) else fit
 
     def get_bounds(self):
         """Min and max value for each parameter."""
