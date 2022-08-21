@@ -97,5 +97,3 @@ class CoverageProblem:
     def get_nix(self):
         """Number of integer dimensions."""
         return self.n_sensors
-
-    # TODO - test impact of reinstating gradient estimation

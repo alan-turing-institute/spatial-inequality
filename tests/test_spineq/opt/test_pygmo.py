@@ -6,8 +6,8 @@ from spineq.data.census import WorkplaceDataset
 from spineq.data.group import LocalAuthority
 from spineq.data.school import SchoolDataset
 from spineq.opt.coverage import BinaryCoverage
-from spineq.opt.objectives import Column, CombinedObjectives
-from spineq.opt.pygmo import CoverageProblem, PyGMOResult
+from spineq.opt.objectives import Column, CombinedObjectives, Objectives
+from spineq.opt.pygmo import CoverageProblem, PyGMO, PyGMOResult
 
 test_la_key = "gateshead"
 
@@ -40,6 +40,11 @@ def objectives(la, columns, cov):
 
 
 @pytest.fixture
+def multi_obj(la, columns, cov):
+    return Objectives(la, columns, cov)
+
+
+@pytest.fixture
 def n_sensors():
     return 3
 
@@ -52,7 +57,7 @@ def population_size():
 class TestPyGMOResult:
     @pytest.fixture
     def algorithm(self):
-        return pg.algorithm(uda=pg.sga(gen=10))
+        return pg.sga(gen=5)
 
     @pytest.fixture
     def problem(self, objectives, n_sensors):
@@ -88,31 +93,56 @@ class TestPyGMOResult:
 
 
 class TestPyGMO:
-    def test_init(self):
-        ...
+    @pytest.fixture
+    def algorithm(self):
+        return pg.sga(gen=10)
 
-    def test_run(self):
-        ...
+    @pytest.fixture
+    def pygmo(self, algorithm, population_size):
+        return PyGMO(algorithm, population_size, verbosity=0)
 
-    def test_update(self):
-        ...
+    def test_init(self, pygmo, algorithm, population_size):
+        assert pygmo.algorithm == algorithm
+        assert pygmo.population_size == population_size
+
+    def test_run(self, pygmo, objectives, n_sensors):
+        result = pygmo.run(objectives, n_sensors)
+        assert isinstance(result, PyGMOResult)
+        assert 0 < result.best_coverage < 1
+        assert (result.all_sensors >= 0).all()
+        assert (result.all_sensors < result.objectives.coverage.n_sites).all()
+
+    def test_update(self, pygmo, objectives, n_sensors):
+        result = pygmo.run(objectives, n_sensors)
+        new_result = pygmo.update(result)
+        assert new_result.best_coverage >= result.best_coverage
 
 
 class TestCoverageProblem:
-    def test_init(self):
-        ...
+    @pytest.fixture
+    def problem(self, multi_obj, n_sensors):
+        return CoverageProblem(multi_obj, n_sensors)
 
-    def test_fitness(self):
-        ...
+    def test_init(self, problem, multi_obj, n_sensors):
+        assert problem.objectives == multi_obj
+        assert problem.n_sensors == n_sensors
 
-    def test_get_bounds(self):
-        ...
+    def test_get_nobj(self, problem):
+        assert problem.get_nobj() == 2
 
-    def test_get_nobj(self):
-        ...
+    def test_fitness(self, problem):
+        fit = problem.fitness(np.array([0, 1, 2]))
+        assert len(fit) == problem.get_nobj()
 
-    def test_get_nec(self):
-        ...
+    def test_get_bounds(self, problem):
+        bounds = problem.get_bounds()
+        np.testing.assert_array_equal(bounds[0], [0, 0, 0])
+        np.testing.assert_array_equal(
+            bounds[1], [problem.objectives.coverage.n_sites - 1] * 3
+        )
 
-    def test_get_nix(self):
-        ...
+    def test_get_nec(self, problem):
+        assert problem.get_nec() == 0
+
+    def test_get_nix(self, problem, n_sensors):
+        assert problem.get_nix() == n_sensors
