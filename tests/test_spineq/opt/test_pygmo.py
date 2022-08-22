@@ -74,22 +74,17 @@ class TestPyGMOResult:
     def test_init(self, result, algorithm, population, n_sensors, population_size):
         assert result.n_sensors == n_sensors
         assert isinstance(result.objectives, CombinedObjectives)
-        assert result.population == population
+        assert result.population.shape == (population_size, n_sensors)
+        assert result.pg_population == population
         assert result.algorithm == algorithm
         assert result.total_coverage.shape == (population_size, 1)
 
-    def test_all_sensors(self, result, population_size, n_sensors):
-        assert result.all_sensors.shape == (population_size, n_sensors)
-
-    def test_all_coverage(self, result, population_size):
-        assert result.all_coverage.shape == (population_size, 1)
-
     def test_best_coverage(self, result):
-        assert result.best_coverage == result.all_coverage.max()
+        assert result.best_coverage == result.total_coverage.max()
 
     def test_best_sensors(self, result):
-        idx = result.all_coverage.argmax()
-        np.testing.assert_array_equal(result.best_sensors, result.all_sensors[idx, :])
+        idx = result.total_coverage.argmax()
+        np.testing.assert_array_equal(result.best_sensors, result.population[idx, :])
 
 
 class TestPyGMO:
@@ -109,8 +104,8 @@ class TestPyGMO:
         result = pygmo.run(objectives, n_sensors)
         assert isinstance(result, PyGMOResult)
         assert 0 < result.best_coverage < 1
-        assert (result.all_sensors >= 0).all()
-        assert (result.all_sensors < result.objectives.coverage.n_sites).all()
+        assert (result.population >= 0).all()
+        assert (result.population < result.objectives.coverage.n_sites).all()
 
     def test_update(self, pygmo, objectives, n_sensors):
         result = pygmo.run(objectives, n_sensors)

@@ -45,20 +45,20 @@ def plot_optimisation_result(
     vmin=0,
     vmax=1,
     basemap=ctx.providers.Stamen.TonerBackground,
+    scalebar=False,
 ):
     """
     Plot map with sensor locations (red points), output area centroids (black points),
     and coverage (shaded areas).
     """
-    sensors = pd.DataFrame(result["sensors"])
-    sensors.set_index("oa11cd", inplace=True)
+    plt.rcParams.update({"font.size": 16})
 
-    oa_coverage = pd.DataFrame(result["oa_coverage"])
-    oa_coverage.set_index("oa11cd", inplace=True)
-
-    oa_shapes = get_oa_shapes(result["lad20cd"])
-
-    oa_shapes["coverage"] = oa_coverage
+    la = result.objectives.datasets
+    oa_data = la.oa_shapes.values
+    oa_data["coverage"] = result.objectives.oa_coverage(result.sensors)
+    oa_data["sensor"] = result.sensors
+    oa_data["centroid_x"] = la.oa_centroids["x"]
+    oa_data["centroid_y"] = la.oa_centroids["y"]
 
     if ax is None:
         ax = plt.figure(figsize=figsize).gca()
@@ -67,12 +67,12 @@ def plot_optimisation_result(
     # https://www.science-emergence.com/Articles/How-to-match-the-colorbar-size-with-the-figure-size-in-matpltolib-/
     if legend and fill_oa:
         cax = get_color_axis(ax)
-        cax.set_title("Coverage")
+        cax.set_title("Coverage", fontsize=16)
     else:
         cax = None
 
     if fill_oa:
-        ax = oa_shapes.plot(
+        ax = oa_data.plot(
             column="coverage",
             alpha=alpha,
             cmap=cmap,
@@ -83,13 +83,13 @@ def plot_optimisation_result(
             vmax=vmax,
         )
     else:
-        ax = oa_shapes.plot(
+        ax = oa_data.plot(
             alpha=alpha, ax=ax, facecolor="none", edgecolor="none", linewidth=0.5
         )
 
     ax.scatter(
-        sensors["x"],
-        sensors["y"],
+        oa_data[oa_data["sensor"] == 1]["centroid_x"],
+        oa_data[oa_data["sensor"] == 1]["centroid_y"],
         s=sensor_size,
         color=sensor_color,
         edgecolor=sensor_edgecolor,
@@ -100,21 +100,25 @@ def plot_optimisation_result(
         ctx.add_basemap(
             ax,
             source=basemap,
-            crs=oa_shapes.crs.to_epsg(),
+            crs=oa_data.crs.to_epsg(),
             attribution_size=5,
             attribution="",
         )
 
     ax.set_axis_off()
     if title is None:
+        tot_cov = result.total_coverage
+        if not isinstance(tot_cov, float):
+            tot_cov = tot_cov[0]
         ax.set_title(
-            "n_sensors = {:.0f}, coverage = {:.2f}".format(
-                len(sensors), result["total_coverage"]
-            ),
+            f"n_sensors = {result.n_sensors}, coverage = {tot_cov:.2f}",
             fontsize=fontsize,
         )
     else:
-        ax.set_title(title)
+        ax.set_title(title, fontsize=fontsize)
+
+    if scalebar:
+        add_scalebar(ax)
 
     if save_path:
         plt.tight_layout()

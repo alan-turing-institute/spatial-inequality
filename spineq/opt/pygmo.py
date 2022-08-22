@@ -11,33 +11,26 @@ class PyGMOResult(PopulationResult):
     def __init__(
         self,
         algorithm,
-        population,
+        pg_population,
     ):
-        coverage = population.problem.extract(CoverageProblem)
+        coverage = pg_population.problem.extract(CoverageProblem)
         super().__init__(
             coverage.objectives,
             coverage.n_sensors,
-            population_size=population.get_x().shape[0],
-            population=population,
-            total_coverage=population.get_f(),
+            population_size=pg_population.get_x().shape[0],
+            population=pg_population.get_x(),
+            total_coverage=-pg_population.get_f(),
         )
         self.algorithm = algorithm
-
-    @property
-    def all_sensors(self):
-        return self.population.get_x()
-
-    @property
-    def all_coverage(self):
-        return -self.population.get_f()
+        self.pg_population = pg_population
 
     @property
     def best_coverage(self):
-        return -self.population.champion_f
+        return -self.pg_population.champion_f
 
     @property
     def best_sensors(self):
-        return self.population.champion_x
+        return self.pg_population.champion_x
 
 
 class PyGMO(Optimisation):
@@ -53,17 +46,17 @@ class PyGMO(Optimisation):
         algorithm.set_verbosity(self.verbosity)
 
         # population of problems
-        population = pg.population(prob=problem, size=self.population_size)
+        pg_population = pg.population(prob=problem, size=self.population_size)
 
-        result = PyGMOResult(algorithm, population)
+        result = PyGMOResult(algorithm, pg_population)
 
         # solve problem
         return self.update(result)
 
     def update(self, result) -> PyGMOResult:
         result = deepcopy(result)
-        population = result.algorithm.evolve(result.population)
-        result.population = population
+        pg_population = result.algorithm.evolve(result.pg_population)
+        result.pg_population = pg_population
         return result
 
 

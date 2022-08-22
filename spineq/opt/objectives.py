@@ -53,10 +53,15 @@ class Objectives:
         cov = self.oa_coverage(sensors)
         return (self.weights * cov[:, np.newaxis]).sum(axis=0)
 
-    def sites_to_sensors(self, sites):
+    def names_to_sensors(self, site_names):
         """convert list of site names where a sensor is placed to boolean sensors array
         compatible with finess/coverage functions"""
-        site_idx = np.array([self.datasets.site_idx(s) for s in sites])
+        site_idx = np.array([self.datasets.site_idx(s) for s in site_names])
+        return self.idx_to_sensors(site_idx)
+
+    def idx_to_sensors(self, site_idx):
+        """convert list of site idx where a sensor is placed to boolean sensors array
+        compatible with finess/coverage functions"""
         sensors = np.zeros(self.datasets.n_sites)
         sensors[site_idx] = 1
         return sensors

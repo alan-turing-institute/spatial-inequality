@@ -100,9 +100,9 @@ class TestObjectives:
             objs.fitness(sensors), [(188 + 139) / 22556, 197 / 5274]
         )
 
-    def test_sites_to_sensors(self, objs, la):
+    def test_names_to_sensors(self, objs, la):
         sites = [la.oa11cd.iloc[0], la.oa11cd.iloc[10]]
-        actual_sensors = objs.sites_to_sensors(sites)
+        actual_sensors = objs.names_to_sensors(sites)
         exp_sensors = np.zeros(la.n_oa11cd)
         exp_sensors[0] = 1
         exp_sensors[10] = 1

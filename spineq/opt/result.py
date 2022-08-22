@@ -33,3 +33,11 @@ class PopulationResult(Result):
         self.population_size = population_size
         self.population = population
         self.total_coverage = total_coverage
+
+    def get_single_network(self, idx):
+        return SingleNetworkResult(
+            self.objectives,
+            self.n_sensors,
+            self.objectives.idx_to_sensors(self.population[idx, :].astype(int)),
+            self.total_coverage[idx],
+        )
