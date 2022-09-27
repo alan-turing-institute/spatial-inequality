@@ -53,6 +53,14 @@ class Objectives:
         cov = self.oa_coverage(sensors)
         return (self.weights * cov[:, np.newaxis]).sum(axis=0)
 
+    def oa_importance(self):
+        importance = np.full((self.datasets.n_sites, self.n_obj), np.nan)
+        for i in range(self.datasets.n_sites):
+            sensors = np.zeros(self.datasets.n_sites)
+            sensors[i] = 1
+            importance[i, :] = self.fitness(sensors)
+        return importance
+
     def names_to_sensors(self, site_names):
         """convert list of site names where a sensor is placed to boolean sensors array
         compatible with finess/coverage functions"""

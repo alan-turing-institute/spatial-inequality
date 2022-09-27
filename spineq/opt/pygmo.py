@@ -56,7 +56,7 @@ class PyGMO(Optimisation):
     def update(self, result) -> PyGMOResult:
         result = deepcopy(result)
         pg_population = result.algorithm.evolve(result.pg_population)
-        result.pg_population = pg_population
+        result = PyGMOResult(result.algorithm, pg_population)
         return result
 
 

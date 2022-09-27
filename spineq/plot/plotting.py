@@ -14,7 +14,12 @@ from matplotlib_scalebar.scalebar import ScaleBar
 from mpl_toolkits.axes_grid1 import ImageGrid, make_axes_locatable
 
 from spineq.data.fetcher import get_oa_centroids, get_oa_shapes
-from spineq.utils import coverage_matrix
+from spineq.data.group import LocalAuthority
+
+
+# from spineq.utils import coverage_matrix
+def coverage_matrix(*args, **kwargs):
+    raise NotImplementedError
 
 
 def get_color_axis(ax):
@@ -129,7 +134,7 @@ def plot_optimisation_result(
 
 
 def plot_coverage_grid(
-    lad20cd,
+    la: LocalAuthority,
     grid_cov,
     crs={"init": "epsg:27700"},
     threshold=0.005,
@@ -176,8 +181,7 @@ def plot_coverage_grid(
     else:
         cax = None
 
-    oa_shapes = get_oa_shapes(lad20cd)
-    oa_shapes.plot(ax=ax, edgecolor="k", facecolor="None")
+    la.oa_shapes.plot(ax=ax, edgecolor="k", facecolor="None")
     grid_cov.plot(
         column="coverage",
         cmap=cmap,
@@ -207,8 +211,8 @@ def plot_coverage_grid(
 
 
 def plot_oa_weights(
-    lad20cd,
-    oa_weights,
+    objectives,
+    density=False,
     title="",
     save_path=None,
     ax=None,
@@ -218,18 +222,28 @@ def plot_oa_weights(
     legend=True,
     show=True,
     vmin=0,
-    vmax=1,
+    vmax=None,
+    legend_title="",
     basemap=ctx.providers.Stamen.TonerBackground,
 ):
-    # YlGnBu
-    oa_shapes = get_oa_shapes(lad20cd)
-    oa_shapes["weight"] = oa_weights
+    oa_shapes = objectives.datasets.oa_shapes.values
+    oa_shapes["weight"] = objectives.weights
+    if density:
+        area = objectives.datasets.oa_shapes.values["geometry"].area / 1e6
+        oa_shapes["weight"] = (100 * oa_shapes["weight"]) / (
+            area * oa_shapes["weight"].sum()
+        )
 
     if ax is None:
         ax = plt.figure(figsize=figsize).gca()
 
     if legend:
         cax = get_color_axis(ax)
+        if not legend_title:
+            if density:
+                cax.set_title(r"Density [% / $\mathrm{km}^2$]")
+            else:
+                cax.set_title("Weight")
     else:
         cax = None
 
@@ -264,9 +278,7 @@ def plot_oa_weights(
 
 
 def plot_oa_importance(
-    lad20cd,
-    oa_weights,
-    theta=500,
+    objectives,
     title="",
     save_path=None,
     ax=None,
@@ -286,10 +298,10 @@ def plot_oa_importance(
     importance is where the first sensor in the network will be placed.
 
     Arguments:
-        oa_weights {pd.Series} -- Weights for each OA (indexed by oa11cd)
+        objectives {Objectives} -- Objectives instance containing output area
+        weights, shapes, and centroids, and coverage function
 
     Keyword Arguments:
-        theta {int} -- coverage decay rate (default: {500})
         title {str} -- plot title (default: {""})
         save_path {str} -- path to save output plot or None to not save
         (default: {None})
@@ -304,26 +316,11 @@ def plot_oa_importance(
                          (default: {None})
     """
 
-    oa_centroids = get_oa_centroids(lad20cd)
-    oa_centroids["weight"] = oa_weights
+    oa11cd = objectives.datasets.oa11cd
+    oa_importance = objectives.oa_importance()
+    oa_importance = pd.Series(data=oa_importance[:, 0], index=oa11cd)
 
-    oa_x = oa_centroids["x"].values
-    oa_y = oa_centroids["y"].values
-    oa_weight = oa_centroids["weight"].values
-    oa11cd = oa_centroids.index.values
-
-    n_poi = len(oa_x)
-    coverage = coverage_matrix(oa_x, oa_y, theta=theta)
-
-    # to store total coverage due to a sensor at any output area
-    oa_importance = np.zeros(n_poi)
-
-    for site in range(n_poi):
-        oa_importance[site] = (oa_weight * coverage[site, :]).sum() / oa_weight.sum()
-
-    oa_importance = pd.Series(data=oa_importance, index=oa11cd)
-
-    oa_shapes = get_oa_shapes(lad20cd)
+    oa_shapes = objectives.datasets.oa_shapes.values
     oa_shapes["importance"] = oa_importance
 
     if ax is None:
@@ -331,7 +328,7 @@ def plot_oa_importance(
 
     if legend:
         cax = get_color_axis(ax)
-        cax.set_title("Density")
+        cax.set_title("Importance")
 
     else:
         cax = None
@@ -436,8 +433,7 @@ def save_fig(fig, filename, save_dir, extension=".png", dpi=600, bbox_inches="ti
 
 
 def networks_swarmplot(
-    scores: np.ndarray,
-    objectives: list,
+    result,
     thresholds: Union[float, dict, None] = None,
     colors: list = ("pink", "blue", "orange"),
     ax: Union[plt.Axes, None] = None,
@@ -473,12 +469,13 @@ def networks_swarmplot(
     plt.Axes
         Matplotlib axis with swarm plot.
     """
-    df = pd.DataFrame(scores, columns=objectives)
+    objs = [obj.label for obj in result.objectives.objectives]
+    df = pd.DataFrame(result.total_coverage, columns=objs)
 
     selected = None
     if isinstance(thresholds, float):
-        selected = df[objectives[0]] > thresholds
-        for obj in objectives[1:]:
+        selected = df[objs[0]] > thresholds
+        for obj in objs[1:]:
             selected = selected & (df[obj] > thresholds)
 
     elif isinstance(thresholds, dict):
@@ -496,7 +493,7 @@ def networks_swarmplot(
             selected[idx] = class_label
         selected = pd.Series(selected)
 
-    df = df[objectives].stack()
+    df = df.stack()
     df.name = "Coverage"
     df.index.set_names(["idx", "objective"], inplace=True)
     df = pd.DataFrame(df)
@@ -535,7 +532,7 @@ def networks_swarmplot(
     if isinstance(thresholds, float):
         ax.axhline(thresholds, color="k", linewidth=0.5)
     elif isinstance(thresholds, dict):
-        for i, obj in enumerate(objectives):
+        for i, obj in enumerate(objs):
             if obj in thresholds.keys():
                 ax.hlines(thresholds[obj], i - 0.35, i + 0.35, color="k", linewidth=0.5)
 
@@ -546,8 +543,7 @@ def networks_swarmplot(
 
 
 def networks_parallel_coords_plot(
-    scores: np.ndarray,
-    objectives: list,
+    result,
     obj_order: Optional[str] = None,
     color_by: Optional[str] = None,
     thresholds: Union[float, dict, None] = None,
@@ -602,11 +598,11 @@ def networks_parallel_coords_plot(
     plt.Axes
         Matplotlib axis with parallel coordinates plot.
     """
-
-    df = pd.DataFrame(scores, columns=objectives)
+    objs = [obj.label for obj in result.objectives.objectives]
+    df = pd.DataFrame(result.total_coverage, columns=objs)
 
     if obj_order is None:
-        obj_order = objectives
+        obj_order = objs
 
     color_col = "color"
     if color_by is not None:
@@ -653,7 +649,7 @@ def networks_parallel_coords_plot(
     )
 
     ax.set_ylabel(ylabel)
-    ax.set_xlim([-0.1, len(objectives) - 0.9])
+    ax.set_xlim([-0.1, len(objs) - 0.9])
 
     if color_by is not None:
         ax.legend().remove()
