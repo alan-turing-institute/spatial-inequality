@@ -73,7 +73,7 @@ def square_grid(xlim: list, ylim: list, grid_size: float):
     return grid_x, grid_y
 
 
-def coverage_grid(sensors, xlim, ylim, coverage_cls, grid_size=100, theta=500):
+def coverage_grid(sensors, xlim, ylim, coverage_cls, coverage_args=None, grid_size=100):
     """Generate a square grid of points and calculate coverage at each point
     due to the closest sensor.
 
@@ -94,11 +94,12 @@ def coverage_grid(sensors, xlim, ylim, coverage_cls, grid_size=100, theta=500):
     grid_x, grid_y = square_grid(xlim, ylim, grid_size)
 
     # coverage at each grid point due to each sensor
-    grid_cov = coverage_matrix(  # noqa # TODO update for new coverage classesx
-        grid_x, grid_y, x2=sensors[:, 0], y2=sensors[:, 1], theta=theta
+    if not coverage_args:
+        coverage_args = {}
+    cov = coverage_cls(
+        sensors[:, 0], sensors[:, 1], x_sites=grid_x, y_sites=grid_y, **coverage_args
     )
-    # max coverage at each grid point (due to nearest sensor)
-    grid_cov = grid_cov.max(axis=1)
+    grid_cov = cov.coverage(np.zeros(len(sensors)))
 
     polygons = [
         Polygon(
