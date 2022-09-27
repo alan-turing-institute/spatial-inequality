@@ -145,10 +145,11 @@ class TestPopulationDataset:
                 "E00166205": 185,
                 "E00175559": 820,
                 "E00175577": 385,
-            }
+            },
+            name="total",
         )
         exp_totals.index.name = "oa11cd"
-        pd.testing.assert_series_equal(total.values.sort_index(), exp_totals)
+        pd.testing.assert_series_equal(total.values["total"].sort_index(), exp_totals)
 
 
 class TestWorkplaceDataset:

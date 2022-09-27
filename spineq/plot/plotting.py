@@ -233,6 +233,8 @@ def plot_oa_weights(
         oa_shapes["weight"] = (100 * oa_shapes["weight"]) / (
             area * oa_shapes["weight"].sum()
         )
+        if vmax is None:
+            vmax = oa_shapes["weight"].quantile(0.95)
 
     if ax is None:
         ax = plt.figure(figsize=figsize).gca()

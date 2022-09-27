@@ -3,7 +3,7 @@ from functools import cached_property
 import pandas as pd
 
 from spineq.data.base import LSOADataset
-from spineq.data.census import CentroidDataset, OABoundaryDataset
+from spineq.data.census import CentroidDataset, OABoundaryDataset, OADataset
 from spineq.data.fetcher import get_la_shape
 from spineq.mappings import la_to_oas, lad20cd_to_lad20nm
 
@@ -55,6 +55,8 @@ class LocalAuthority(DatasetGroup):
         if not name:
             raise ValueError("name must be defined")
         dataset = dataset.filter_la(self)
+        if isinstance(dataset, OADataset):
+            dataset.values = dataset.values.reindex(self.oa11cd)
         self.datasets[name] = dataset
 
     def __repr__(self):

@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 import geopandas as gpd
+import pandas as pd
 
 from spineq.data.base import LSOADataset, OADataset
 from spineq.data.fetcher import (
@@ -72,7 +73,7 @@ class PopulationDataset(OADataset):
 
     def to_total(self):
         self_total = deepcopy(self)
-        self_total.values = self_total.values.sum(axis=1)
+        self_total.values = pd.DataFrame({"total": self_total.values.sum(axis=1)})
         return self_total
 
 
