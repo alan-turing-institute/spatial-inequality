@@ -14,8 +14,7 @@ class DatasetGroup:
         self.site_names = pd.Index(site_names) if site_names is not None else None
         self.datasets = {}
         if datasets:
-            for d in datasets:
-                self.add_dataset(d)
+            self.add_datasets(datasets)
 
     def __getitem__(self, name):
         return self.datasets[name]
@@ -40,6 +39,10 @@ class DatasetGroup:
 
     def add_dataset(self, dataset):
         self.__setitem__(dataset.name, dataset)
+
+    def add_datasets(self, datasets):
+        for d in datasets:
+            self.add_dataset(d)
 
     def site_idx(self, name):
         return self.site_names.get_loc(name)
