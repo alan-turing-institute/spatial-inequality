@@ -24,14 +24,6 @@ class PyGMOResult(PopulationResult):
         self.algorithm = algorithm
         self.pg_population = pg_population
 
-    @property
-    def best_coverage(self):
-        return -self.pg_population.champion_f
-
-    @property
-    def best_sensors(self):
-        return self.pg_population.champion_x
-
 
 class PyGMO(Optimisation):
     def __init__(self, algorithm, population_size, verbosity=1):

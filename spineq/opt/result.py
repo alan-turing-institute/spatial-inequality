@@ -34,10 +34,31 @@ class PopulationResult(Result):
         self.population = population
         self.total_coverage = total_coverage
 
-    def get_single_network(self, idx):
+    def get_single_result(self, idx):
         return SingleNetworkResult(
             self.objectives,
             self.n_sensors,
             self.objectives.idx_to_sensors(self.population[idx, :].astype(int)),
             self.total_coverage[idx],
         )
+
+    @property
+    def best_idx(self):
+        return self.total_coverage.argmax()
+
+    @property
+    def best_result(self) -> SingleNetworkResult:
+        return SingleNetworkResult(
+            self.objectives,
+            self.n_sensors,
+            self.objectives.idx_to_sensors(self.best_sensors.astype(int)),
+            self.best_coverage,
+        )
+
+    @property
+    def best_coverage(self):
+        return self.total_coverage.max()
+
+    @property
+    def best_sensors(self):
+        return self.population[self.best_idx, :]
