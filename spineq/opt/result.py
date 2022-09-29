@@ -42,23 +42,23 @@ class PopulationResult(Result):
             self.total_coverage[idx],
         )
 
-    @property
-    def best_idx(self):
+    def best_idx(self, obj_idx=0):
+        if len(self.objectives) > 0:
+            return self.total_coverag[:, obj_idx].argmax()
         return self.total_coverage.argmax()
 
-    @property
-    def best_result(self) -> SingleNetworkResult:
+    def best_result(self, obj_idx=0) -> SingleNetworkResult:
         return SingleNetworkResult(
             self.objectives,
             self.n_sensors,
-            self.objectives.idx_to_sensors(self.best_sensors.astype(int)),
-            self.best_coverage,
+            self.objectives.idx_to_sensors(self.best_sensors(obj_idx).astype(int)),
+            self.best_coverage()[obj_idx],
         )
 
-    @property
     def best_coverage(self):
+        if len(self.objectives) > 0:
+            return self.total_coverage.max(axis=0)
         return self.total_coverage.max()
 
-    @property
-    def best_sensors(self):
-        return self.population[self.best_idx, :]
+    def best_sensors(self, obj_idx=0):
+        return self.population[self.best_idx(obj_idx), :]

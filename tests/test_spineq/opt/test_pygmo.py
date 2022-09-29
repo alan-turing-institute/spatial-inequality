@@ -80,11 +80,11 @@ class TestPyGMOResult:
         assert result.total_coverage.shape == (population_size, 1)
 
     def test_best_coverage(self, result):
-        assert result.best_coverage == result.total_coverage.max()
+        assert result.best_coverage() == result.total_coverage.max()
 
     def test_best_sensors(self, result):
         idx = result.total_coverage.argmax()
-        np.testing.assert_array_equal(result.best_sensors, result.population[idx, :])
+        np.testing.assert_array_equal(result.best_sensors(), result.population[idx, :])
 
 
 class TestPyGMO:
@@ -103,14 +103,14 @@ class TestPyGMO:
     def test_run(self, pygmo, objectives, n_sensors):
         result = pygmo.run(objectives, n_sensors)
         assert isinstance(result, PyGMOResult)
-        assert 0 < result.best_coverage < 1
+        assert 0 < result.best_coverage() < 1
         assert (result.population >= 0).all()
         assert (result.population < result.objectives.coverage.n_sites).all()
 
     def test_update(self, pygmo, objectives, n_sensors):
         result = pygmo.run(objectives, n_sensors)
         new_result = pygmo.update(result)
-        assert new_result.best_coverage >= result.best_coverage
+        assert new_result.best_coverage() >= result.best_coverage()
 
 
 class TestCoverageProblem:
