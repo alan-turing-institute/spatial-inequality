@@ -44,7 +44,7 @@ class PopulationResult(Result):
 
     def best_idx(self, obj_idx=0):
         if len(self.objectives) > 0:
-            return self.total_coverag[:, obj_idx].argmax()
+            return self.total_coverage[:, obj_idx].argmax()
         return self.total_coverage.argmax()
 
     def best_result(self, obj_idx=0) -> SingleNetworkResult:
