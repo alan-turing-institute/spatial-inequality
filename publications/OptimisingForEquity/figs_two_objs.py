@@ -2,7 +2,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from networks_multi_objs import get_multi_obj_inputs
 from networks_two_objs import get_two_objs_filepath
 from utils import (
     add_subplot_label,
@@ -14,9 +13,7 @@ from utils import (
     set_fig_style,
 )
 
-from spineq.data.fetcher import lad20nm_to_lad20cd
-from spineq.opt.genetic import extract_all
-from spineq.opt.optimise import calc_coverage
+from spineq.opt.result import PopulationResult
 from spineq.plot.plotting import (
     add_colorbar,
     add_scalebar,
@@ -28,7 +25,7 @@ from spineq.plot.plotting import (
 
 def fig_obj1_vs_obj2(
     plot_objs: list,
-    scores: np.ndarray,
+    result: PopulationResult,
     all_groups: dict,
     theta: float,
     n_sensors: int,
@@ -42,8 +39,8 @@ def fig_obj1_vs_obj2(
     ----------
     plot_objs : list
         Names of the two objectives to plot
-    scores : np.ndarray
-        Coverage values for each objective in each candidate network
+    result : PopulationResult
+        Optimisation results
     all_groups : dict
         Short name (keys) and long title (values) for each objective
     theta : float
@@ -56,7 +53,7 @@ def fig_obj1_vs_obj2(
         Figure file format
     """
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
-    ax.plot(scores[:, 1], scores[:, 0], "o")
+    ax.plot(result.total_coverage[:, 1], result.total_coverage[:, 0], "o")
     ax.set_xlabel(all_groups[plot_objs[1]]["title"], fontsize=14)
     ax.set_ylabel(all_groups[plot_objs[0]]["title"], fontsize=14)
     ax.axis("equal")
@@ -64,11 +61,8 @@ def fig_obj1_vs_obj2(
 
 
 def fig_two_objs_spectrum(
-    lad20cd: str,
     plot_objs: list,
-    scores: np.ndarray,
-    solutions: np.ndarray,
-    inputs: dict,
+    result: PopulationResult,
     all_groups: dict,
     theta: float,
     n_sensors: int,
@@ -81,14 +75,10 @@ def fig_two_objs_spectrum(
 
     Parameters
     ----------
-    lad20cd : str
-        Local authority code
     plot_objs : list
         Names of the two objectives to plot
-    scores : np.ndarray
-        Coverage values for each objective in each candidate network
-    solutions : np.ndarray
-        Output area indices for each sensor in each candidate network
+    result : PopulationResult
+        Optimisation results
     inputs : dict
         Optimisation inputs from networks_two_objs.get_two_obj_inputs
     all_groups : dict
@@ -102,40 +92,21 @@ def fig_two_objs_spectrum(
     extension : str
         Figure file format
     """
-    population_size = len(scores)
-    rank_idx = scores[:, 0].argsort()
-    ranks_to_plot = np.linspace(0, population_size - 1, 4).astype(int)
+    rank_idx = result.total_coverage[:, 0].argsort()
+    ranks_to_plot = np.linspace(0, result.population_size - 1, 4).astype(int)
 
     fig, ax = get_fig_grid()
     for i, rank in enumerate(ranks_to_plot):
         idx = rank_idx[rank]
-        sensor_idx = solutions[idx].astype(int)
-        sensor_dict = [
-            {
-                "oa11cd": inputs["oa11cd"][idx],
-                "x": inputs["oa_x"][idx],
-                "y": inputs["oa_y"][idx],
-            }
-            for idx in sensor_idx
-        ]
-        sensors = [inputs["oa11cd"][idx] for idx in sensor_idx]
-        coverage = calc_coverage(
-            lad20cd,
-            sensors,
-            oa_weight=inputs["oa_weight"][plot_objs[0]],
-            theta=theta,
-        )
-        coverage["sensors"] = sensor_dict
-        coverage["lad20cd"] = lad20cd
 
         title = "".join(
             f"{all_groups[obj]['title']} = {score:.2f}, "
-            for obj, score in zip(["pop_elderly", "workplace"], scores[idx])
+            for obj, score in zip(plot_objs, result.total_coverage[idx])
         )
         title = title[:-2]
 
         plot_optimisation_result(
-            coverage,
+            result.get_single_result(idx),
             title=title,
             ax=ax[i],
             show=False,
@@ -161,28 +132,19 @@ def main():
     set_fig_style()
     config = get_config()
     figs_dir, extension = get_figures_params(config)
-
+    _, all_groups = get_objectives(config)
+    plot_objs = config["optimisation"]["two_objectives"]["objectives"]
     networks_path = get_two_objs_filepath(config)
     networks = load_jsonpickle(networks_path)
     theta, n_sensors = get_default_optimisation_params(config)
-    n = networks[f"theta{theta}"][f"{n_sensors}sensors"][0]
-    scores, solutions = extract_all(n)
-    scores = -scores
-
-    population_groups, all_groups = get_objectives(config)
-    plot_objs = config["optimisation"]["two_objectives"]["objectives"]
-    lad20cd = lad20nm_to_lad20cd(config["la"])
-    inputs = get_multi_obj_inputs(lad20cd, population_groups)
+    result = networks[f"theta{theta}"][f"{n_sensors}sensors"][0]
 
     fig_obj1_vs_obj2(
-        plot_objs, scores, all_groups, theta, n_sensors, figs_dir, extension
+        plot_objs, result, all_groups, theta, n_sensors, figs_dir, extension
     )
     fig_two_objs_spectrum(
-        lad20cd,
         plot_objs,
-        scores,
-        solutions,
-        inputs,
+        result,
         all_groups,
         theta,
         n_sensors,
