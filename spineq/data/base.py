@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 import geopandas as gpd
+import jsonpickle
 import pandas as pd
 
 from spineq.mappings import la_to_lsoas, lsoa_to_oas, point_to_oa
@@ -34,6 +35,18 @@ class Dataset:
     def read_geopandas(cls, name, path, read_kwargs=None, **kwargs):
         values = gpd.read_file(path, **(read_kwargs or {}))
         return cls(name, values, **kwargs)
+
+    @classmethod
+    def read_jsonpickle(cls, path):
+        with open(path, "rb") as f:
+            obj = jsonpickle.decode(f.read())
+        if not isinstance(obj, cls):
+            raise TypeError(f"{path} contained a {type(obj)}, not a {cls}")
+        return obj
+
+    def save_jsonpickle(self, path):
+        with open(path, "w") as f:
+            f.write(jsonpickle.encode(self))
 
     def to_oa_dataset(self, *args, **kwargs):
         raise NotImplementedError(

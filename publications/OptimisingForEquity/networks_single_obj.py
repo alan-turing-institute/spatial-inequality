@@ -8,8 +8,12 @@ from utils import (
     save_jsonpickle,
 )
 
-from spineq.data.fetcher import lad20nm_to_lad20cd
-from spineq.opt.optimise import optimise
+from spineq.data.census import PopulationDataset, WorkplaceDataset
+from spineq.data.group import LocalAuthority
+from spineq.mappings import lad20nm_to_lad20cd
+from spineq.opt.coverage import ExponentialCoverage
+from spineq.opt.greedy import Greedy
+from spineq.opt.objectives import Column, CombinedObjectives
 
 
 def get_single_obj_filepath(config: dict) -> Path:
@@ -61,46 +65,51 @@ def make_single_obj_networks(
     dict
         Optimised networks and coverage scores
     """
-    for name, weights in population_groups.items():
+    greedy = Greedy()
+
+    for name, params in population_groups.items():
         if name not in results.keys():
             results[name] = {}
+
+        la = LocalAuthority(
+            lad20cd,
+            [
+                PopulationDataset(lad20cd)
+                .filter_age(low=params["min"], high=params["max"], name=name)
+                .to_total()
+            ],
+        )
 
         for theta in thetas:
             if f"theta{theta}" not in results[name].keys():
                 results[name][f"theta{theta}"] = {}
 
+            cov = ExponentialCoverage.from_la(la, theta)
+            objs = CombinedObjectives(la, [Column(name, "total")], cov)
+
             for n in n_sensors:
                 print("=" * 20)
                 print(name, ", theta", theta, ", n_sensors", n)
                 print("=" * 20)
-                result = optimise(
-                    lad20cd=lad20cd,
-                    n_sensors=n,
-                    theta=theta,
-                    population_weight=1,
-                    workplace_weight=0,
-                    pop_age_groups={name: weights},
-                )
+                result = greedy.run(objs, n)
                 results[name][f"theta{theta}"][f"{n}sensors"] = result
 
     name = "workplace"
+    la = LocalAuthority(lad20cd, [WorkplaceDataset(lad20cd, name=name)])
     if name not in results.keys():
         results[name] = {}
     for theta in thetas:
         if f"theta{theta}" not in results[name].keys():
             results[name][f"theta{theta}"] = {}
 
+        cov = ExponentialCoverage.from_la(la, theta)
+        objs = CombinedObjectives(la, [Column(name, "total")], cov)
+
         for n in n_sensors:
             print("=" * 20)
             print(name, ", theta", theta, ", n_sensors", n)
             print("=" * 20)
-            result = optimise(
-                lad20cd=lad20cd,
-                n_sensors=n,
-                theta=theta,
-                population_weight=0,
-                workplace_weight=1,
-            )
+            result = greedy.run(objs, n)
             results[name][f"theta{theta}"][f"{n}sensors"] = result
 
     return results
