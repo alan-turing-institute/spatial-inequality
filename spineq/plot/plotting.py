@@ -13,7 +13,6 @@ import seaborn as sns
 from matplotlib_scalebar.scalebar import ScaleBar
 from mpl_toolkits.axes_grid1 import ImageGrid, make_axes_locatable
 
-from spineq.data.fetcher import get_oa_centroids, get_oa_shapes
 from spineq.data.group import LocalAuthority
 
 
@@ -131,6 +130,8 @@ def plot_optimisation_result(
         plt.close()
     elif show:
         plt.show()
+
+    return ax
 
 
 def plot_coverage_grid(
@@ -366,8 +367,8 @@ def plot_oa_importance(
 
 
 def plot_sensors(
-    lad20cd,
-    sensors,
+    la,
+    uo_data,
     shapes=True,
     centroids=True,
     title="",
@@ -378,19 +379,22 @@ def plot_sensors(
         _, ax = plt.subplots(1, 1, figsize=(7, 7))
 
     if shapes:
-        oa = get_oa_shapes(lad20cd)
-        oa.plot(linewidth=1, ax=ax, facecolor="yellow", edgecolor="blue", alpha=0.1)
+        la.oa_shapes.values.plot(
+            linewidth=1, ax=ax, facecolor="yellow", edgecolor="blue", alpha=0.1
+        )
 
     if centroids:
-        c = get_oa_centroids(lad20cd)
+        c = la.oa_centroids.values
         ax.scatter(c["x"], c["y"], s=5)
 
-    sensors.plot(ax=ax, edgecolor="yellow", facecolor="red", markersize=35, linewidth=1)
+    uo_data.values.plot(
+        ax=ax, edgecolor="yellow", facecolor="red", markersize=35, linewidth=1
+    )
     if basemap:
         ctx.add_basemap(
             ax,
             source=basemap,
-            crs=sensors.crs,
+            crs=uo_data.values.crs,
             attribution_size=5,
             attribution="",
         )

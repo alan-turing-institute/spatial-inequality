@@ -63,7 +63,7 @@ class Objectives:
 
     def names_to_sensors(self, site_names):
         """convert list of site names where a sensor is placed to boolean sensors array
-        compatible with finess/coverage functions"""
+        compatible with fitness/coverage functions"""
         site_idx = np.array([self.datasets.site_idx(s) for s in site_names])
         return self.idx_to_sensors(site_idx)
 
