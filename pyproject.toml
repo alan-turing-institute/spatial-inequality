@@ -7,52 +7,75 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-geopandas = "^0.10.2"
-jsonpickle = "^2.2.0"
-Jinja2 = "^3.1.2"
-Markdown = "^3.3.7"
-numpy = "^1.22.4"
-pandas = "^1.4.2"
+geopandas = "^0.11"
+jsonpickle = "^2.2"
+Jinja2 = "^3.1"
+Markdown = "^3.3"
+numpy = "^1.22"
+openpyxl = "^3.0"
+pandas = "^1.4"
+platformdirs = "^2.5"
+pygeos = "^0.12"
 PyYAML = "^6.0"
-requests = "^2.27.1"
-Shapely = "^1.8.2"
-tqdm = "^4.64.0"
-Fiona = "^1.8.21"
-matplotlib = {version="^3.5.2", optional = true}
-descartes = {version="^1.1.0", optional = true}
-contextily = {version="^1.2.0", optional = true}
-seaborn = {version="^0.11.2", optional = true}
-distinctipy = {version="^1.2.1", optional = true}
-matplotlib-scalebar = {version="^0.8.1", optional = true}
-jupyter = {version="^1.0.0", optional = true}
-Flask = {version = "^2.1.2", optional = true}
-Flask-Cors = {version = "^3.0.10", optional = true}
-Flask-SocketIO = {version = "^5.2.0", optional = true}
-gunicorn = { git = "https://github.com/benoitc/gunicorn.git", rev = "ff58e0c" }  # See https://github.com/benoitc/gunicorn/pull/2581
-python-socketio = {version = "^5.6.0", optional = true}
-redis = {version = "^4.3.3", optional = true}
-rq = {version = "^1.10.1", optional = true}
-eventlet = {version = "^0.33.1", optional = true}
-platformdirs = "^2.5.2"
-openpyxl = "^3.0.10"
-pygeos = "^0.12.0"
-
-[tool.poetry.dev-dependencies]
-black = "^22.3.0"
-flake8 = "^4.0.1"
-isort = "^5.10.1"
-nbqa = "^1.3.1"
-pre-commit = "^2.19.0"
-pytest = "^7.1.2"
+requests = "^2.27"
+Shapely = "^1.8"
+tqdm = "^4.64"
+contextily = { version = "^1.2", optional = true }
+descartes = { version = "^1.1", optional = true }
+distinctipy = { version = "^1.2", optional = true }
+matplotlib = { version = "^3.5", optional = true }
+matplotlib-scalebar = { version = "^0.8", optional = true }
+seaborn = { version = "^0.11", optional = true }
+jupyter = { version = "^1.0", optional = true }
+eventlet = { version = "^0.33", optional = true }
+Flask = { version = "^2.1", optional = true }
+Flask-Cors = { version = "^3.0", optional = true }
+Flask-SocketIO = { version = "^5.2", optional = true }
+gunicorn = { git = "https://github.com/benoitc/gunicorn.git", rev = "ff58e0c" } # See https://github.com/benoitc/gunicorn/pull/2581
+python-socketio = { version = "^5.6", optional = true }
+redis = { version = "^4.3", optional = true }
+rq = { version = "^1.10", optional = true }
+black = { version = "^22.6", optional = true }
+flake8 = { version = "^4.0", optional = true }
+isort = { version = "^5.10", optional = true }
+nbqa = { version = "^1.3", optional = true }
+pre-commit = { version = "^2.19", optional = true }
+pytest = { version = "^7.1", optional = true }
+pytest-cov = { version = "^3.0", optional = true }
+pyogrio = "^0.4"
 
 [tool.poetry.extras]
-plot = ["matplotlib", "descartes", "contextily", "seaborn", "distinctipy", "matplotlib-scaler"]
+plot = [
+    "matplotlib",
+    "descartes",
+    "contextily",
+    "seaborn",
+    "distinctipy",
+    "matplotlib-scaler",
+]
 notebook = ["jupyter"]
-api = ["Flask", "Flask-Cors", "Flask-SocketIO", "gunicorn", "python-socketio", "redis", "rq", "eventlet"]
+api = [
+    "Flask",
+    "Flask-Cors",
+    "Flask-SocketIO",
+    "gunicorn",
+    "python-socketio",
+    "redis",
+    "rq",
+    "eventlet",
+]
+dev = ["black", "flake8", "isort", "nbqa", "pre-commit", "pytest", "pytest-cov"]
 
 [tool.poetry.scripts]
-spineq_download = "spineq.data_fetcher:main"
+spineq_download = "spineq.cli:spineq_download"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = "--cov=spineq --cov-report=term-missing:skip-covered"
+testpaths = ["tests"]
+
+[tool.isort]
+profile = "black"

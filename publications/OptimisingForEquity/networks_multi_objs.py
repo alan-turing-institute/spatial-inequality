@@ -12,9 +12,12 @@ from utils import (
     save_jsonpickle,
 )
 
-from spineq.data_fetcher import lad20nm_to_lad20cd
-from spineq.genetic import build_problem, extract_all
-from spineq.optimise import get_optimisation_inputs
+from spineq.data.census import PopulationDataset, WorkplaceDataset
+from spineq.data.group import LocalAuthority
+from spineq.mappings import lad20nm_to_lad20cd
+from spineq.opt.coverage import ExponentialCoverage
+from spineq.opt.objectives import Column, Objectives
+from spineq.opt.pygmo import PyGMO, PyGMOResult
 
 
 def get_multi_objs_filepath(config: dict) -> Path:
@@ -50,15 +53,21 @@ def get_multi_obj_inputs(lad20cd: str, population_groups: dict) -> dict:
     -------
     dict
         Output area centroids and weights for each output area for each objective, as
-        calculated by spineq.optimise.get_optimisation_inputs
+        calculated by spineq.opt.optimise.get_optimisation_inputs
     """
-    return get_optimisation_inputs(
-        lad20cd=lad20cd,
-        population_weight=1,
-        workplace_weight=1,
-        pop_age_groups=population_groups,
-        combine=False,
-    )
+    datasets = []
+    columns = []
+    for name, params in population_groups.items():
+        datasets.append(
+            PopulationDataset(lad20cd)
+            .filter_age(low=params["min"], high=params["max"], name=name)
+            .to_total()
+        )
+        columns.append(Column(name, "total"))
+    name = "workplace"
+    datasets.append(WorkplaceDataset(lad20cd, name=name))
+    columns.append(Column(name, "workers"))
+    return LocalAuthority(lad20cd, datasets), columns
 
 
 class Log:
@@ -69,35 +78,32 @@ class Log:
         self.scores = []
         self.sensors = []
 
-    def log(self, pop, generations):
+    def log(self, result: PyGMOResult, generations: int):
         self.generations.append(generations)
-        scores, sensors = extract_all(pop)
-        self.scores.append(scores)
-        self.sensors.append(sensors)
-        self.fitness.append(scores.min(axis=0))
-        hv = pg.hypervolume(scores).compute(np.zeros(scores.shape[1]))
+        self.scores.append(result.total_coverage)
+        self.sensors.append(result.population)
+        self.fitness.append(result.best_coverage())
+        hv = pg.hypervolume(-result.total_coverage).compute(
+            np.zeros(result.objectives.n_obj)
+        )
         self.hypervolume.append(hv)
 
 
 def run_nsga_with_log(
-    prob, gen=100, population_size=100, log_every=100, save_path=None
+    objs, n_sensors, gen=100, population_size=100, log_every=100, save_path=None
 ):
-    # Create algorithm to solve problem with
-    uda = pg.nsga2(gen=log_every)
-    algo = pg.algorithm(uda=uda)
-
-    # population for problem
-    pop = pg.population(prob=prob, size=population_size)
+    opt = PyGMO(pg.nsga2(gen=log_every), population_size)
 
     # solve problem
     log = Log()
+    result = None
     for g in trange(log_every, gen + log_every, log_every):
-        pop = algo.evolve(pop)
-        log.log(pop, g)
+        result = opt.update(result) if result else opt.run(objs, n_sensors)
+        log.log(result, g)
         if save_path:
             save_jsonpickle(log.__dict__, save_path)
 
-    return pop, log
+    return result, log
 
 
 def make_multi_obj_networks(
@@ -135,22 +141,27 @@ def make_multi_obj_networks(
     dict
         Optimised networks and coverage scores
     """
-    inputs = get_multi_obj_inputs(lad20cd, population_groups)
+    la, columns = get_multi_obj_inputs(lad20cd, population_groups)
 
     results = {}
     for t in thetas:
         results[f"theta{t}"] = {}
+        cov = ExponentialCoverage.from_la(la, t)
+        objs = Objectives(la, columns, cov)
         for ns in n_sensors:
             print("theta", t, ", n_sensors", ns)
-            prob = build_problem(inputs, n_sensors=ns, theta=t)
-            pop, log = run_nsga_with_log(
-                prob,
+            result, log = run_nsga_with_log(
+                objs,
+                ns,
                 gen=gen,
                 population_size=population_size,
                 log_every=100,
                 save_path=f"{save_path}_theta{t}_{ns}sensors.log",
             )
-            results[f"theta{t}"][f"{ns}sensors"] = {"pop": pop, "log": log.__dict__}
+            results[f"theta{t}"][f"{ns}sensors"] = {
+                "result": result,
+                "log": log.__dict__,
+            }
 
     return results
 

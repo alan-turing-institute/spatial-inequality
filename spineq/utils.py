@@ -1,8 +1,9 @@
 """Utility functions used by other files.
 """
+from typing import Optional
+
 import geopandas as gpd
 import numpy as np
-import pandas as pd
 from shapely.geometry import Polygon
 
 
@@ -22,7 +23,6 @@ def distance_matrix(x1, y1, x2=None, y2=None):
         numpy array -- 2D matrix of distance between location i and location j,
         for each i and j.
     """
-
     coords_1 = np.array([x1, y1]).T
 
     if x2 is not None and y2 is not None:
@@ -33,7 +33,7 @@ def distance_matrix(x1, y1, x2=None, y2=None):
             (coords_1[:, np.newaxis, :] - coords_2[np.newaxis, :, :]) ** 2, axis=-1
         )
 
-    elif (x2 is None and y2 is not None) or (y2 is None and x2 is not None):
+    elif x2 is None and y2 is not None or x2 is not None:
         raise ValueError("x2 and y2 both must be defined or undefined.")
 
     else:
@@ -42,53 +42,7 @@ def distance_matrix(x1, y1, x2=None, y2=None):
             (coords_1[:, np.newaxis, :] - coords_1[np.newaxis, :, :]) ** 2, axis=-1
         )
 
-    distances = np.sqrt(dist_sq)
-
-    return distances
-
-
-def coverage_matrix(x1, y1, x2=None, y2=None, theta=1):
-    """Generate a matrix of coverages for a number of locations
-
-    Arguments:
-        x {list-like} -- x coordinate for each location
-        y {list-like} -- y coordinate for each location
-
-    Keyword Arguments:
-        theta {numeric} -- decay rate (default: {1})
-
-    Returns:
-        numpy array -- 2D matrix of coverage at each location i due to a
-        sensor placed at another location j.
-    """
-    distances = distance_matrix(x1, y1, x2=x2, y2=y2)
-    return np.exp(-distances / theta)
-
-
-def coverage_from_sensors(sensors, coverage_matrix):
-    # only keep coverages due to output areas where a sensor is present
-    mask_cov = np.multiply(coverage_matrix, sensors[np.newaxis, :])
-    # coverage at each output area = coverage due to nearest sensor
-    max_mask_cov = np.max(mask_cov, axis=1)
-    return max_mask_cov
-
-
-def total_coverage(point_coverage: np.array, point_weights: np.array = None) -> float:
-    """Total coverage metric from coverage of each point
-
-    Parameters
-    ----------
-    point_coverage : np.array
-        Coverage provided at each point (due to a sensor network)
-    point_weights : np.array
-        Weight for each point
-
-    Returns
-    -------
-    float
-        Total coverage (between 0 and 1)
-    """
-    return np.average(point_coverage, weights=point_weights)
+    return np.sqrt(dist_sq)
 
 
 def square_grid(xlim: list, ylim: list, grid_size: float):
@@ -119,7 +73,7 @@ def square_grid(xlim: list, ylim: list, grid_size: float):
     return grid_x, grid_y
 
 
-def coverage_grid(sensors, xlim, ylim, grid_size=100, theta=500):
+def coverage_grid(sensors, xlim, ylim, coverage_cls, coverage_args=None, grid_size=100):
     """Generate a square grid of points and calculate coverage at each point
     due to the closest sensor.
 
@@ -140,11 +94,12 @@ def coverage_grid(sensors, xlim, ylim, grid_size=100, theta=500):
     grid_x, grid_y = square_grid(xlim, ylim, grid_size)
 
     # coverage at each grid point due to each sensor
-    grid_cov = coverage_matrix(
-        grid_x, grid_y, x2=sensors[:, 0], y2=sensors[:, 1], theta=theta
+    if not coverage_args:
+        coverage_args = {}
+    cov = coverage_cls(
+        sensors[:, 0], sensors[:, 1], x_sites=grid_x, y_sites=grid_y, **coverage_args
     )
-    # max coverage at each grid point (due to nearest sensor)
-    grid_cov = grid_cov.max(axis=1)
+    grid_cov = cov.coverage(np.zeros(len(sensors)))
 
     polygons = [
         Polygon(
@@ -192,18 +147,19 @@ def make_job_dict(job):
     }
 
 
-def make_age_range(min_age=0, max_age=90):
-    """Create a pandas series of age weights as needed for the optimisation.
-    Index is from 0 to 90 (inclusive), returns weight 1 for
-    min_age <= age <= max_age and 0 for all other ages.
+def normalize(array: np.ndarray, axis: Optional[int] = None) -> np.ndarray:
+    """Normalise an array so that its elements (optionally along an axis) sum to one.
 
-    Keyword Arguments:
-        min_age {int} -- [description] (default: {0})
-        max_age {int} -- [description] (default: {90})
+    Parameters
+    ----------
+    array : np.ndarray
+        Array with values to normalise
+    axis : Optional[int], optional
+        Axis along which values should sum to 1, by default None
 
-    Returns:
-        [type] -- [description]
+    Returns
+    -------
+    np.ndarray
+        Normalised array
     """
-    age_weights = pd.Series(0, index=range(91))
-    age_weights[(age_weights.index >= min_age) & (age_weights.index <= max_age)] = 1
-    return age_weights
+    return array / array.sum(axis=axis)

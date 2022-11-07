@@ -10,7 +10,7 @@ from flask_socketio import SocketIO, emit
 from rq.job import Job
 from worker import conn, queue
 
-from spineq.optimise import calc_coverage, get_optimisation_inputs
+from spineq.opt.optimise import calc_coverage, get_optimisation_inputs
 from spineq.utils import make_age_range, make_job_dict
 
 redis_url = "redis://{}:{}".format(REDIS_HOST, REDIS_PORT)
@@ -214,16 +214,8 @@ def socket_optimise_job(parameters):
         emit("job", {"code": 400, "message": "Must supply n_sensors and theta."})
 
     else:
-        if "min_age" in parameters.keys():
-            min_age = parameters["min_age"]
-        else:
-            min_age = 0
-
-        if "max_age" in parameters.keys():
-            max_age = parameters["max_age"]
-        else:
-            max_age = 90
-
+        min_age = parameters["min_age"] if "min_age" in parameters.keys() else 0
+        max_age = parameters["max_age"] if "max_age" in parameters.keys() else 90
         age_weights = make_age_range(min_age=min_age, max_age=max_age)
 
         if "population_weight" in parameters.keys():
@@ -321,7 +313,7 @@ def submit_optimise_job(
     """
 
     job = queue.enqueue(
-        "spineq.optimise.optimise",
+        "spineq.opt.optimise.optimise",
         meta={"status": "Queued", "progress": 0},
         ttl=86400,  # maximum time to stay in queue (seconds)
         job_timeout=3600,  # max job execution time (seconds)

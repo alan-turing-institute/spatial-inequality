@@ -10,7 +10,9 @@ import matplotlib.pyplot as plt
 import matplotlib.transforms as mtransforms
 import yaml
 
-from spineq.data_fetcher import lad20nm_to_lad20cd
+from spineq.data.census import PopulationDataset, WorkplaceDataset
+from spineq.data.fetcher import lad20nm_to_lad20cd
+from spineq.data.group import LocalAuthority
 
 
 def get_config() -> dict:
@@ -232,3 +234,16 @@ def get_figures_params(config: dict) -> Path:
     figures_dir = Path(la_path, config["figures"]["save_dir"])
     os.makedirs(figures_dir, exist_ok=True)
     return figures_dir, config["figures"]["extension"]
+
+
+def get_la(lad20cd, population_groups):
+    la = LocalAuthority(lad20cd)
+    for name, params in population_groups.items():
+        la.add_dataset(
+            PopulationDataset(lad20cd)
+            .filter_age(low=params["min"], high=params["max"], name=name)
+            .to_total()
+        )
+    name = "workplace"
+    la.add_dataset(WorkplaceDataset(lad20cd, name=name))
+    return la

@@ -8,9 +8,9 @@ import pygmo as pg
 from tqdm import tqdm
 
 from publications.OptimisingForEquity.utils import save_jsonpickle
-from spineq.data_fetcher import lad20nm_to_lad20cd
-from spineq.genetic import build_problem, extract_all, run_problem
-from spineq.optimise import calc_coverage, get_optimisation_inputs
+from spineq.data.fetcher import lad20nm_to_lad20cd
+from spineq.opt.genetic import build_problem, extract_all, run_problem
+from spineq.opt.optimise import calc_coverage, get_optimisation_inputs
 
 
 def get_multi_obj_inputs(
@@ -37,7 +37,7 @@ def get_multi_obj_inputs(
     -------
     dict
         Output area centroids and weights for each output area for each objective, as
-        calculated by spineq.optimise.get_optimisation_inputs
+        calculated by spineq.opt.optimise.get_optimisation_inputs
     """
     if len(objectives) < 2:
         raise ValueError(

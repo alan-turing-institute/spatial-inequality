@@ -2,7 +2,7 @@
 
 ## ONS
 
-Source: Office for National Statistics licensed under the Open Government Licence v.3.0
+Source: Office for National Statistics licensed under the [Open Government Licence v.3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/)
 
 Contains OS data © Crown copyright and database right 2021
 
@@ -12,3 +12,14 @@ Contains OS data © Crown copyright and database right 2021
 - [Output Area population weighted centroids](https://geoportal.statistics.gov.uk/datasets/ons::output-areas-december-2011-population-weighted-centroids-1/about)
 - [Output Area population estimates](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates/datasets/censusoutputareaestimatesinthenortheastregionofengland)
 - [Output Area workplace population](https://www.nomisweb.co.uk/datasets/1300_1)
+  - Zenodo upload to allow direct download: https://doi.org/10.5281/zenodo.6683973
+- [Long Term Health Problems or Disability (Lower Layer Super Output Areas)](https://www.nomisweb.co.uk/census/2011/lc3101ewls)
+  - Zenodo upload to allow direct download: https://doi.org/10.5281/zenodo.6783028
+
+## Schools
+
+[Get Information About Schools](https://www.get-information-schools.service.gov.uk/)
+
+[Open Government License v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/)
+
+Zenodo upload to allow direct download: https://doi.org/10.5281/zenodo.6780060

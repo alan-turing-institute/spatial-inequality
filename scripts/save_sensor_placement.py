@@ -1,4 +1,4 @@
-from spineq.optimise import optimise
+from spineq.opt.optimise import optimise
 
 theta = 500
 n_sensors = 60

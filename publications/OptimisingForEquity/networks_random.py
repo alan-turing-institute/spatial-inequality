@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import numpy as np
-from tqdm import trange
 from utils import (
     get_all_optimisation_params,
     get_config,
@@ -10,8 +8,12 @@ from utils import (
     save_jsonpickle,
 )
 
-from spineq.data_fetcher import lad20nm_to_lad20cd
-from spineq.optimise import calc_coverage, get_optimisation_inputs
+from spineq.data.census import PopulationDataset, WorkplaceDataset
+from spineq.data.group import LocalAuthority
+from spineq.mappings import lad20nm_to_lad20cd
+from spineq.opt.coverage import ExponentialCoverage
+from spineq.opt.objectives import Column, Objectives
+from spineq.opt.random import Random
 
 
 def get_random_filepath(config: dict) -> Path:
@@ -67,31 +69,33 @@ def make_random_networks(
     if results is None:
         results = {}
 
-    oa_weight = get_optimisation_inputs(
-        population_weight=1,
-        workplace_weight=1,
-        pop_age_groups=population_groups,
-        combine=False,
-    )
+    datasets = []
+    columns = []
+    for name, params in population_groups.items():
+        datasets.append(
+            PopulationDataset(lad20cd)
+            .filter_age(low=params["min"], high=params["max"], name=name)
+            .to_total()
+        )
+        columns.append(Column(name, "total"))
+    name = "workplace"
+    datasets.append(WorkplaceDataset(lad20cd, name=name))
+    columns.append(Column(name, "workers"))
+
+    randopt = Random(n_networks)
+
+    la = LocalAuthority(lad20cd, datasets)
+
     for theta in thetas:
         if f"theta{theta}" not in results.keys():
             results[f"theta{theta}"] = {}
 
+        cov = ExponentialCoverage.from_la(la, theta)
+        objs = Objectives(la, columns, cov)
+
         for ns in n_sensors:
             print("theta", theta, ", n_sensors", ns)
-            rnd_oa = np.random.choice(oa_weight["oa11cd"], size=(n_networks, ns))
-            rnd_scores = np.array(
-                [
-                    [
-                        calc_coverage(lad20cd, rnd_oa[i, :], oa_weight=w, theta=theta)[
-                            "total_coverage"
-                        ]
-                        for w in oa_weight["oa_weight"].values()
-                    ]
-                    for i in trange(rnd_oa.shape[0])
-                ]
-            )
-            results[f"theta{theta}"][f"{ns}sensors"] = rnd_scores
+            results[f"theta{theta}"][f"{ns}sensors"] = randopt.run(objs, ns)
 
     return results
 

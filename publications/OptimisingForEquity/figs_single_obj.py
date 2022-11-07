@@ -14,7 +14,7 @@ from utils import (
     set_fig_style,
 )
 
-from spineq.plotting import (
+from spineq.plot.plotting import (
     add_colorbar,
     add_scalebar,
     get_fig_grid,
@@ -114,9 +114,9 @@ def fig_coverage_vs_sensors(
     fig, ax = plt.subplots(1, 1, figsize=(5, 3))
     markers = ["o", "^", "s", "x"]
     for obj, m in zip(all_groups.keys(), markers):
-        cov_history = results[obj][f"theta{theta}"][f"{n_sensors}sensors"][
-            "coverage_history"
-        ]
+        cov_history = results[obj][f"theta{theta}"][
+            f"{n_sensors}sensors"
+        ].coverage_history
         ax.plot(
             range(1, len(cov_history) + 1),
             cov_history,

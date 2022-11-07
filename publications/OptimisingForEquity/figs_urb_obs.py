@@ -1,28 +1,31 @@
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 import contextily as ctx
-import geopandas as gpd
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from figs_demographics import get_weights
 from networks_single_obj import get_single_obj_filepath
 from utils import (
     add_subplot_label,
     get_config,
     get_default_optimisation_params,
     get_figures_params,
+    get_la,
     get_la_save_dir,
     get_objectives,
     load_jsonpickle,
     set_fig_style,
 )
 
-from spineq.data_fetcher import get_oa_shapes, lad20nm_to_lad20cd
-from spineq.optimise import calc_coverage
-from spineq.plotting import (
+from spineq.data.group import LocalAuthority
+from spineq.data.urb_obs import UODataset
+from spineq.mappings import lad20nm_to_lad20cd
+from spineq.opt.coverage import ExponentialCoverage
+from spineq.opt.objectives import Column, CombinedObjectives
+from spineq.opt.result import SingleNetworkResult
+from spineq.plot.plotting import (
     add_colorbar,
     add_scalebar,
     get_fig_grid,
@@ -31,11 +34,11 @@ from spineq.plotting import (
     plot_sensors,
     save_fig,
 )
-from spineq.urb_obs import get_uo_sensor_dict, plot_uo_coverage_grid
+from spineq.urb_obs import plot_uo_coverage_grid
 from spineq.utils import coverage_grid
 
 
-def load_uo_sensors(config: Optional[dict]) -> gpd.GeoDataFrame:
+def load_uo_sensors(config: Optional[dict]) -> UODataset:
     """Load previously saved Urban Observatory sensor locations.
 
     Parameters
@@ -46,7 +49,7 @@ def load_uo_sensors(config: Optional[dict]) -> gpd.GeoDataFrame:
 
     Returns
     -------
-    gpd.GeoDataFrame
+    UODataset
         Urban Observatory sensor locations
     """
     if config is None:
@@ -55,55 +58,7 @@ def load_uo_sensors(config: Optional[dict]) -> gpd.GeoDataFrame:
     filename = config["urb_obs"]["filename"]
     la_dir = get_la_save_dir(config)
     uo_path = Path(la_dir, uo_dir, filename)
-    return gpd.read_file(uo_path)
-
-
-def get_uo_coverage_oa(
-    lad20cd: str,
-    uo_sensor_dict: Optional[list],
-    theta: float,
-    all_groups: dict,
-    oa_weights: dict,
-) -> dict:
-    """Calculate the coverage of each output area provide by the Urban Observatory
-    sensors
-
-    Parameters
-    ----------
-    lad20cd : str
-        Local authority code
-    uo_sensor_dict : Optional[list]
-        List of dictionaries with the location of each Urban Observatoy sensor, or None
-        in which cases this is generated from the output of load_uo_sensors
-    theta : float
-        Coverage distance to use
-    all_groups : dict
-        Short name (keys) and long title (values) for each objective to plot
-    oa_weights : dict
-        Weight for each output area for each group/objective
-
-    Returns
-    -------
-    dict
-        Coverage of each output area with the Urban Observatory network
-    """
-    if uo_sensor_dict is None:
-        uo_sensors = load_uo_sensors(None)
-        uo_sensor_dict = get_uo_sensor_dict(lad20cd, uo_sensors=uo_sensors)
-
-    uo_coverage = {}
-    for name, _ in all_groups.items():
-        if name == "workplace" and "workplace" not in oa_weights.keys():
-            oaw = oa_weights["workers"]
-        else:
-            oaw = oa_weights[name]
-        uo_coverage[name] = calc_coverage(
-            lad20cd, [s["oa11cd"] for s in uo_sensor_dict], oa_weight=oaw, theta=theta
-        )
-        uo_coverage[name]["sensors"] = uo_sensor_dict
-        uo_coverage[name]["lad20cd"] = lad20cd
-    uo_coverage["n_sensors"] = len(uo_sensor_dict)
-    return uo_coverage
+    return UODataset.read_jsonpickle(uo_path)
 
 
 def get_diff_cmap() -> matplotlib.colors.LinearSegmentedColormap:
@@ -121,7 +76,7 @@ def get_diff_cmap() -> matplotlib.colors.LinearSegmentedColormap:
 
 
 def fig_uo_sensor_locations(
-    lad20cd: str, uo_sensors: gpd.GeoDataFrame, save_dir: Path, extension: str
+    la: LocalAuthority, uo_sensors: UODataset, save_dir: Path, extension: str
 ):
     """Show the location of all sensors in the Urban Observatory network (points only).
     Figure nane: urb_obs_sensors_nsensors_{N}.png (where {N} is the no. sensors in the
@@ -129,9 +84,9 @@ def fig_uo_sensor_locations(
 
     Parameters
     ----------
-    lad20cd : str
-        Local authority code
-    uo_sensors : gpd.GeoDataFrame
+    la : LocalAuthority
+        Local authority
+    uo_sensors : UODataset
         Urban Observatory sensor locations
     save_dir : Path
         Directory to save figure
@@ -139,14 +94,14 @@ def fig_uo_sensor_locations(
         Figure file format
     """
     fig, ax = plt.subplots(1, 1, figsize=(6, 6))
-    plot_sensors(lad20cd, uo_sensors, centroids=False, ax=ax)
+    plot_sensors(la, uo_sensors, centroids=False, ax=ax)
     add_scalebar(ax)
     save_fig(fig, f"urb_obs_sensors_nsensors_{len(uo_sensors)}", save_dir, extension)
 
 
 def fig_uo_coverage_grid(
-    lad20cd: str,
-    uo_sensors: gpd.GeoDataFrame,
+    la: LocalAuthority,
+    uo_sensors: UODataset,
     theta: int,
     save_dir: Path,
     extension: str,
@@ -156,9 +111,9 @@ def fig_uo_coverage_grid(
 
     Parameters
     ----------
-    lad20cd : str
-        Local authority code
-    uo_sensors : gpd.GeoDataFrame
+    la : LocalAuthority
+        Local authority
+    uo_sensors : UODataset
         Urban Observatory sensor locations
     theta : int
         Coverage distance to use
@@ -170,9 +125,7 @@ def fig_uo_coverage_grid(
     fig, ax = get_fig_grid(nrows_ncols=(1, 1))
     ax = ax[0]
     cmap = "Greens"
-    plot_uo_coverage_grid(
-        lad20cd, uo_sensors=uo_sensors, ax=ax, legend=False, cmap=cmap
-    )
+    plot_uo_coverage_grid(la, uo_sensors=uo_sensors, ax=ax, legend=False, cmap=cmap)
     add_colorbar(ax, cmap=cmap, label="Coverage")
     add_scalebar(ax)
     t_str = f"theta_{theta}"
@@ -181,8 +134,8 @@ def fig_uo_coverage_grid(
 
 
 def fig_uo_coverage_grid_diff(
-    lad20cd: str,
-    uo_sensors: gpd.GeoDataFrame,
+    la: str,
+    uo_sensors: UODataset,
     theta: float,
     all_groups: dict,
     networks: dict,
@@ -196,9 +149,9 @@ def fig_uo_coverage_grid_diff(
 
     Parameters
     ----------
-    lad20cd : str
-        Local authority code
-    uo_sensors : gpd.GeoDataFrame
+    la : LocalAuthority
+        Local authority
+    uo_sensors : UODataset
         Urban Observatory sensor locations
     theta : float
         Coverage distance to use
@@ -213,34 +166,34 @@ def fig_uo_coverage_grid_diff(
         Figure file format
     """
     uo_sensors_xy = np.array(
-        [uo_sensors["geometry"].x.values, uo_sensors["geometry"].y.values]
+        [uo_sensors.values["geometry"].x.values, uo_sensors.values["geometry"].y.values]
     ).T
-    oa = get_oa_shapes(lad20cd)
+    oa = la.oa_shapes.values
     bounds = oa["geometry"].bounds
     xlim = (bounds["minx"].min(), bounds["maxx"].max())
     ylim = (bounds["miny"].min(), bounds["maxy"].max())
     grid_size = 100
     uo_cov = coverage_grid(uo_sensors_xy, xlim, ylim, theta=theta, grid_size=grid_size)
 
-    n_uo_oa = uo_sensors["oa11cd"].nunique()
+    n_uo_oa = uo_sensors.values["oa11cd"].nunique()
 
     fig, grid = get_fig_grid()
     cmap = get_diff_cmap()
     vmin = -1
     vmax = 1
     for i, (name, params) in enumerate(all_groups.items()):
-        greedy_sensors = pd.DataFrame(
-            networks[name][f"theta{theta}"][f"{n_uo_oa}sensors"]["sensors"]
+        greedy_result = networks[name][f"theta{theta}"][f"{n_uo_oa}sensors"]["sensors"]
+        greedy_xy = np.array(
+            la.oa_centroids.values[["x", "y"]].iloc[greedy_result.placement_history, :]
         )
-        greedy_sensors = np.array(greedy_sensors[["x", "y"]])
         greedy_cov = coverage_grid(
-            greedy_sensors, xlim, ylim, theta=theta, grid_size=grid_size
+            greedy_xy, xlim, ylim, theta=theta, grid_size=grid_size
         )
         cov_diff = uo_cov.copy()
         cov_diff["coverage"] = greedy_cov["coverage"] - uo_cov["coverage"]
 
         plot_coverage_grid(
-            lad20cd,
+            la,
             cov_diff,
             ax=grid[i],
             vmin=vmin,
@@ -267,17 +220,56 @@ def fig_uo_coverage_grid_diff(
     )
 
 
+def get_uo_coverage_results_oa(
+    la: LocalAuthority, uo_sensors: UODataset, theta: float, all_groups: dict
+) -> Dict[SingleNetworkResult]:
+    """Compute Urban Observatory sensor network coverage
+
+    Parameters
+    ----------
+    la : LocalAuthority
+        Local Authority object with all datasets in all_groups added
+    uo_sensors : UODataset
+        Urban Observatory sensor locations
+    theta : float
+        Coverage distance to use
+    all_groups : dict
+        Short name (keys) and long title (values) for each objective
+
+    Returns
+    -------
+    Dict[SingleNetworkResult]
+        Urban Observatory sensor network coverage for each objective
+    """
+    results = {}
+    cov = ExponentialCoverage.from_la(la, theta)
+    for name in all_groups:
+        objs = CombinedObjectives(la, [Column(name, "total")], cov)
+        sensors = objs.names_to_sensors(uo_sensors.values["oa11cd"].unique())
+        total_coverage = objs.fitness(sensors)
+        results[name] = SingleNetworkResult(
+            objs, len(uo_sensors.values), sensors, total_coverage
+        )
+    return results
+
+
 def fig_uo_coverage_oa(
-    uo_coverage: dict, theta: float, all_groups: dict, save_dir: Path, extension: str
+    la: LocalAuthority,
+    uo_sensors: UODataset,
+    theta: float,
+    all_groups: dict,
+    save_dir: Path,
+    extension: str,
 ):
     """Plot the coverage of each output area provide by the Urban Observatory
     sensors. Figure name: urb_obs_coverage_oa_theta_{theta}_nsensors_{n_sensors}.png
 
     Parameters
     ----------
-    uo_coverage : dict
-        Coverage of each output area with the Urban Observatory network (e.g. from
-        get_uo_coverage_oa)
+    la : LocalAuthority
+        Local Authority object with all datasets in all_groups added
+    uo_sensors : UODataset
+        Urban Observatory sensor locations
     theta : float
         Coverage distance to use
     all_groups : dict
@@ -285,14 +277,15 @@ def fig_uo_coverage_oa(
     save_dir : Path
         Directory to save figure
     """
+    results = get_uo_coverage_results_oa(la, uo_sensors, theta, all_groups)
     title = f"Urban Observatory: Coverage with $\\theta$ = {theta} m\n"
     for name, params in all_groups.items():
-        title += f"{params['title']}: {uo_coverage[name]['total_coverage']:.2f}, "
+        title += f"{params['title']}: {results[name].total_coverage:.2f}, "
     title = title[:-2]
 
     fig, ax = get_fig_grid(nrows_ncols=(1, 1))
     plot_optimisation_result(
-        uo_coverage[name],
+        results[name],
         title=title,
         ax=ax[0],
         show=False,
@@ -306,13 +299,13 @@ def fig_uo_coverage_oa(
     add_colorbar(ax[0], cmap="Greens", label="Coverage")
 
     t_str = f"theta_{theta}"
-    n_str = f"nsensors_{uo_coverage['n_sensors']}"
+    n_str = f"nsensors_{results[name].n_sensors}"
     save_fig(fig, f"urb_obs_coverage_oa_{t_str}_{n_str}", save_dir, extension)
 
 
 def fig_uo_coverage_oa_diff(
-    lad20cd: str,
-    uo_coverage: dict,
+    la: LocalAuthority,
+    uo_sensors: UODataset,
     theta: float,
     all_groups: dict,
     networks: dict,
@@ -344,23 +337,26 @@ def fig_uo_coverage_oa_diff(
     """
     fig, grid = get_fig_grid()
     cmap = get_diff_cmap()
-    n_uo_oa = uo_coverage["n_sensors"]
+    uo_results = get_uo_coverage_results_oa(la, uo_sensors, theta, all_groups)
 
     for i, (name, params) in enumerate(all_groups.items()):
-        uo_cov = uo_coverage[name]["oa_coverage"]
-        uo_cov = pd.DataFrame(uo_cov).set_index("oa11cd")
-        uo_cov.rename(columns={"coverage": "urb_obs"}, inplace=True)
+        n_uo_oa = uo_results[name].n_sensors
+        uo_cov = uo_results[name].objectives.oa_coverage(uo_results[name].sensors)
+        uo_cov = pd.DataFrame({"urb_obs": uo_cov}, index=la.oa11cd)
 
-        greedy_cov = networks[name][f"theta{theta}"][f"{n_uo_oa}sensors"]["oa_coverage"]
-        greedy_cov = pd.DataFrame(greedy_cov).set_index("oa11cd")
-        greedy_cov.rename(columns={"coverage": "greedy"}, inplace=True)
+        greedy_cov = networks[name][f"theta{theta}"][
+            f"{n_uo_oa}sensors"
+        ].objectives.oa_coverage(
+            networks[name][f"theta{theta}"][f"{n_uo_oa}sensors"].sensors
+        )
+        greedy_cov = pd.DataFrame({"greedy": greedy_cov}, index=la.oa11cd)
 
         compare_nets = uo_cov.join(greedy_cov)
         compare_nets["diff"] = compare_nets["greedy"] - compare_nets["urb_obs"]
         compare_nets["diff"].describe()
 
-        oa_shapes = get_oa_shapes(lad20cd)
-        oa_shapes = oa_shapes.join(compare_nets["diff"])
+        oa_shapes = la.oa_shapes
+        oa_shapes = oa_shapes.values.join(compare_nets["diff"])
 
         vmin = -1
         vmax = 1
@@ -407,29 +403,24 @@ def main():
 
     config = get_config()
     lad20cd = lad20nm_to_lad20cd(config["la"])
+    population_groups, all_groups = get_objectives(config)
+    la = get_la(lad20cd, population_groups)
     networks_path = get_single_obj_filepath(config)
     networks = load_jsonpickle(networks_path)
     uo_sensors = load_uo_sensors(config)
 
     figs_dir, extension = get_figures_params(config)
 
-    population_groups, all_groups = get_objectives(config)
-    oa_weights = get_weights(lad20cd, population_groups)
     theta, _ = get_default_optimisation_params(config)
 
-    uo_sensor_dict = get_uo_sensor_dict(lad20cd, uo_sensors=uo_sensors)
-    uo_coverage = get_uo_coverage_oa(
-        lad20cd, uo_sensor_dict, theta, all_groups, oa_weights
-    )
-
-    fig_uo_sensor_locations(lad20cd, uo_sensors, figs_dir, extension)
-    fig_uo_coverage_grid(lad20cd, uo_sensors, theta, figs_dir, extension)
+    fig_uo_sensor_locations(la, uo_sensors, figs_dir, extension)
+    fig_uo_coverage_grid(la, uo_sensors, theta, figs_dir, extension)
     fig_uo_coverage_grid_diff(
-        lad20cd, uo_sensors, theta, all_groups, networks, figs_dir, extension
+        la, uo_sensors, theta, all_groups, networks, figs_dir, extension
     )
-    fig_uo_coverage_oa(uo_coverage, theta, all_groups, figs_dir, extension)
+    fig_uo_coverage_oa(la, uo_sensors, theta, all_groups, figs_dir, extension)
     fig_uo_coverage_oa_diff(
-        lad20cd, uo_coverage, theta, all_groups, networks, figs_dir, extension
+        la, uo_sensors, theta, all_groups, networks, figs_dir, extension
     )
 
 

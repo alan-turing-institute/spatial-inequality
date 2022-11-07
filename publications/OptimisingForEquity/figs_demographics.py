@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import geopandas as gpd
 from utils import (
     add_subplot_label,
     get_config,
@@ -10,9 +9,12 @@ from utils import (
     set_fig_style,
 )
 
-from spineq.data_fetcher import get_oa_shapes, get_oa_stats, lad20nm_to_lad20cd
-from spineq.optimise import calc_oa_weights
-from spineq.plotting import (
+from spineq.data.census import PopulationDataset, WorkplaceDataset
+from spineq.data.group import LocalAuthority
+from spineq.mappings import lad20nm_to_lad20cd
+from spineq.opt.coverage import ExponentialCoverage
+from spineq.opt.objectives import Column, CombinedObjectives
+from spineq.plot.plotting import (
     add_colorbar,
     add_scalebar,
     get_fig_grid,
@@ -22,7 +24,7 @@ from spineq.plotting import (
 )
 
 
-def get_weights(lad20cd: str, population_groups: dict) -> dict:
+def make_objs(lad20cd: str, population_groups: dict, theta: float) -> dict:
     """Calculate optimisation weights for each objective for each output area
     in a local authority.
 
@@ -39,77 +41,30 @@ def get_weights(lad20cd: str, population_groups: dict) -> dict:
     dict
         Output area weights
     """
-    oa_weights = {
-        name: calc_oa_weights(
-            lad20cd=lad20cd,
-            pop_age_groups={name: weights},
-            population_weight=1,
-            workplace_weight=0,
+
+    la = LocalAuthority(lad20cd)
+    for name, params in population_groups.items():
+        la.add_dataset(
+            PopulationDataset(lad20cd)
+            .filter_age(low=params["min"], high=params["max"], name=name)
+            .to_total()
         )
-        for name, weights in population_groups.items()
+    la.add_dataset(WorkplaceDataset(lad20cd))
+    cov = ExponentialCoverage.from_la(la, theta)
+
+    objs = {
+        name: CombinedObjectives(la, [Column(name, "total")], cov)
+        for name in population_groups
     }
-    oa_weights["workplace"] = calc_oa_weights(
-        lad20cd=lad20cd, population_weight=0, workplace_weight=1
-    )
-    return oa_weights
+    name = "workplace"
+    objs[name] = CombinedObjectives(la, [Column(name, "total")], cov)
 
-
-def calc_oa_density(
-    lad20cd: str, all_groups: dict, population_groups: dict
-) -> gpd.GeoDataFrame:
-    """Calculate the density of people for each objective in each output area (OA),
-    expressed as the percentage of people in that OA divided by the aera of the OA
-
-    Parameters
-    ----------
-    lad20cd : str
-        Local authority code to generate results for
-    all_groups : dict
-        Short name (keys) and long title (values) for each objective.
-    population_groups : dict
-        Parameters for residential population objectives, as returned by
-        utils.get_objectives
-
-    Returns
-    -------
-    gpd.GeoDataFrame
-        Data frame with popluation counts for each objective in each  outputa area, plus
-        columns {name}_perc, {name}_reld for the percentage and density of people in
-        each output area for each objective (where {name} is replaced with the name of
-        the objective)
-    """
-    oa = get_oa_shapes(lad20cd)
-    oa["area"] = oa["geometry"].area / 1e6  # km^2
-
-    stats = get_oa_stats(lad20cd)
-    for name, config in population_groups.items():
-        group_pop = (
-            stats["population_ages"]
-            .loc[
-                :,
-                (stats["population_ages"].columns >= config["min"])
-                & (stats["population_ages"].columns <= config["max"]),
-            ]
-            .sum(axis=1)
-        )
-        group_pop.name = name
-        oa = oa.join(group_pop)
-
-    workplace = stats["workplace"]
-    workplace.name = "workplace"
-    oa = oa.join(workplace)
-    for group in all_groups:
-        oa[f"{group}_perc"] = oa[group] / oa[group].sum()
-        oa[f"{group}_reld"] = oa[f"{group}_perc"] / oa["area"]
-
-    return oa
+    return objs
 
 
 def fig_importance(
-    lad20cd: str,
     groups: dict,
-    oa_weights: dict,
-    theta: float,
+    objectives: dict,
     save_dir: Path,
     extension: str,
     vmax: float = 0.06,
@@ -121,14 +76,10 @@ def fig_importance(
 
     Parameters
     ----------
-    lad20cd : str
-        Local authority code to generate results for
     groups : dict
         Name and title of each population group/objective
-    oa_weights : dict
-        Weight for each output area for each group/objective
-    theta : float
-        Coverage distance
+    objectives : dict
+        Objectives instance for each output area for each group/objective
     save_dir : Path
         Directory to save figure in
     extension : str
@@ -142,9 +93,7 @@ def fig_importance(
         name = g[0]
         title = g[1]["title"]
         plot_oa_importance(
-            lad20cd,
-            oa_weights[name],
-            theta=theta,
+            objectives[name],
             vmax=vmax,
             ax=grid[i],
             show=False,
@@ -161,9 +110,8 @@ def fig_importance(
 
 
 def fig_density(
-    lad20cd: str,
-    oa: gpd.GeoDataFrame,
-    all_groups: dict,
+    groups: dict,
+    objectives: dict,
     save_dir: Path,
     extension: str,
     vmax: float = 6,
@@ -174,13 +122,10 @@ def fig_density(
 
     Parameters
     ----------
-    lad20cd : str
-        Local authority code to generate results for
-    oa : gpd.GeoDataFrame
-        Data frame with stats for each variable in each output area (e.g. from
-        calc_oa_density)
-    all_groups : dict
+    groups : dict
         Short name (keys) and long title (values) for each objective
+    objectives: dict
+        CombinedObjectives instance for each objective in groups
     save_dir : Path
         Directory to save figure in
     extension : str
@@ -190,12 +135,12 @@ def fig_density(
     """
     fig, grid = get_fig_grid()
 
-    for i, g in enumerate(all_groups.items()):
+    for i, g in enumerate(groups.items()):
         name = g[0]
         title = g[1]["title"]
         plot_oa_weights(
-            lad20cd,
-            100 * oa[f"{name}_reld"],
+            objectives[name],
+            density=True,
             title=title,
             vmax=vmax,
             ax=grid[i],
@@ -224,10 +169,9 @@ def main():
     theta, _ = get_default_optimisation_params(config)
     population_groups, all_groups = get_objectives(config)
 
-    oa_weights = get_weights(lad20cd, population_groups)
-    fig_importance(lad20cd, all_groups, oa_weights, theta, figs_dir, extension)
-    oa = calc_oa_density(lad20cd, all_groups, population_groups)
-    fig_density(lad20cd, oa, all_groups, figs_dir, extension)
+    objectives = make_objs(lad20cd, population_groups, theta)
+    fig_importance(all_groups, objectives, figs_dir, extension)
+    fig_density(all_groups, all_groups, figs_dir, extension)
 
 
 if __name__ == "__main__":

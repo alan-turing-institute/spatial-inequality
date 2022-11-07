@@ -1,14 +1,14 @@
 import os
 from pathlib import Path
 
-import geopandas as gpd
 import yaml
 from utils import get_config
 
-from spineq.data_fetcher import get_uo_sensors, lad20nm_to_lad20cd
+from spineq.data.urb_obs import UODataset
+from spineq.mappings import lad20nm_to_lad20cd
 
 
-def save_uo_sensors(lad20cd: str, save_path: Path) -> gpd.GeoDataFrame:
+def save_uo_sensors(lad20cd: str, save_path: Path) -> UODataset:
     """Get Urban Observatory sensors in a local authority and save them to file.
 
     Parameters
@@ -23,12 +23,12 @@ def save_uo_sensors(lad20cd: str, save_path: Path) -> gpd.GeoDataFrame:
     gpd.GeoDataFrame
         Urban observatoy sensor locations
     """
-    uo_sensors = get_uo_sensors(lad20cd)
-    uo_sensors.to_file(save_path)
+    uo_sensors = UODataset(lad20cd)
+    uo_sensors.save_jsonpickle(save_path)
     return uo_sensors
 
 
-def add_n_uo_sensors_to_config(uo_sensors: gpd.GeoDataFrame, config: dict):
+def add_n_uo_sensors_to_config(uo_sensors: UODataset, config: dict):
     """Check how many output areas the Urban Observatory has a sensor in. If the config
     file doesn't specify to optimise a network with that many sensors, add it so it's
     possible to make a fair comparison later.
@@ -36,11 +36,11 @@ def add_n_uo_sensors_to_config(uo_sensors: gpd.GeoDataFrame, config: dict):
     Parameters
     ----------
     uo_sensors : gpd.GeoDataFrame
-        Urban Observatory sensor locations from spineq.data_fetcher.get_uo_sensors()
+        Urban Observatory sensor locations from spineq.data.fetcher.get_uo_sensors()
     config : dict
         Config loaded by utils.get_config()
     """
-    n_uo_oa = uo_sensors["oa11cd"].nunique()
+    n_uo_oa = uo_sensors.values["oa11cd"].nunique()
     if n_uo_oa not in config["optimisation"]["n_sensors"]["generate"]:
         print(
             f"Urban Observatory sensors found in {n_uo_oa} OA. "
