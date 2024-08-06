@@ -4,7 +4,7 @@ services:
 
   web:
     build: .
-    container_name: spineq_api
+    container_name: spineq-api
     ports:
       - "${HOST_PORT}:${FLASK_PORT}"
     depends_on:
@@ -16,7 +16,7 @@ services:
 
   worker:
     build: .
-    container_name: spineq_worker
+    container_name: spineq-worker
     depends_on:
       - redis
     env_file:

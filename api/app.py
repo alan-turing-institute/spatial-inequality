@@ -1,6 +1,7 @@
 """Creates the Flask and Flask-Socketio endpoints for the
 optimisation backend.
 """
+
 import pandas as pd
 import rq
 from config import FLASK_HOST, FLASK_PORT, REDIS_HOST, REDIS_PORT
@@ -17,7 +18,13 @@ redis_url = "redis://{}:{}".format(REDIS_HOST, REDIS_PORT)
 
 app = Flask(__name__)
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*", message_queue=redis_url)
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    message_queue=redis_url,
+    logger=True,
+    engineio_logger=True,
+)
 
 
 @app.route("/")
@@ -429,4 +436,4 @@ def delete_job(job_id):
 
 
 if __name__ == "__main__":
-    app.run(host=FLASK_HOST, port=FLASK_PORT)
+    socketio.run(app, host=FLASK_HOST, port=FLASK_PORT)
